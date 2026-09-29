@@ -161,7 +161,6 @@ def bucle_escaneo():
                     away_name = item["teams"]["away"]["name"]
                     league_name = item["league"]["name"]
 
-                    # SECCIÓN 1: Captura todos los 0-0 en ventana 46'-78' sin gastar llamadas extra
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         temp_00.append({
                             "fixture_id": fixture_id,
@@ -172,11 +171,17 @@ def bucle_escaneo():
                         })
 
                         if fixture_id not in alertas_disparadas:
-                            candidatos_validos.append((fixture_id, item, minuto))
+                            candidatos_validos.append((
+                                fixture_id,
+                                item,
+                                minuto,
+                            ))
 
                 partidos_00_en_vivo = temp_00
+                print(
+                    f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}"
+                )
 
-                # SECCIÓN 2: Analiza detalladamente máximo 2 partidos por ciclo
                 for fixture_id, item, minuto in candidatos_validos[:2]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
@@ -194,6 +199,16 @@ def bucle_escaneo():
                     }
 
                     es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
+                    print(
+                        f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}"
+                    )
+                    print(
+                        f"   Local: xG={stats.get('xg_local')}, Remates={stats.get('remates_local')}, Tir.Puerta={stats.get('puerta_local')}, AtaquesP={stats.get('ataques_p_local')}"
+                    )
+                    print(
+                        f"   Visita: xG={stats.get('xg_visita')}, Remates={stats.get('remates_visita')}, Tir.Puerta={stats.get('puerta_visita')}, AtaquesP={stats.get('ataques_p_visita')}"
+                    )
+
                     if es_alerta:
                         guardar_alerta(
                             fixture_id,
@@ -218,7 +233,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CON PESTAÑAS (TAB SYSTEM)
+# 🎨 DISEÑO PRO CON RADAR DINÁMICO & NEÓN
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -226,14 +241,15 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Monitor Global 0-0</title>
+    <title>AFC Analytics - Herramienta de Análisis en Vivo</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #06090e;
-            --card-bg: #0d131d;
+            --bg-color: #05080e;
+            --card-bg: rgba(13, 19, 29, 0.85);
             --card-border: rgba(255, 255, 255, 0.08);
             --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.35);
             --text-primary: #ffffff;
             --text-secondary: #94a3b8;
         }
@@ -243,32 +259,40 @@ HTML_TEMPLATE = """
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
             color: var(--text-primary);
             margin: 0; padding: 0;
-            line-height: 1.5;
+            min-height: 100vh;
         }
 
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 18px 5%;
-            background: rgba(6, 9, 14, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(5, 8, 14, 0.85);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--card-border);
             position: sticky; top: 0; z-index: 100;
         }
 
         .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; }
         .brand-icon {
-            width: 36px; height: 36px;
+            width: 38px; height: 38px;
             background: radial-gradient(circle, var(--accent-green) 0%, rgba(16,185,129,0.2) 100%);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--accent-green);
+            box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
         .status-pill {
             background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
             color: var(--accent-green); padding: 6px 16px; border-radius: 20px;
             font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 0 12px var(--accent-green-glow);
         }
 
         .pulse {
@@ -282,57 +306,158 @@ HTML_TEMPLATE = """
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
+        .hero-section {
+            max-width: 1200px; margin: 40px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;
+        }
+
+        .badge-tag {
+            color: var(--accent-green); font-size: 12px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px;
+            display: inline-block; background: rgba(16, 185, 129, 0.08); padding: 4px 12px;
+            border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .hero-title { font-size: 42px; font-weight: 800; line-height: 1.15; margin: 0 0 16px 0; letter-spacing: -1px; }
+        .highlight-green { color: var(--accent-green); text-shadow: 0 0 20px var(--accent-green-glow); }
+        .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 30px; max-width: 520px; }
+
+        .features-grid { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .feature-item {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border);
+            padding: 10px 16px; border-radius: 12px; backdrop-filter: blur(8px);
+        }
+        .feature-icon { color: var(--accent-green); font-size: 18px; }
+        .feature-title { font-size: 12px; font-weight: 700; }
+        .feature-sub { font-size: 11px; color: var(--text-secondary); }
+
+        /* RADAR CYBERPUNK DE ALTO IMPACTO */
+        .radar-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 24px; padding: 35px; text-align: center; position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(16, 185, 129, 0.03);
+            backdrop-filter: blur(12px);
+        }
+
+        .radar-box {
+            width: 200px; height: 200px; margin: 0 auto 20px auto; border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.35); position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 75%);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+            overflow: hidden;
+        }
+
+        /* Ejes en cruz del radar */
+        .radar-box::before {
+            content: ''; position: absolute; width: 100%; height: 1px;
+            background: rgba(16, 185, 129, 0.2);
+        }
+        .radar-box::after {
+            content: ''; position: absolute; height: 100%; width: 1px;
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .radar-circle-inner {
+            position: absolute; width: 120px; height: 120px; border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .radar-circle-center {
+            position: absolute; width: 50px; height: 50px; border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .radar-sweep {
+            position: absolute; width: 100px; height: 100px; top: 0; right: 0;
+            background: conic-gradient(from 0deg at 0% 100%, rgba(16, 185, 129, 0.45) 0deg, transparent 90deg);
+            border-radius: 100% 0 0 0; transform-origin: 0% 100%;
+            animation: sweep 3.5s linear infinite;
+        }
+
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Puntos de blip en el radar */
+        .blip {
+            position: absolute; width: 6px; height: 6px; background: #38bdf8;
+            border-radius: 50%; box-shadow: 0 0 8px #38bdf8; animation: blip-flash 2s infinite alternate;
+        }
+        .blip1 { top: 35%; left: 65%; animation-delay: 0.5s; }
+        .blip2 { top: 70%; left: 30%; animation-delay: 1.2s; }
+
+        @keyframes blip-flash {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.3); }
+        }
+
+        .stats-counter { font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
+        .stats-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        /* PESTAÑAS Y LISTA */
         .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
 
-        /* NAVEGACIÓN POR PESTAÑAS */
         .tabs-nav {
             display: flex; gap: 12px; margin-bottom: 30px;
-            border-bottom: 1px solid var(--card-border); padding-bottom: 12px;
+            border-bottom: 1px solid var(--card-border); padding-bottom: 15px;
         }
 
         .tab-btn {
             background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 10px 22px; border-radius: 12px;
-            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
-            display: flex; align-items: center; gap: 8px;
+            color: var(--text-secondary); padding: 12px 24px; border-radius: 14px;
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.25s ease;
+            display: flex; align-items: center; gap: 10px;
         }
 
         .tab-btn.active {
             background: var(--accent-green); color: #000; border-color: var(--accent-green);
-            font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            font-weight: 700; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
         }
 
-        .tab-badge {
-            background: rgba(0,0,0,0.15); padding: 2px 8px; border-radius: 10px; font-size: 11px;
-        }
+        .tab-badge { background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px; }
 
         .match-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 16px; padding: 20px; transition: all 0.25s ease;
+            border-radius: 18px; padding: 22px; transition: all 0.3s ease;
+            backdrop-filter: blur(10px); position: relative; overflow: hidden;
         }
 
-        .match-card:hover { border-color: rgba(16, 185, 129, 0.4); transform: translateY(-3px); }
+        .match-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+            opacity: 0.6;
+        }
+
+        .match-card:hover {
+            border-color: rgba(16, 185, 129, 0.4); transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 15px rgba(16, 185, 129, 0.1);
+        }
 
         .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-        .league-badge { background: rgba(255, 255, 255, 0.05); padding: 3px 8px; border-radius: 6px; font-weight: 600; }
-        .minute-badge { color: #f59e0b; font-weight: 700; }
-        .teams-title { font-size: 17px; font-weight: 700; text-align: center; margin: 15px 0; }
+        .league-badge { background: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
+        .minute-badge { color: #f59e0b; font-weight: 800; background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 6px; }
+        .teams-title { font-size: 18px; font-weight: 700; text-align: center; margin: 15px 0; line-height: 1.3; }
 
         .fulfilled-box {
-            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 10px 14px; border-radius: 10px; font-size: 13px;
+            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);
+            padding: 10px 14px; border-radius: 12px; font-size: 13px;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .team-pill { background: var(--accent-green); color: #000; font-weight: 700; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+        .team-pill { background: var(--accent-green); color: #000; font-weight: 700; padding: 3px 10px; border-radius: 8px; font-size: 12px; }
 
         .empty-card {
-            grid-column: 1 / -1; text-align: center; padding: 60px 20px;
+            grid-column: 1 / -1; text-align: center; padding: 65px 20px;
             background: var(--card-bg); border: 1px dashed var(--card-border);
             border-radius: 20px; color: var(--text-secondary);
         }
+
+        @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -348,8 +473,51 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
+    <div class="hero-section">
+        <div>
+            <div class="badge-tag">Análisis Algorítmico en Vivo</div>
+            <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Inminente</span></h1>
+            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones estricto de presión ofensiva (xG, remates y ataques peligrosos).</p>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div>
+                        <div class="feature-title">Análisis</div>
+                        <div class="feature-sub">Tiempo real</div>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⏱️</span>
+                    <div>
+                        <div class="feature-title">Ventana</div>
+                        <div class="feature-sub">46' - 78'</div>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <div>
+                        <div class="feature-title">Datos</div>
+                        <div class="feature-sub">xG, Remates, Ataques</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="radar-card">
+            <div class="radar-box">
+                <div class="radar-circle-inner"></div>
+                <div class="radar-circle-center"></div>
+                <div class="radar-sweep"></div>
+                <div class="blip blip1"></div>
+                <div class="blip blip2"></div>
+            </div>
+            <div class="stats-counter" id="alertas-counter">0</div>
+            <div class="stats-label">alertas registradas hoy</div>
+        </div>
+    </div>
+
     <div class="main-container">
-        <!-- BARRA DE PESTAÑAS -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="cambiarPestana('radar')">
                 📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
@@ -359,26 +527,21 @@ HTML_TEMPLATE = """
             </button>
         </div>
 
-        <!-- CONTENIDO PESTAÑA 1: RADAR GLOBAL 0-0 -->
         <div id="pestana-radar">
             <div id="grid-radar" class="grid">
-                <div class="empty-card"><p>Cargando partidos 0-0 en ventana 46'-78'...</p></div>
+                <div class="empty-card"><p>Cargando escáner global en vivo...</p></div>
             </div>
         </div>
 
-        <!-- CONTENIDO PESTAÑA 2: ALERTAS CUMPLIDAS -->
         <div id="pestana-alertas" style="display: none;">
             <div id="grid-alertas" class="grid">
-                <div class="empty-card"><p>Cargando alertas confirmadas...</p></div>
+                <div class="empty-card"><p>Cargando alertas VIP confirmadas...</p></div>
             </div>
         </div>
     </div>
 
     <script>
-        let pestanaActual = 'radar';
-
         function cambiarPestana(pestana) {
-            pestanaActual = pestana;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             if(pestana === 'radar') {
                 event.currentTarget.classList.add('active');
@@ -392,14 +555,13 @@ HTML_TEMPLATE = """
         }
 
         function cargarDatos() {
-            // 1. Cargar Todos los 0-0
             fetch('/api/partidos_00')
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-radar');
                     document.getElementById('count-radar').innerText = data.length;
                     if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en este momento</h3><p>Monitoreando en vivo entre el min 46 y 78...</p></div>';
+                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3><p>Escaneando continuamente la liga mundial...</p></div>';
                         return;
                     }
                     grid.innerHTML = data.map(p => `
@@ -413,14 +575,16 @@ HTML_TEMPLATE = """
                     `).join('');
                 });
 
-            // 2. Cargar Alertas VIP
             fetch('/api/alertas')
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-alertas');
+                    const counter = document.getElementById('alertas-counter');
                     document.getElementById('count-alertas').innerText = data.length;
+                    counter.innerText = data.length;
+
                     if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP registradas hoy</h3><p>Las alertas que cumplan las 6 reglas aparecerán aquí.</p></div>';
+                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las 6 reglas aparecerán aquí y en Telegram.</p></div>';
                         return;
                     }
                     grid.innerHTML = data.map(a => `

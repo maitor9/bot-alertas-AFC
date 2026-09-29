@@ -16,9 +16,7 @@ HEADERS = {"x-apisports-key": API_KEY}
 
 # CREDENCIALES DE TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
-TELEGRAM_CHAT_ID = (
-    "PEGA_AQUI_TU_CHAT_ID"  # Reemplaza con tu Chat ID de Telegram
-)
+TELEGRAM_CHAT_ID = "PEGA_AQUI_TU_CHAT_ID"
 
 alertas_disparadas = set()
 
@@ -26,17 +24,15 @@ alertas_disparadas = set()
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
-    """Envía un mensaje con formato profesional a Telegram."""
     if (
         TELEGRAM_TOKEN == "PEGA_AQUI_TU_TELEGRAM_TOKEN"
         or not TELEGRAM_TOKEN
         or TELEGRAM_CHAT_ID == "PEGA_AQUI_TU_CHAT_ID"
     ):
-        print("⚠️ Telegram no configurado correctamente. Omite envío.")
         return
 
     mensaje = (
-        f"🚨 <b>¡ALERTA OVER 0.5 GOALS!</b> 🚨\n\n"
+        f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
         f"⏱️ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
@@ -53,7 +49,6 @@ def enviar_alerta_telegram(
 
     try:
         requests.post(url, data=payload, timeout=5)
-        print(f"📱 Alerta enviada a Telegram: {home_name} vs {away_name}")
     except Exception as e:
         print(f"⚠️ Error enviando a Telegram: {e}")
 
@@ -148,8 +143,7 @@ def evaluar_reglas_estrictas(datos):
 
 
 def bucle_escaneo():
-    """Escáner optimizado (cada 10 min) para maximizar el cupo diario de 100 peticiones."""
-    INTERVALO_SEGUNDOS = 600  # 10 minutos entre revisiones
+    INTERVALO_SEGUNDOS = 600
 
     while True:
         try:
@@ -172,7 +166,6 @@ def bucle_escaneo():
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         candidatos_validos.append((fixture_id, item, minuto))
 
-                # Evaluamos máximo 3 candidatos por ciclo para no agotar la cuota
                 for fixture_id, item, minuto in candidatos_validos[:3]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
@@ -214,7 +207,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# INTERFAZ WEB HTML
+# 🎨 DISEÑO NUEVO, MODERNO Y LLAMATIVO
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -222,19 +215,232 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Alertas - Over 0.5 Goals</title>
+    <title>AFC Bot de Alertas - Over 0.5 Goals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 25px; }
-        h1 { margin: 0; font-size: 24px; color: #38bdf8; }
-        .status { background: #166534; color: #4ade80; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
-        .card-header { font-size: 12px; color: #94a3b8; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .match-title { font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 15px; text-align: center; }
-        .badge { background: #0284c7; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; display: inline-block; margin-top: 5px; }
-        .footer-card { margin-top: 15px; font-size: 12px; color: #64748b; text-align: right; }
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #070a12 100%);
+            --card-bg: rgba(17, 24, 39, 0.75);
+            --neon-accent: #38bdf8;
+            --neon-glow: rgba(56, 189, 248, 0.35);
+            --green-glow: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 15px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* HEADER ULTRA MODERNO */
+        .header {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 35px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--neon-glow));
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--neon-accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--green-glow);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--green-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--green-glow);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e2e8f0;
+        }
+
+        /* GRID Y TARJETAS FUTURISTAS */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 18px;
+            padding: 22px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            opacity: 0.8;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px var(--neon-glow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 15px;
+        }
+
+        .league-name {
+            font-weight: 600;
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .minute-tag {
+            color: #f59e0b;
+            font-weight: 800;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .match-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+            margin: 15px 0 20px 0;
+            line-height: 1.3;
+        }
+
+        .team-fulfilled {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #e2e8f0;
+        }
+
+        .badge-team {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+        }
+
+        .footer-card {
+            margin-top: 18px;
+            font-size: 11px;
+            color: #64748b;
+            text-align: right;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 10px;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            color: var(--text-sub);
+        }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 15px; text-align: center; }
+            .logo-area { flex-direction: column; }
+        }
     </style>
     <script>
         setInterval(() => {
@@ -243,17 +449,24 @@ HTML_TEMPLATE = """
                 .then(data => {
                     const grid = document.getElementById('alertas-grid');
                     if (data.length === 0) {
-                        grid.innerHTML = '<p style="color: #64748b;">No hay alertas registradas aún. Escaneando en vivo...</p>';
+                        grid.innerHTML = `
+                            <div class="empty-state">
+                                <h3>🔎 Rastreo Continuo Activado</h3>
+                                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
+                            </div>`;
                         return;
                     }
                     grid.innerHTML = data.map(a => `
                         <div class="card">
                             <div class="card-header">
-                                <span>🏆 ${a.liga}</span>
-                                <span>⏱️ Min ${a.minuto}'</span>
+                                <span class="league-name">🏆 ${a.liga}</span>
+                                <span class="minute-tag">⏱️ ${a.minuto}'</span>
                             </div>
                             <div class="match-title">${a.equipo_local} vs ${a.equipo_visita}</div>
-                            <div>🔥 Cumple: <span class="badge">${a.equipo_cumple}</span></div>
+                            <div class="team-fulfilled">
+                                <span>Presión Detectada:</span>
+                                <span class="badge-team">${a.equipo_cumple}</span>
+                            </div>
                             <div class="footer-card">📅 ${a.fecha_hora}</div>
                         </div>
                     `).join('');
@@ -264,12 +477,27 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚽ BOT DE ALERTAS OVER 0.5 GOALS</h1>
-            <div class="status">● SISTEMA EN VIVO</div>
+            <div class="logo-area">
+                <div class="logo-icon">⚽</div>
+                <div>
+                    <h1>AFC Bot de Alertas</h1>
+                    <div class="subtitle">Estrategia Over 0.5 Goals en Vivo</div>
+                </div>
+            </div>
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                SISTEMA EN VIVO
+            </div>
         </div>
-        <h2>🚨 Alertas Detectadas</h2>
+
+        <div class="section-title">
+            🚨 Últimas Alertas Detectadas
+        </div>
+
         <div id="alertas-grid" class="grid">
-            <p style="color: #64748b;">Cargando alertas en vivo...</p>
+            <div class="empty-state">
+                <p>Cargando panel de control...</p>
+            </div>
         </div>
     </div>
 </body>

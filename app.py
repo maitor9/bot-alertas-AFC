@@ -16,7 +16,8 @@ HEADERS = {"x-apisports-key": API_KEY}
 
 # CREDENCIALES DE TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
-TELEGRAM_CHAT_ID = "PEGA_AQUI_TU_CHAT_ID"
+# Reemplaza 'TU_CHAT_ID_AQUI' con tu ID numérico personal de Telegram
+TELEGRAM_CHAT_ID = "TU_CHAT_ID_AQUI"
 
 alertas_disparadas = set()
 
@@ -24,10 +25,11 @@ alertas_disparadas = set()
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
+    """Envía la alerta con formato HTML a tu bot de Telegram."""
     if (
-        TELEGRAM_TOKEN == "PEGA_AQUI_TU_TELEGRAM_TOKEN"
-        or not TELEGRAM_TOKEN
-        or TELEGRAM_CHAT_ID == "PEGA_AQUI_TU_CHAT_ID"
+        not TELEGRAM_TOKEN
+        or TELEGRAM_CHAT_ID == "TU_CHAT_ID_AQUI"
+        or not TELEGRAM_CHAT_ID
     ):
         return
 
@@ -35,7 +37,7 @@ def enviar_alerta_telegram(
         f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱️ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
+        f"⏱️️ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
         f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
         f"📈 <i>Filtros cumplidos: xG/Tiros + Marcador 0-0 en 2da mitad.</i>"
     )
@@ -54,6 +56,7 @@ def enviar_alerta_telegram(
 
 
 def obtener_estadisticas_partido(fixture_id):
+    """Consulta las métricas detalladas en vivo del partido."""
     try:
         response = requests.get(
             URL_STATS,
@@ -99,6 +102,7 @@ def obtener_estadisticas_partido(fixture_id):
 
 
 def evaluar_reglas_estrictas(datos):
+    """Evalúa las 6 reglas requeridas para la estrategia Over 0.5 Goles."""
     minuto = datos.get("minuto", 0)
     if not (46 <= minuto <= 78):
         return False, None
@@ -143,6 +147,7 @@ def evaluar_reglas_estrictas(datos):
 
 
 def bucle_escaneo():
+    """Bucle optimizado a 10 minutos (600s) para maximizar el cupo gratuito diario de la API."""
     INTERVALO_SEGUNDOS = 600
 
     while True:
@@ -166,6 +171,7 @@ def bucle_escaneo():
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         candidatos_validos.append((fixture_id, item, minuto))
 
+                # Límite de 3 escaneos detallados por ciclo para ahorrar cuotas de la API
                 for fixture_id, item, minuto in candidatos_validos[:3]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
@@ -201,13 +207,13 @@ def bucle_escaneo():
                         )
                         alertas_disparadas.add(fixture_id)
         except Exception as e:
-            print(f"Error en escaneo: {e}")
+            print(f"Error durante el escaneo: {e}")
 
         time.sleep(INTERVALO_SEGUNDOS)
 
 
 # ==========================================
-# 🎨 DISEÑO NUEVO, MODERNO Y LLAMATIVO
+# 🎨 DISEÑO WEB MODERNO Y CORREGIDO
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -242,7 +248,6 @@ HTML_TEMPLATE = """
             margin: 0 auto;
         }
 
-        /* HEADER ULTRA MODERNO */
         .header {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(12px);
@@ -264,9 +269,6 @@ HTML_TEMPLATE = """
 
         .logo-icon {
             font-size: 32px;
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 10px var(--neon-glow));
         }
 
@@ -328,7 +330,6 @@ HTML_TEMPLATE = """
             color: #e2e8f0;
         }
 
-        /* GRID Y TARJETAS FUTURISTAS */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -442,46 +443,6 @@ HTML_TEMPLATE = """
             .logo-area { flex-direction: column; }
         }
     </style>
-    <script>
-        function cargarAlertas() {
-            fetch('/api/alertas')
-                .then(res => res.json())
-                .then(data => {
-                    const grid = document.getElementById('alertas-grid');
-                    if (!data || data.length === 0) {
-                        grid.innerHTML = `
-                            <div class="empty-state">
-                                <h3>🔎 Rastreo Continuo Activado</h3>
-                                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
-                            </div>`;
-                        return;
-                    }
-                    grid.innerHTML = data.map(a => `
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="league-name">🏆 ${a.liga}</span>
-                                <span class="minute-tag">⏱️ ${a.minuto}'</span>
-                            </div>
-                            <div class="match-title">${a.equipo_local} vs ${a.equipo_visita}</div>
-                            <div class="team-fulfilled">
-                                <span>Presión Detectada:</span>
-                                <span class="badge-team">${a.equipo_cumple}</span>
-                            </div>
-                            <div class="footer-card">📅 ${a.fecha_hora}</div>
-                        </div>
-                    `).join('');
-                })
-                .catch(err => {
-                    console.error('Error cargando alertas:', err);
-                });
-        }
-
-        // Ejecutar inmediatamente al cargar la página
-        document.addEventListener('DOMContentLoaded', cargarAlertas);
-        
-        // Consultar automáticamente cada 5 segundos
-        setInterval(cargarAlertas, 5000);
-    </script>
 </head>
 <body>
     <div class="container">
@@ -505,10 +466,52 @@ HTML_TEMPLATE = """
 
         <div id="alertas-grid" class="grid">
             <div class="empty-state">
-                <p>Cargando panel de control...</p>
+                <h3>🔎 Rastreo Continuo Activado</h3>
+                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
             </div>
         </div>
     </div>
+
+    <script>
+        function cargarAlertas() {
+            fetch('/api/alertas')
+                .then(res => {
+                    if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    const grid = document.getElementById('alertas-grid');
+                    if (!data || !Array.isArray(data) || data.length === 0) {
+                        grid.innerHTML = `
+                            <div class="empty-state">
+                                <h3>🔎 Rastreo Continuo Activado</h3>
+                                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
+                            </div>`;
+                        return;
+                    }
+                    grid.innerHTML = data.map(a => `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="league-name">🏆 ${a.liga || 'Liga General'}</span>
+                                <span class="minute-tag">⏱️ ${a.minuto || 0}'</span>
+                            </div>
+                            <div class="match-title">${a.equipo_local || 'Local'} vs ${a.equipo_visita || 'Visita'}</div>
+                            <div class="team-fulfilled">
+                                <span>Presión Detectada:</span>
+                                <span class="badge-team">${a.equipo_cumple || 'Confirmado'}</span>
+                            </div>
+                            <div class="footer-card">📅 ${a.fecha_hora || ''}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => {
+                    console.log('Esperando alertas del servidor...', err);
+                });
+        }
+
+        window.onload = cargarAlertas;
+        setInterval(cargarAlertas, 5000);
+    </script>
 </body>
 </html>
 """

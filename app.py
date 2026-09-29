@@ -14,9 +14,7 @@ URL_LIVE = "https://v3.football.api-sports.io/fixtures"
 URL_STATS = "https://v3.football.api-sports.io/fixtures/statistics"
 HEADERS = {"x-apisports-key": API_KEY}
 
-# CREDENCIALES DE TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
-# Reemplaza 'TU_CHAT_ID_AQUI' con tu ID numérico personal de Telegram
 TELEGRAM_CHAT_ID = "8470398609"
 
 alertas_disparadas = set()
@@ -25,10 +23,9 @@ alertas_disparadas = set()
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
-    """Envía la alerta con formato HTML a tu bot de Telegram."""
     if (
         not TELEGRAM_TOKEN
-        or TELEGRAM_CHAT_ID == "TU_CHAT_ID_AQUI"
+        or TELEGRAM_CHAT_ID == "8470398609"
         or not TELEGRAM_CHAT_ID
     ):
         return
@@ -37,7 +34,7 @@ def enviar_alerta_telegram(
         f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱️️ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
+        f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
         f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
         f"📈 <i>Filtros cumplidos: xG/Tiros + Marcador 0-0 en 2da mitad.</i>"
     )
@@ -56,7 +53,6 @@ def enviar_alerta_telegram(
 
 
 def obtener_estadisticas_partido(fixture_id):
-    """Consulta las métricas detalladas en vivo del partido."""
     try:
         response = requests.get(
             URL_STATS,
@@ -102,7 +98,6 @@ def obtener_estadisticas_partido(fixture_id):
 
 
 def evaluar_reglas_estrictas(datos):
-    """Evalúa las 6 reglas requeridas para la estrategia Over 0.5 Goles."""
     minuto = datos.get("minuto", 0)
     if not (46 <= minuto <= 78):
         return False, None
@@ -147,7 +142,6 @@ def evaluar_reglas_estrictas(datos):
 
 
 def bucle_escaneo():
-    """Bucle optimizado a 10 minutos (600s) para maximizar el cupo gratuito diario de la API."""
     INTERVALO_SEGUNDOS = 600
 
     while True:
@@ -171,7 +165,6 @@ def bucle_escaneo():
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         candidatos_validos.append((fixture_id, item, minuto))
 
-                # Límite de 3 escaneos detallados por ciclo para ahorrar cuotas de la API
                 for fixture_id, item, minuto in candidatos_validos[:3]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
@@ -213,7 +206,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO WEB MODERNO Y CORREGIDO
+# 🎨 DISEÑO PRO TIPO SAAS (AFC BOT)
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -221,253 +214,400 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Bot de Alertas - Over 0.5 Goals</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>AFC Bot - Herramienta de Análisis en Vivo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #070a12 100%);
-            --card-bg: rgba(17, 24, 39, 0.75);
-            --neon-accent: #38bdf8;
-            --neon-glow: rgba(56, 189, 248, 0.35);
-            --green-glow: #10b981;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
+            --bg-color: #06090e;
+            --card-bg: #0d131d;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.25);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             margin: 0;
-            padding: 30px 15px;
-            min-height: 100vh;
+            padding: 0;
+            line-height: 1.5;
         }
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 25px 35px;
+        /* HEADER NAVEGACIÓN */
+        .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            margin-bottom: 35px;
+            padding: 18px 5%;
+            background: rgba(6, 9, 14, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo-area {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-
-        .logo-icon {
-            font-size: 32px;
-            filter: drop-shadow(0 0 10px var(--neon-glow));
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 28px;
+            gap: 12px;
             font-weight: 800;
+            font-size: 20px;
             letter-spacing: -0.5px;
-            background: linear-gradient(90deg, #ffffff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
-        .subtitle {
-            font-size: 13px;
-            color: var(--neon-accent);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 600;
-            margin-top: 4px;
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: radial-gradient(circle, var(--accent-green) 0%, rgba(16,185,129,0.2) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 1px solid var(--accent-green);
         }
 
-        .status-badge {
-            background: rgba(16, 185, 129, 0.12);
+        .status-pill {
+            background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--green-glow);
-            padding: 8px 18px;
-            border-radius: 30px;
+            color: var(--accent-green);
+            padding: 6px 16px;
+            border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
         }
 
-        .pulse-dot {
+        .pulse {
             width: 8px;
             height: 8px;
-            background-color: var(--green-glow);
+            background: var(--accent-green);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--green-glow);
-            animation: pulse 1.8s infinite;
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: pulse-animation 2s infinite;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-animation {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        .section-title {
+        /* HERO SECTION MAIN */
+        .hero-section {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .badge-tag {
+            color: var(--accent-green);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .hero-title {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin: 0 0 16px 0;
+            letter-spacing: -1px;
+        }
+
+        .highlight-green {
+            color: var(--accent-green);
+        }
+
+        .hero-desc {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 30px;
+            max-width: 520px;
+        }
+
+        /* FEATURE ICONS BADGES */
+        .features-grid {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            padding: 10px 16px;
+            border-radius: 12px;
+        }
+
+        .feature-icon {
+            color: var(--accent-green);
+            font-size: 18px;
+        }
+
+        .feature-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .feature-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* WIDGET RADAR DERECHO */
+        .radar-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 35px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .radar-box {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 20px auto;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%);
+        }
+
+        .radar-box::before {
+            content: '';
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .radar-box::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .radar-sweep {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            top: 0; right: 0;
+            background: conic-gradient(from 0deg at 0% 100%, rgba(16, 185, 129, 0.4) 0deg, transparent 90deg);
+            border-radius: 100% 0 0 0;
+            transform-origin: 0% 100%;
+            animation: sweep 4s linear infinite;
+        }
+
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats-counter {
+            font-size: 46px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+
+        .stats-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* GRID DE ALERTAS DETECTADAS */
+        .alerts-section {
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 0 20px;
+        }
+
+        .section-header {
             font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
+            font-weight: 700;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #e2e8f0;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
         }
 
-        .card {
+        .match-card {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 18px;
-            padding: 22px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.25s ease;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #38bdf8, #818cf8);
-            opacity: 0.8;
+        .match-card:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(56, 189, 248, 0.4);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px var(--neon-glow);
-        }
-
-        .card-header {
+        .match-meta {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
         }
 
-        .league-name {
-            font-weight: 600;
-            color: #cbd5e1;
+        .league-badge {
             background: rgba(255, 255, 255, 0.05);
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
+            font-weight: 600;
         }
 
-        .minute-tag {
+        .minute-badge {
             color: #f59e0b;
-            font-weight: 800;
-            background: rgba(245, 158, 11, 0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        .match-title {
-            font-size: 19px;
             font-weight: 700;
-            color: #ffffff;
-            text-align: center;
-            margin: 15px 0 20px 0;
-            line-height: 1.3;
         }
 
-        .team-fulfilled {
-            background: rgba(56, 189, 248, 0.08);
-            border: 1px solid rgba(56, 189, 248, 0.25);
+        .teams-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .fulfilled-box {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
             padding: 10px 14px;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 13px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            color: #e2e8f0;
+            align-items: center;
         }
 
-        .badge-team {
-            background: linear-gradient(135deg, #0284c7, #2563eb);
-            color: #ffffff;
+        .team-pill {
+            background: var(--accent-green);
+            color: #000;
             font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 8px;
+            padding: 2px 8px;
+            border-radius: 6px;
             font-size: 12px;
-            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
         }
 
-        .footer-card {
-            margin-top: 18px;
-            font-size: 11px;
-            color: #64748b;
-            text-align: right;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 10px;
-        }
-
-        .empty-state {
+        .empty-card {
             grid-column: 1 / -1;
             text-align: center;
-            padding: 50px 20px;
+            padding: 60px 20px;
             background: var(--card-bg);
-            border-radius: 18px;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            color: var(--text-sub);
+            border: 1px dashed var(--card-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
         }
 
-        @media (max-width: 600px) {
-            .header { flex-direction: column; gap: 15px; text-align: center; }
-            .logo-area { flex-direction: column; }
+        @media (max-width: 900px) {
+            .hero-section { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-area">
-                <div class="logo-icon">⚽</div>
-                <div>
-                    <h1>AFC Bot de Alertas</h1>
-                    <div class="subtitle">Estrategia Over 0.5 Goals en Vivo</div>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <div class="brand">
+            <div class="brand-icon">⚡</div>
+            <span>AFC Analytics</span>
+        </div>
+        <div class="status-pill">
+            <div class="pulse"></div>
+            SCANNER ACTIVO
+        </div>
+    </div>
+
+    <!-- HERO SECTION -->
+    <div class="hero-section">
+        <div>
+            <div class="badge-tag">Herramienta de Análisis en Vivo</div>
+            <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Imminente</span></h1>
+            <p class="hero-desc">AFC Analytics monitorea automáticamente los partidos globales entre los minutos 46' y 78' e identifica las mejores oportunidades para Over 0.5 Goles.</p>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div>
+                        <div class="feature-title">Analiza</div>
+                        <div class="feature-sub">Tiempo real</div>
+                    </div>
                 </div>
-            </div>
-            <div class="status-badge">
-                <div class="pulse-dot"></div>
-                SISTEMA EN VIVO
+                <div class="feature-item">
+                    <span class="feature-icon">⏱️</span>
+                    <div>
+                        <div class="feature-title">Ventana</div>
+                        <div class="feature-sub">46' - 78'</div>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <div>
+                        <div class="feature-title">Datos</div>
+                        <div class="feature-sub">xG, Remates, Ataques</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="section-title">
-            🚨 Últimas Alertas Detectadas
+        <!-- WIDGET RADAR DERECHO -->
+        <div class="radar-card">
+            <div class="radar-box">
+                <div class="radar-sweep"></div>
+            </div>
+            <div class="stats-counter" id="alertas-counter">0</div>
+            <div class="stats-label">alertas registradas hoy</div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE ALERTAS -->
+    <div class="alerts-section">
+        <div class="section-header">
+            <span>🚨 Partidos Detectados en Vivo</span>
         </div>
 
         <div id="alertas-grid" class="grid">
-            <div class="empty-state">
-                <h3>🔎 Rastreo Continuo Activado</h3>
-                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
+            <div class="empty-card">
+                <h3>🔎 Monitoreando el mercado global...</h3>
+                <p>Las alertas aparecerán aquí tan pronto como un partido cumpla las 6 reglas estables.</p>
             </div>
         </div>
     </div>
@@ -475,38 +615,37 @@ HTML_TEMPLATE = """
     <script>
         function cargarAlertas() {
             fetch('/api/alertas')
-                .then(res => {
-                    if (!res.ok) throw new Error('Error HTTP: ' + res.status);
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('alertas-grid');
+                    const counter = document.getElementById('alertas-counter');
+
                     if (!data || !Array.isArray(data) || data.length === 0) {
+                        counter.innerText = '0';
                         grid.innerHTML = `
-                            <div class="empty-state">
-                                <h3>🔎 Rastreo Continuo Activado</h3>
-                                <p>Escaneando partidos en vivo en el mundo cada 10 minutos...</p>
+                            <div class="empty-card">
+                                <h3>🔎 Escáner en búsqueda activa</h3>
+                                <p>Revisando partidos globales entre el min 46' y 78' con marcador 0-0...</p>
                             </div>`;
                         return;
                     }
+
+                    counter.innerText = data.length;
                     grid.innerHTML = data.map(a => `
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="league-name">🏆 ${a.liga || 'Liga General'}</span>
-                                <span class="minute-tag">⏱️ ${a.minuto || 0}'</span>
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 ${a.liga || 'General'}</span>
+                                <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
                             </div>
-                            <div class="match-title">${a.equipo_local || 'Local'} vs ${a.equipo_visita || 'Visita'}</div>
-                            <div class="team-fulfilled">
-                                <span>Presión Detectada:</span>
-                                <span class="badge-team">${a.equipo_cumple || 'Confirmado'}</span>
+                            <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
+                            <div class="fulfilled-box">
+                                <span>Alta presión ofensiva:</span>
+                                <span class="team-pill">${a.equipo_cumple}</span>
                             </div>
-                            <div class="footer-card">📅 ${a.fecha_hora || ''}</div>
                         </div>
                     `).join('');
                 })
-                .catch(err => {
-                    console.log('Esperando alertas del servidor...', err);
-                });
+                .catch(err => console.log('Sincronizando con el servidor...', err));
         }
 
         window.onload = cargarAlertas;

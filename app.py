@@ -202,12 +202,6 @@ def bucle_escaneo():
                     print(
                         f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}"
                     )
-                    print(
-                        f"   Local: xG={stats.get('xg_local')}, Remates={stats.get('remates_local')}, Tir.Puerta={stats.get('puerta_local')}, AtaquesP={stats.get('ataques_p_local')}"
-                    )
-                    print(
-                        f"   Visita: xG={stats.get('xg_visita')}, Remates={stats.get('remates_visita')}, Tir.Puerta={stats.get('puerta_visita')}, AtaquesP={stats.get('ataques_p_visita')}"
-                    )
 
                     if es_alerta:
                         guardar_alerta(
@@ -332,7 +326,6 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 12px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* RADAR CYBERPUNK DE ALTO IMPACTO */
         .radar-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 24px; padding: 35px; text-align: center; position: relative;
@@ -349,7 +342,6 @@ HTML_TEMPLATE = """
             overflow: hidden;
         }
 
-        /* Ejes en cruz del radar */
         .radar-box::before {
             content: ''; position: absolute; width: 100%; height: 1px;
             background: rgba(16, 185, 129, 0.2);
@@ -381,7 +373,6 @@ HTML_TEMPLATE = """
             100% { transform: rotate(360deg); }
         }
 
-        /* Puntos de blip en el radar */
         .blip {
             position: absolute; width: 6px; height: 6px; background: #38bdf8;
             border-radius: 50%; box-shadow: 0 0 8px #38bdf8; animation: blip-flash 2s infinite alternate;
@@ -397,7 +388,6 @@ HTML_TEMPLATE = """
         .stats-counter { font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
         .stats-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-        /* PESTAÑAS Y LISTA */
         .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
 
         .tabs-nav {
@@ -477,7 +467,7 @@ HTML_TEMPLATE = """
         <div>
             <div class="badge-tag">Análisis Algorítmico en Vivo</div>
             <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Inminente</span></h1>
-            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones estricto de presión ofensiva (xG, remates y ataques peligrosos).</p>
+            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones estrictos de presión ofensiva (xG, remates y ataques peligrosos).</p>
 
             <div class="features-grid">
                 <div class="feature-item">
@@ -519,10 +509,10 @@ HTML_TEMPLATE = """
 
     <div class="main-container">
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="cambiarPestana('radar')">
+            <button class="tab-btn active" onclick="cambiarPestana(event, 'radar')">
                 📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
             </button>
-            <button class="tab-btn" onclick="cambiarPestana('alertas')">
+            <button class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
                 🔥 Alertas VIP Cumplidas <span class="tab-badge" id="count-alertas">0</span>
             </button>
         </div>
@@ -541,14 +531,15 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        function cambiarPestana(pestana) {
+        function cambiarPestana(evt, pestana) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            if(pestana === 'radar') {
-                event.currentTarget.classList.add('active');
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+            if (pestana === 'radar') {
                 document.getElementById('pestana-radar').style.display = 'block';
                 document.getElementById('pestana-alertas').style.display = 'none';
             } else {
-                event.currentTarget.classList.add('active');
                 document.getElementById('pestana-radar').style.display = 'none';
                 document.getElementById('pestana-alertas').style.display = 'block';
             }
@@ -559,7 +550,7 @@ HTML_TEMPLATE = """
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-radar');
-                    document.getElementById('count-radar').innerText = data.length;
+                    document.getElementById('count-radar').innerText = data ? data.length : 0;
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3><p>Escaneando continuamente la liga mundial...</p></div>';
                         return;
@@ -567,21 +558,23 @@ HTML_TEMPLATE = """
                     grid.innerHTML = data.map(p => `
                         <div class="match-card">
                             <div class="match-meta">
-                                <span class="league-badge">🏆 ${p.liga}</span>
+                                <span class="league-badge">🏆 ${p.liga || 'General'}</span>
                                 <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
                             </div>
                             <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
                         </div>
                     `).join('');
-                });
+                })
+                .catch(err => console.log('Error en partidos_00:', err));
 
             fetch('/api/alertas')
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-alertas');
                     const counter = document.getElementById('alertas-counter');
-                    document.getElementById('count-alertas').innerText = data.length;
-                    counter.innerText = data.length;
+                    const total = data ? data.length : 0;
+                    document.getElementById('count-alertas').innerText = total;
+                    counter.innerText = total;
 
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las 6 reglas aparecerán aquí y en Telegram.</p></div>';
@@ -590,17 +583,18 @@ HTML_TEMPLATE = """
                     grid.innerHTML = data.map(a => `
                         <div class="match-card">
                             <div class="match-meta">
-                                <span class="league-badge">🏆 ${a.liga}</span>
+                                <span class="league-badge">🏆 ${a.liga || 'General'}</span>
                                 <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
                             </div>
                             <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
                             <div class="fulfilled-box">
                                 <span>Alta presión detectada:</span>
-                                <span class="team-pill">${a.equipo_cumple}</span>
+                                <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
                             </div>
                         </div>
                     `).join('');
-                });
+                })
+                .catch(err => console.log('Error en alertas:', err));
         }
 
         window.onload = cargarDatos;
@@ -618,7 +612,12 @@ def index():
 
 @app.route("/api/alertas")
 def api_alertas():
-    return jsonify(obtener_alertas())
+    try:
+        alertas = obtener_alertas()
+        return jsonify(alertas if alertas else [])
+    except Exception as e:
+        print(f"Error en API alertas: {e}")
+        return jsonify([])
 
 
 @app.route("/api/partidos_00")

@@ -443,12 +443,12 @@ HTML_TEMPLATE = """
         }
     </style>
     <script>
-        setInterval(() => {
+        function cargarAlertas() {
             fetch('/api/alertas')
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('alertas-grid');
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         grid.innerHTML = `
                             <div class="empty-state">
                                 <h3>🔎 Rastreo Continuo Activado</h3>
@@ -470,8 +470,17 @@ HTML_TEMPLATE = """
                             <div class="footer-card">📅 ${a.fecha_hora}</div>
                         </div>
                     `).join('');
+                })
+                .catch(err => {
+                    console.error('Error cargando alertas:', err);
                 });
-        }, 5000);
+        }
+
+        // Ejecutar inmediatamente al cargar la página
+        document.addEventListener('DOMContentLoaded', cargarAlertas);
+        
+        // Consultar automáticamente cada 5 segundos
+        setInterval(cargarAlertas, 5000);
     </script>
 </head>
 <body>

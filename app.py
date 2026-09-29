@@ -17,7 +17,7 @@ HEADERS = {"x-apisports-key": API_KEY}
 # CREDENCIALES DE TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 # Reemplaza 'TU_CHAT_ID_AQUI' con tu ID numérico personal de Telegram
-TELEGRAM_CHAT_ID = "TU_CHAT_ID_AQUI"
+TELEGRAM_CHAT_ID = "8470398609"
 
 alertas_disparadas = set()
 

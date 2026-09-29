@@ -18,16 +18,13 @@ TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
 
 alertas_disparadas = set()
+partidos_00_en_vivo = []
 
 
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
-    if (
-        not TELEGRAM_TOKEN
-        or TELEGRAM_CHAT_ID == "8470398609"
-        or not TELEGRAM_CHAT_ID
-    ):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
 
     mensaje = (
@@ -142,6 +139,7 @@ def evaluar_reglas_estrictas(datos):
 
 
 def bucle_escaneo():
+    global partidos_00_en_vivo
     INTERVALO_SEGUNDOS = 600
 
     while True:
@@ -151,21 +149,35 @@ def bucle_escaneo():
             )
             if response.status_code == 200:
                 partidos = response.json().get("response", [])
+                temp_00 = []
                 candidatos_validos = []
 
                 for item in partidos:
                     fixture_id = item["fixture"]["id"]
-                    if fixture_id in alertas_disparadas:
-                        continue
-
                     minuto = item["fixture"]["status"]["elapsed"] or 0
                     goles_h = item["goals"]["home"] or 0
                     goles_a = item["goals"]["away"] or 0
+                    home_name = item["teams"]["home"]["name"]
+                    away_name = item["teams"]["away"]["name"]
+                    league_name = item["league"]["name"]
 
+                    # SECCIÓN 1: Captura todos los 0-0 en ventana 46'-78' sin gastar llamadas extra
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
-                        candidatos_validos.append((fixture_id, item, minuto))
+                        temp_00.append({
+                            "fixture_id": fixture_id,
+                            "equipo_local": home_name,
+                            "equipo_visita": away_name,
+                            "liga": league_name,
+                            "minuto": minuto,
+                        })
 
-                for fixture_id, item, minuto in candidatos_validos[:3]:
+                        if fixture_id not in alertas_disparadas:
+                            candidatos_validos.append((fixture_id, item, minuto))
+
+                partidos_00_en_vivo = temp_00
+
+                # SECCIÓN 2: Analiza detalladamente máximo 2 partidos por ciclo
+                for fixture_id, item, minuto in candidatos_validos[:2]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
                     league_name = item["league"]["name"]
@@ -206,7 +218,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO PRO TIPO SAAS (AFC BOT)
+# 🎨 DISEÑO CON PESTAÑAS (TAB SYSTEM)
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -214,7 +226,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Bot - Herramienta de Análisis en Vivo</title>
+    <title>AFC Analytics - Monitor Global 0-0</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -222,7 +234,6 @@ HTML_TEMPLATE = """
             --card-bg: #0d131d;
             --card-border: rgba(255, 255, 255, 0.08);
             --accent-green: #10b981;
-            --accent-green-glow: rgba(16, 185, 129, 0.25);
             --text-primary: #ffffff;
             --text-secondary: #94a3b8;
         }
@@ -233,318 +244,99 @@ HTML_TEMPLATE = """
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             line-height: 1.5;
         }
 
-        /* HEADER NAVEGACIÓN */
         .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             padding: 18px 5%;
             background: rgba(6, 9, 14, 0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--card-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 800;
-            font-size: 20px;
-            letter-spacing: -0.5px;
-        }
-
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; }
         .brand-icon {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             background: radial-gradient(circle, var(--accent-green) 0%, rgba(16,185,129,0.2) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--accent-green);
         }
 
         .status-pill {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--accent-green);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green); padding: 6px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
         }
 
         .pulse {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--accent-green);
-            animation: pulse-animation 2s infinite;
+            width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green); animation: pulse-anim 2s infinite;
         }
 
-        @keyframes pulse-animation {
+        @keyframes pulse-anim {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        /* HERO SECTION MAIN */
-        .hero-section {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 40px;
-            align-items: center;
+        .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+
+        /* NAVEGACIÓN POR PESTAÑAS */
+        .tabs-nav {
+            display: flex; gap: 12px; margin-bottom: 30px;
+            border-bottom: 1px solid var(--card-border); padding-bottom: 12px;
         }
 
-        .badge-tag {
-            color: var(--accent-green);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-bottom: 12px;
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border);
+            color: var(--text-secondary); padding: 10px 22px; border-radius: 12px;
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 8px;
         }
 
-        .hero-title {
-            font-size: 42px;
-            font-weight: 800;
-            line-height: 1.15;
-            margin: 0 0 16px 0;
-            letter-spacing: -1px;
+        .tab-btn.active {
+            background: var(--accent-green); color: #000; border-color: var(--accent-green);
+            font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
 
-        .highlight-green {
-            color: var(--accent-green);
+        .tab-badge {
+            background: rgba(0,0,0,0.15); padding: 2px 8px; border-radius: 10px; font-size: 11px;
         }
 
-        .hero-desc {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-bottom: 30px;
-            max-width: 520px;
-        }
-
-        /* FEATURE ICONS BADGES */
-        .features-grid {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--card-border);
-            padding: 10px 16px;
-            border-radius: 12px;
-        }
-
-        .feature-icon {
-            color: var(--accent-green);
-            font-size: 18px;
-        }
-
-        .feature-title {
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .feature-sub {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        /* WIDGET RADAR DERECHO */
-        .radar-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            padding: 35px;
-            text-align: center;
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-
-        .radar-box {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 20px auto;
-            border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%);
-        }
-
-        .radar-box::before {
-            content: '';
-            position: absolute;
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .radar-box::after {
-            content: '';
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .radar-sweep {
-            position: absolute;
-            width: 90px;
-            height: 90px;
-            top: 0; right: 0;
-            background: conic-gradient(from 0deg at 0% 100%, rgba(16, 185, 129, 0.4) 0deg, transparent 90deg);
-            border-radius: 100% 0 0 0;
-            transform-origin: 0% 100%;
-            animation: sweep 4s linear infinite;
-        }
-
-        @keyframes sweep {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .stats-counter {
-            font-size: 46px;
-            font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 4px;
-        }
-
-        .stats-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* GRID DE ALERTAS DETECTADAS */
-        .alerts-section {
-            max-width: 1200px;
-            margin: 50px auto;
-            padding: 0 20px;
-        }
-
-        .section-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 
         .match-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.25s ease;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 20px; transition: all 0.25s ease;
         }
 
-        .match-card:hover {
-            border-color: rgba(16, 185, 129, 0.4);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
+        .match-card:hover { border-color: rgba(16, 185, 129, 0.4); transform: translateY(-3px); }
 
-        .match-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .league-badge {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .minute-badge {
-            color: #f59e0b;
-            font-weight: 700;
-        }
-
-        .teams-title {
-            font-size: 18px;
-            font-weight: 700;
-            text-align: center;
-            margin: 15px 0;
-        }
+        .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+        .league-badge { background: rgba(255, 255, 255, 0.05); padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+        .minute-badge { color: #f59e0b; font-weight: 700; }
+        .teams-title { font-size: 17px; font-weight: 700; text-align: center; margin: 15px 0; }
 
         .fulfilled-box {
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 10px 14px; border-radius: 10px; font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .team-pill {
-            background: var(--accent-green);
-            color: #000;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-        }
+        .team-pill { background: var(--accent-green); color: #000; font-weight: 700; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
 
         .empty-card {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 60px 20px;
-            background: var(--card-bg);
-            border: 1px dashed var(--card-border);
-            border-radius: 20px;
-            color: var(--text-secondary);
-        }
-
-        @media (max-width: 900px) {
-            .hero-section { grid-template-columns: 1fr; }
+            grid-column: 1 / -1; text-align: center; padding: 60px 20px;
+            background: var(--card-bg); border: 1px dashed var(--card-border);
+            border-radius: 20px; color: var(--text-secondary);
         }
     </style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
     <div class="navbar">
         <div class="brand">
             <div class="brand-icon">⚡</div>
@@ -552,104 +344,103 @@ HTML_TEMPLATE = """
         </div>
         <div class="status-pill">
             <div class="pulse"></div>
-            SCANNER ACTIVO
+            SCANNER EN VIVO
         </div>
     </div>
 
-    <!-- HERO SECTION -->
-    <div class="hero-section">
-        <div>
-            <div class="badge-tag">Herramienta de Análisis en Vivo</div>
-            <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Imminente</span></h1>
-            <p class="hero-desc">AFC Analytics monitorea automáticamente los partidos globales entre los minutos 46' y 78' e identifica las mejores oportunidades para Over 0.5 Goles.</p>
+    <div class="main-container">
+        <!-- BARRA DE PESTAÑAS -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="cambiarPestana('radar')">
+                📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
+            </button>
+            <button class="tab-btn" onclick="cambiarPestana('alertas')">
+                🔥 Alertas VIP Cumplidas <span class="tab-badge" id="count-alertas">0</span>
+            </button>
+        </div>
 
-            <div class="features-grid">
-                <div class="feature-item">
-                    <span class="feature-icon">📡</span>
-                    <div>
-                        <div class="feature-title">Analiza</div>
-                        <div class="feature-sub">Tiempo real</div>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">⏱️</span>
-                    <div>
-                        <div class="feature-title">Ventana</div>
-                        <div class="feature-sub">46' - 78'</div>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">📊</span>
-                    <div>
-                        <div class="feature-title">Datos</div>
-                        <div class="feature-sub">xG, Remates, Ataques</div>
-                    </div>
-                </div>
+        <!-- CONTENIDO PESTAÑA 1: RADAR GLOBAL 0-0 -->
+        <div id="pestana-radar">
+            <div id="grid-radar" class="grid">
+                <div class="empty-card"><p>Cargando partidos 0-0 en ventana 46'-78'...</p></div>
             </div>
         </div>
 
-        <!-- WIDGET RADAR DERECHO -->
-        <div class="radar-card">
-            <div class="radar-box">
-                <div class="radar-sweep"></div>
-            </div>
-            <div class="stats-counter" id="alertas-counter">0</div>
-            <div class="stats-label">alertas registradas hoy</div>
-        </div>
-    </div>
-
-    <!-- SECCIÓN DE ALERTAS -->
-    <div class="alerts-section">
-        <div class="section-header">
-            <span>🚨 Partidos Detectados en Vivo</span>
-        </div>
-
-        <div id="alertas-grid" class="grid">
-            <div class="empty-card">
-                <h3>🔎 Monitoreando el mercado global...</h3>
-                <p>Las alertas aparecerán aquí tan pronto como un partido cumpla las 6 reglas estables.</p>
+        <!-- CONTENIDO PESTAÑA 2: ALERTAS CUMPLIDAS -->
+        <div id="pestana-alertas" style="display: none;">
+            <div id="grid-alertas" class="grid">
+                <div class="empty-card"><p>Cargando alertas confirmadas...</p></div>
             </div>
         </div>
     </div>
 
     <script>
-        function cargarAlertas() {
+        let pestanaActual = 'radar';
+
+        function cambiarPestana(pestana) {
+            pestanaActual = pestana;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if(pestana === 'radar') {
+                event.currentTarget.classList.add('active');
+                document.getElementById('pestana-radar').style.display = 'block';
+                document.getElementById('pestana-alertas').style.display = 'none';
+            } else {
+                event.currentTarget.classList.add('active');
+                document.getElementById('pestana-radar').style.display = 'none';
+                document.getElementById('pestana-alertas').style.display = 'block';
+            }
+        }
+
+        function cargarDatos() {
+            // 1. Cargar Todos los 0-0
+            fetch('/api/partidos_00')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-radar');
+                    document.getElementById('count-radar').innerText = data.length;
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en este momento</h3><p>Monitoreando en vivo entre el min 46 y 78...</p></div>';
+                        return;
+                    }
+                    grid.innerHTML = data.map(p => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 ${p.liga}</span>
+                                <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
+                            </div>
+                            <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
+                        </div>
+                    `).join('');
+                });
+
+            // 2. Cargar Alertas VIP
             fetch('/api/alertas')
                 .then(res => res.json())
                 .then(data => {
-                    const grid = document.getElementById('alertas-grid');
-                    const counter = document.getElementById('alertas-counter');
-
-                    if (!data || !Array.isArray(data) || data.length === 0) {
-                        counter.innerText = '0';
-                        grid.innerHTML = `
-                            <div class="empty-card">
-                                <h3>🔎 Escáner en búsqueda activa</h3>
-                                <p>Revisando partidos globales entre el min 46' y 78' con marcador 0-0...</p>
-                            </div>`;
+                    const grid = document.getElementById('grid-alertas');
+                    document.getElementById('count-alertas').innerText = data.length;
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP registradas hoy</h3><p>Las alertas que cumplan las 6 reglas aparecerán aquí.</p></div>';
                         return;
                     }
-
-                    counter.innerText = data.length;
                     grid.innerHTML = data.map(a => `
                         <div class="match-card">
                             <div class="match-meta">
-                                <span class="league-badge">🏆 ${a.liga || 'General'}</span>
+                                <span class="league-badge">🏆 ${a.liga}</span>
                                 <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
                             </div>
                             <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
                             <div class="fulfilled-box">
-                                <span>Alta presión ofensiva:</span>
+                                <span>Alta presión detectada:</span>
                                 <span class="team-pill">${a.equipo_cumple}</span>
                             </div>
                         </div>
                     `).join('');
-                })
-                .catch(err => console.log('Sincronizando con el servidor...', err));
+                });
         }
 
-        window.onload = cargarAlertas;
-        setInterval(cargarAlertas, 5000);
+        window.onload = cargarDatos;
+        setInterval(cargarDatos, 5000);
     </script>
 </body>
 </html>
@@ -664,6 +455,11 @@ def index():
 @app.route("/api/alertas")
 def api_alertas():
     return jsonify(obtener_alertas())
+
+
+@app.route("/api/partidos_00")
+def api_partidos_00():
+    return jsonify(partidos_00_en_vivo)
 
 
 if __name__ == "__main__":

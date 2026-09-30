@@ -190,7 +190,6 @@ def bucle_escaneo():
                                 minuto,
                             ))
 
-                # ACTUALIZAR INMEDIATAMENTE LA MEMORIA WEB
                 partidos_00_en_vivo = temp_00
                 print(
                     f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}",
@@ -240,7 +239,7 @@ def bucle_escaneo():
                             )
                         except Exception as e_db:
                             print(
-                                f"⚠️️ Error guardando en DB: {e_db}", flush=True
+                                f"⚠️ Error guardando en DB: {e_db}", flush=True
                             )
 
                         enviar_alerta_telegram(
@@ -560,15 +559,11 @@ HTML_TEMPLATE = """
         </div>
 
         <div id="pestana-radar">
-            <div id="grid-radar" class="grid">
-                <div class="empty-card"><p>Cargando escáner global en vivo...</p></div>
-            </div>
+            <div id="grid-radar" class="grid"></div>
         </div>
 
         <div id="pestana-alertas" style="display: none;">
-            <div id="grid-alertas" class="grid">
-                <div class="empty-card"><p>Cargando alertas VIP confirmadas...</p></div>
-            </div>
+            <div id="grid-alertas" class="grid"></div>
         </div>
     </div>
 
@@ -595,17 +590,17 @@ HTML_TEMPLATE = """
                     document.getElementById('count-radar').innerText = data ? data.length : 0;
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3><p>Escaneando continuamente la liga mundial...</p></div>';
-                        return;
-                    }
-                    grid.innerHTML = data.map(p => `
-                        <div class="match-card">
-                            <div class="match-meta">
-                                <span class="league-badge">🏆 ${p.liga || 'General'}</span>
-                                <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
+                    } else {
+                        grid.innerHTML = data.map(p => `
+                            <div class="match-card">
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${p.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
+                                </div>
+                                <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
                             </div>
-                            <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
-                        </div>
-                    `).join('');
+                        `).join('');
+                    }
                 })
                 .catch(err => console.log('Error en partidos_00:', err));
 
@@ -620,21 +615,21 @@ HTML_TEMPLATE = """
 
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las reglas aparecerán aquí y en Telegram.</p></div>';
-                        return;
+                    } else {
+                        grid.innerHTML = data.map(a => `
+                            <div class="match-card">
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${a.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
+                                </div>
+                                <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
+                                <div class="fulfilled-box">
+                                    <span>Alta presión detectada:</span>
+                                    <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
+                                </div>
+                            </div>
+                        `).join('');
                     }
-                    grid.innerHTML = data.map(a => `
-                        <div class="match-card">
-                            <div class="match-meta">
-                                <span class="league-badge">🏆 ${a.liga || 'General'}</span>
-                                <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
-                            </div>
-                            <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
-                            <div class="fulfilled-box">
-                                <span>Alta presión detectada:</span>
-                                <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
-                            </div>
-                        </div>
-                    `).join('');
                 })
                 .catch(err => console.log('Error en alertas:', err));
         }

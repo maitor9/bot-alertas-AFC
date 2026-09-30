@@ -9,26 +9,17 @@ app = Flask(__name__)
 # ==========================================
 # 🔑 CONFIGURACIÓN DE APIS Y TELEGRAM
 # ==========================================
-# API 1: API-Football (Para listar partidos en vivo)
 API_KEY_FOOTBALL = "1919b9af07c4eeae00a059f0086f6473"
 URL_LIVE = "https://v3.football.api-sports.io/fixtures"
 URL_STATS_FOOTBALL = "https://v3.football.api-sports.io/fixtures/statistics"
 HEADERS_FOOTBALL = {"x-apisports-key": API_KEY_FOOTBALL}
 
-# API 2: SofaScore vía RapidAPI (Para datos estadísticos de alta precisión)
-RAPIDAPI_KEY = "2f488e62ccmsh23e427888b248b2p15beadjsn7ece902c0747"
-RAPIDAPI_HOST = "sofascore.p.rapidapi.com"
-HEADERS_SOFASCORE = {
-    "x-rapidapi-key": RAPIDAPI_KEY,
-    "x-rapidapi-host": RAPIDAPI_HOST,
-}
-
-# TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
 
 alertas_disparadas = set()
 partidos_00_en_vivo = []
+ultimas_stats_evaluadas = []
 
 
 def enviar_alerta_telegram(
@@ -43,7 +34,7 @@ def enviar_alerta_telegram(
         f"🏆 <b>Liga:</b> {league_name}\n"
         f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
         f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
-        f"📈 <i>Filtros cumplidos: xG/Tiros + Marcador 0-0 en 2da mitad.</i>"
+        f"📈 <i>Filtros cumplidos: Remates + Tiros a puerta en 2da mitad.</i>"
     )
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -64,7 +55,6 @@ def enviar_alerta_telegram(
 
 
 def obtener_estadisticas_partido(fixture_id):
-    """Consulta las estadísticas en API-Football con respaldo ante valores vacíos."""
     try:
         response = requests.get(
             URL_STATS_FOOTBALL,
@@ -111,7 +101,7 @@ def obtener_estadisticas_partido(fixture_id):
 
 
 def evaluar_reglas_estrictas(datos):
-    """Evalúa las 6 reglas requeridas para activar la alerta."""
+    """Reglas adaptativas: Si xG > 0 exige >= 0.8; si xG = 0 se flexibiliza y valida por remates."""
     minuto = datos.get("minuto", 0)
     if not (46 <= minuto <= 78):
         return False, None
@@ -131,7 +121,8 @@ def evaluar_reglas_estrictas(datos):
         datos.get("ataques_p_visita", 0),
     )
 
-    local_xg_ok = (l_xg >= 0.8) if l_xg > 0 else (l_remates >= 8)
+    # Evaluación Local
+    local_xg_ok = (l_xg >= 0.8) if l_xg > 0 else True
     cumple_local = (
         local_xg_ok
         and l_remates >= 8
@@ -139,7 +130,8 @@ def evaluar_reglas_estrictas(datos):
         and (l_ataques >= 30 or l_ataques == 0)
     )
 
-    visita_xg_ok = (v_xg >= 0.8) if v_xg > 0 else (v_remates >= 8)
+    # Evaluación Visita
+    visita_xg_ok = (v_xg >= 0.8) if v_xg > 0 else True
     cumple_visita = (
         visita_xg_ok
         and v_remates >= 8
@@ -156,21 +148,25 @@ def evaluar_reglas_estrictas(datos):
 
 
 def bucle_escaneo():
-    global partidos_00_en_vivo
+    global partidos_00_en_vivo, ultimas_stats_evaluadas
     INTERVALO_SEGUNDOS = 600
 
-    print("🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...", flush=True)
+    print("🚀 Bucle de escaneo adaptativo iniciado...", flush=True)
 
     while True:
         try:
             print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
             response = requests.get(
-                URL_LIVE, headers=HEADERS_FOOTBALL, params={"live": "all"}, timeout=10
+                URL_LIVE,
+                headers=HEADERS_FOOTBALL,
+                params={"live": "all"},
+                timeout=10,
             )
             if response.status_code == 200:
                 partidos = response.json().get("response", [])
                 temp_00 = []
                 candidatos_validos = []
+                stats_recientes = []
 
                 for item in partidos:
                     fixture_id = item["fixture"]["id"]
@@ -220,6 +216,15 @@ def bucle_escaneo():
                     }
 
                     es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
+
+                    stats_recientes.append({
+                        "partido": f"{home_name} vs {away_name}",
+                        "liga": league_name,
+                        "minuto": minuto,
+                        "es_alerta": es_alerta,
+                        "stats": stats,
+                    })
+
                     print(
                         f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}",
                         flush=True,
@@ -244,7 +249,9 @@ def bucle_escaneo():
                                 equipo,
                             )
                         except Exception as e_db:
-                            print(f"⚠️ Error guardando en DB: {e_db}", flush=True)
+                            print(
+                                f"⚠️ Error guardando en DB: {e_db}", flush=True
+                            )
 
                         enviar_alerta_telegram(
                             home_name,
@@ -254,6 +261,8 @@ def bucle_escaneo():
                             equipo,
                         )
                         alertas_disparadas.add(fixture_id)
+
+                ultimas_stats_evaluadas = stats_recientes
             else:
                 print(
                     f"⚠️ Error en respuesta de API: Status {response.status_code}",
@@ -510,7 +519,7 @@ HTML_TEMPLATE = """
         <div>
             <div class="badge-tag">Análisis Algorítmico en Vivo</div>
             <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Inminente</span></h1>
-            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones strictly de presión ofensiva (xG, remates y ataques peligrosos).</p>
+            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones de presión ofensiva (xG, remates y ataques peligrosos).</p>
 
             <div class="features-grid">
                 <div class="feature-item">
@@ -620,7 +629,7 @@ HTML_TEMPLATE = """
                     counter.innerText = total;
 
                     if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las 6 reglas aparecerán aquí y en Telegram.</p></div>';
+                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las reglas aparecerán aquí y en Telegram.</p></div>';
                         return;
                     }
                     grid.innerHTML = data.map(a => `
@@ -668,9 +677,12 @@ def api_partidos_00():
     return jsonify(partidos_00_en_vivo)
 
 
-# ==========================================
-# 🧪 RUTA DE PRUEBA DE ALERTA (SEGURA)
-# ==========================================
+@app.route("/ver-stats")
+def ver_stats():
+    """Herramienta de diagnóstico para ver estadísticas crudas descargadas en vivo."""
+    return jsonify(ultimas_stats_evaluadas)
+
+
 @app.route("/probar-alerta")
 def probar_alerta():
     try:
@@ -681,10 +693,8 @@ def probar_alerta():
         equipo = "Real Madrid (Prueba)"
         fixture_id = 999999
 
-        # 1. Enviar mensaje a Telegram
         enviar_alerta_telegram(home, away, liga, minuto, equipo)
 
-        # 2. Guardar en base de datos de manera protegida
         try:
             guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
         except Exception as db_err:

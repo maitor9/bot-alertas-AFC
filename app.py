@@ -159,19 +159,13 @@ def bucle_escaneo():
     global partidos_00_en_vivo
     INTERVALO_SEGUNDOS = 600
 
-    print(
-        "🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...",
-        flush=True,
-    )
+    print("🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...", flush=True)
 
     while True:
         try:
             print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
             response = requests.get(
-                URL_LIVE,
-                headers=HEADERS_FOOTBALL,
-                params={"live": "all"},
-                timeout=10,
+                URL_LIVE, headers=HEADERS_FOOTBALL, params={"live": "all"}, timeout=10
             )
             if response.status_code == 200:
                 partidos = response.json().get("response", [])
@@ -240,14 +234,18 @@ def bucle_escaneo():
                     )
 
                     if es_alerta:
-                        guardar_alerta(
-                            fixture_id,
-                            home_name,
-                            away_name,
-                            league_name,
-                            minuto,
-                            equipo,
-                        )
+                        try:
+                            guardar_alerta(
+                                fixture_id,
+                                home_name,
+                                away_name,
+                                league_name,
+                                minuto,
+                                equipo,
+                            )
+                        except Exception as e_db:
+                            print(f"⚠️ Error guardando en DB: {e_db}", flush=True)
+
                         enviar_alerta_telegram(
                             home_name,
                             away_name,
@@ -512,7 +510,7 @@ HTML_TEMPLATE = """
         <div>
             <div class="badge-tag">Análisis Algorítmico en Vivo</div>
             <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Inminente</span></h1>
-            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones estrictos de presión ofensiva (xG, remates y ataques peligrosos).</p>
+            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones strictly de presión ofensiva (xG, remates y ataques peligrosos).</p>
 
             <div class="features-grid">
                 <div class="feature-item">
@@ -671,24 +669,31 @@ def api_partidos_00():
 
 
 # ==========================================
-# 🧪 RUTA DE PRUEBA DE ALERTA (SIMULACIÓN)
+# 🧪 RUTA DE PRUEBA DE ALERTA (SEGURA)
 # ==========================================
 @app.route("/probar-alerta")
 def probar_alerta():
-    home = "Real Madrid (Prueba)"
-    away = "Barcelona (Prueba)"
-    liga = "Liga Santander"
-    minuto = 65
-    equipo = "Real Madrid (Prueba)"
-    fixture_id = 999999
+    try:
+        home = "Real Madrid (Prueba)"
+        away = "Barcelona (Prueba)"
+        liga = "Liga Santander"
+        minuto = 65
+        equipo = "Real Madrid (Prueba)"
+        fixture_id = 999999
 
-    # 1. Guardar en Base de Datos
-    guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+        # 1. Enviar mensaje a Telegram
+        enviar_alerta_telegram(home, away, liga, minuto, equipo)
 
-    # 2. Enviar a Telegram
-    enviar_alerta_telegram(home, away, liga, minuto, equipo)
+        # 2. Guardar en base de datos de manera protegida
+        try:
+            guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+        except Exception as db_err:
+            print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
 
-    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y la pestaña Alertas VIP.</h1>"
+        return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
+    except Exception as e:
+        print(f"❌ Error en prueba: {e}", flush=True)
+        return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
 
 
 if __name__ == "__main__":

@@ -159,13 +159,19 @@ def bucle_escaneo():
     global partidos_00_en_vivo
     INTERVALO_SEGUNDOS = 600
 
-    print("🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...", flush=True)
+    print(
+        "🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...",
+        flush=True,
+    )
 
     while True:
         try:
             print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
             response = requests.get(
-                URL_LIVE, headers=HEADERS_FOOTBALL, params={"live": "all"}, timeout=10
+                URL_LIVE,
+                headers=HEADERS_FOOTBALL,
+                params={"live": "all"},
+                timeout=10,
             )
             if response.status_code == 200:
                 partidos = response.json().get("response", [])
@@ -662,6 +668,27 @@ def api_alertas():
 @app.route("/api/partidos_00")
 def api_partidos_00():
     return jsonify(partidos_00_en_vivo)
+
+
+# ==========================================
+# 🧪 RUTA DE PRUEBA DE ALERTA (SIMULACIÓN)
+# ==========================================
+@app.route("/probar-alerta")
+def probar_alerta():
+    home = "Real Madrid (Prueba)"
+    away = "Barcelona (Prueba)"
+    liga = "Liga Santander"
+    minuto = 65
+    equipo = "Real Madrid (Prueba)"
+    fixture_id = 999999
+
+    # 1. Guardar en Base de Datos
+    guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+
+    # 2. Enviar a Telegram
+    enviar_alerta_telegram(home, away, liga, minuto, equipo)
+
+    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y la pestaña Alertas VIP.</h1>"
 
 
 if __name__ == "__main__":

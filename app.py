@@ -9,11 +9,21 @@ app = Flask(__name__)
 # ==========================================
 # 🔑 CONFIGURACIÓN DE APIS Y TELEGRAM
 # ==========================================
-API_KEY = "1919b9af07c4eeae00a059f0086f6473"
+# API 1: API-Football (Para listar partidos en vivo)
+API_KEY_FOOTBALL = "1919b9af07c4eeae00a059f0086f6473"
 URL_LIVE = "https://v3.football.api-sports.io/fixtures"
-URL_STATS = "https://v3.football.api-sports.io/fixtures/statistics"
-HEADERS = {"x-apisports-key": API_KEY}
+URL_STATS_FOOTBALL = "https://v3.football.api-sports.io/fixtures/statistics"
+HEADERS_FOOTBALL = {"x-apisports-key": API_KEY_FOOTBALL}
 
+# API 2: SofaScore vía RapidAPI (Para datos estadísticos de alta precisión)
+RAPIDAPI_KEY = "2f488e62ccmsh23e427888b248b2p15beadjsn7ece902c0747"
+RAPIDAPI_HOST = "sofascore.p.rapidapi.com"
+HEADERS_SOFASCORE = {
+    "x-rapidapi-key": RAPIDAPI_KEY,
+    "x-rapidapi-host": RAPIDAPI_HOST,
+}
+
+# TELEGRAM
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
 
@@ -54,10 +64,11 @@ def enviar_alerta_telegram(
 
 
 def obtener_estadisticas_partido(fixture_id):
+    """Consulta las estadísticas en API-Football con respaldo ante valores vacíos."""
     try:
         response = requests.get(
-            URL_STATS,
-            headers=HEADERS,
+            URL_STATS_FOOTBALL,
+            headers=HEADERS_FOOTBALL,
             params={"fixture": fixture_id},
             timeout=8,
         )
@@ -94,11 +105,13 @@ def obtener_estadisticas_partido(fixture_id):
             "xg_visita": limpiar(stats_visita.get("expected_goals")),
             "ataques_p_visita": limpiar(stats_visita.get("Dangerous Attacks")),
         }
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Error obteniendo stats: {e}", flush=True)
         return {}
 
 
 def evaluar_reglas_estrictas(datos):
+    """Evalúa las 6 reglas requeridas para activar la alerta."""
     minuto = datos.get("minuto", 0)
     if not (46 <= minuto <= 78):
         return False, None
@@ -146,13 +159,13 @@ def bucle_escaneo():
     global partidos_00_en_vivo
     INTERVALO_SEGUNDOS = 600
 
-    print("🚀 Bucle de escaneo de partidos iniciado...", flush=True)
+    print("🚀 Bucle de escaneo híbrido (Football-API + RapidAPI) iniciado...", flush=True)
 
     while True:
         try:
             print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
             response = requests.get(
-                URL_LIVE, headers=HEADERS, params={"live": "all"}, timeout=10
+                URL_LIVE, headers=HEADERS_FOOTBALL, params={"live": "all"}, timeout=10
             )
             if response.status_code == 200:
                 partidos = response.json().get("response", [])

@@ -45,8 +45,12 @@ def enviar_alerta_telegram(
 
     try:
         requests.post(url, data=payload, timeout=5)
+        print(
+            f"📱 Alerta enviada a Telegram: {home_name} vs {away_name}",
+            flush=True,
+        )
     except Exception as e:
-        print(f"⚠️ Error enviando a Telegram: {e}")
+        print(f"⚠️ Error enviando a Telegram: {e}", flush=True)
 
 
 def obtener_estadisticas_partido(fixture_id):
@@ -142,8 +146,11 @@ def bucle_escaneo():
     global partidos_00_en_vivo
     INTERVALO_SEGUNDOS = 600
 
+    print("🚀 Bucle de escaneo de partidos iniciado...", flush=True)
+
     while True:
         try:
+            print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
             response = requests.get(
                 URL_LIVE, headers=HEADERS, params={"live": "all"}, timeout=10
             )
@@ -179,10 +186,11 @@ def bucle_escaneo():
 
                 partidos_00_en_vivo = temp_00
                 print(
-                    f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}"
+                    f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}",
+                    flush=True,
                 )
 
-                for fixture_id, item, minuto in candidatos_validos[:2]:
+                for fixture_id, item, minuto in candidatos_validos[:3]:
                     home_name = item["teams"]["home"]["name"]
                     away_name = item["teams"]["away"]["name"]
                     league_name = item["league"]["name"]
@@ -200,7 +208,16 @@ def bucle_escaneo():
 
                     es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
                     print(
-                        f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}"
+                        f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}",
+                        flush=True,
+                    )
+                    print(
+                        f"   Local: xG={stats.get('xg_local')}, Remates={stats.get('remates_local')}, Tir.Puerta={stats.get('puerta_local')}, AtaquesP={stats.get('ataques_p_local')}",
+                        flush=True,
+                    )
+                    print(
+                        f"   Visita: xG={stats.get('xg_visita')}, Remates={stats.get('remates_visita')}, Tir.Puerta={stats.get('puerta_visita')}, AtaquesP={stats.get('ataques_p_visita')}",
+                        flush=True,
                     )
 
                     if es_alerta:
@@ -220,9 +237,18 @@ def bucle_escaneo():
                             equipo,
                         )
                         alertas_disparadas.add(fixture_id)
+            else:
+                print(
+                    f"⚠️ Error en respuesta de API: Status {response.status_code}",
+                    flush=True,
+                )
         except Exception as e:
-            print(f"Error durante el escaneo: {e}")
+            print(f"Error durante el escaneo: {e}", flush=True)
 
+        print(
+            f"💤 Esperando {INTERVALO_SEGUNDOS} segundos para el próximo ciclo...",
+            flush=True,
+        )
         time.sleep(INTERVALO_SEGUNDOS)
 
 
@@ -616,7 +642,7 @@ def api_alertas():
         alertas = obtener_alertas()
         return jsonify(alertas if alertas else [])
     except Exception as e:
-        print(f"Error en API alertas: {e}")
+        print(f"Error en API alertas: {e}", flush=True)
         return jsonify([])
 
 
@@ -631,5 +657,5 @@ if __name__ == "__main__":
     hilo_bot = threading.Thread(target=bucle_escaneo, daemon=True)
     hilo_bot.start()
 
-    print("🚀 Servidor Web iniciado en http://127.0.0.1:5000")
+    print("🚀 Servidor Web iniciado en http://127.0.0.1:5000", flush=True)
     app.run(host="0.0.0.0", port=5000, debug=False)

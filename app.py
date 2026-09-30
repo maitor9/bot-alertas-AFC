@@ -101,7 +101,6 @@ def obtener_estadisticas_partido(fixture_id):
 
 
 def evaluar_reglas_estrictas(datos):
-    """Reglas adaptativas: Si xG > 0 exige >= 0.8; si xG = 0 se flexibiliza y valida por remates."""
     minuto = datos.get("minuto", 0)
     if not (46 <= minuto <= 78):
         return False, None
@@ -121,7 +120,6 @@ def evaluar_reglas_estrictas(datos):
         datos.get("ataques_p_visita", 0),
     )
 
-    # Evaluación Local
     local_xg_ok = (l_xg >= 0.8) if l_xg > 0 else True
     cumple_local = (
         local_xg_ok
@@ -130,7 +128,6 @@ def evaluar_reglas_estrictas(datos):
         and (l_ataques >= 30 or l_ataques == 0)
     )
 
-    # Evaluación Visita
     visita_xg_ok = (v_xg >= 0.8) if v_xg > 0 else True
     cumple_visita = (
         visita_xg_ok
@@ -173,9 +170,9 @@ def bucle_escaneo():
                     minuto = item["fixture"]["status"]["elapsed"] or 0
                     goles_h = item["goals"]["home"] or 0
                     goles_a = item["goals"]["away"] or 0
-                    home_name = item["teams"]["home"]["name"]
-                    away_name = item["teams"]["away"]["name"]
-                    league_name = item["league"]["name"]
+                    home_name = item["teams"]["home"]["name"] or "Local"
+                    away_name = item["teams"]["away"]["name"] or "Visitante"
+                    league_name = item["league"]["name"] or "Liga"
 
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         temp_00.append({
@@ -193,6 +190,7 @@ def bucle_escaneo():
                                 minuto,
                             ))
 
+                # ACTUALIZAR INMEDIATAMENTE LA MEMORIA WEB
                 partidos_00_en_vivo = temp_00
                 print(
                     f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}",
@@ -229,14 +227,6 @@ def bucle_escaneo():
                         f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}",
                         flush=True,
                     )
-                    print(
-                        f"   Local: xG={stats.get('xg_local')}, Remates={stats.get('remates_local')}, Tir.Puerta={stats.get('puerta_local')}, AtaquesP={stats.get('ataques_p_local')}",
-                        flush=True,
-                    )
-                    print(
-                        f"   Visita: xG={stats.get('xg_visita')}, Remates={stats.get('remates_visita')}, Tir.Puerta={stats.get('puerta_visita')}, AtaquesP={stats.get('ataques_p_visita')}",
-                        flush=True,
-                    )
 
                     if es_alerta:
                         try:
@@ -250,7 +240,7 @@ def bucle_escaneo():
                             )
                         except Exception as e_db:
                             print(
-                                f"⚠️ Error guardando en DB: {e_db}", flush=True
+                                f"⚠️️ Error guardando en DB: {e_db}", flush=True
                             )
 
                         enviar_alerta_telegram(
@@ -650,7 +640,7 @@ HTML_TEMPLATE = """
         }
 
         window.onload = cargarDatos;
-        setInterval(cargarDatos, 5000);
+        setInterval(cargarDatos, 3000);
     </script>
 </body>
 </html>
@@ -679,7 +669,6 @@ def api_partidos_00():
 
 @app.route("/ver-stats")
 def ver_stats():
-    """Herramienta de diagnóstico para ver estadísticas crudas descargadas en vivo."""
     return jsonify(ultimas_stats_evaluadas)
 
 
@@ -706,7 +695,6 @@ def probar_alerta():
         return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
 
 
-# Inicializar base de datos e hilo de escaneo al arrancar
 inicializar_db()
 hilo_bot = threading.Thread(target=bucle_escaneo, daemon=True)
 hilo_bot.start()

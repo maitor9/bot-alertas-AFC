@@ -3,11 +3,11 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER DE FÚTBOL EN VIVO (ESPN API + FILTROS EXACTOS)
+# ⚽ SCRAPER DE FÚTBOL EN VIVO (RADAR GLOBAL & VIP)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API pública de ESPN con estadísticas avanzadas...", flush=True)
+  print("⏳ Consultando partidos en vivo para Radar y VIP...", flush=True)
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -22,11 +22,9 @@ async def extraer_futbol_en_vivo():
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
 
-          # Solo partidos en juego ("in")
           if state != "in":
             continue
 
-          # Extraer el minuto actual
           display_clock = status.get("displayClock", "50")
           min_int = 50
           match_min = re.search(r"\d+", str(display_clock))
@@ -81,15 +79,14 @@ async def extraer_futbol_en_vivo():
           if leagues_info:
             league = leagues_info.get("name", "Liga en Vivo")
 
-          # Criterios actualizados:
-          # 1. Minuto entre 46 y 78
-          # 2. Marcador 0 - 0
-          # 3. Remates totales >= 8 O Remates a puerta >= 4
+          # Regla base: 2do tiempo (46 a 78) y marcador 0-0
           condicion_minuto = 46 <= min_int <= 78
           condicion_goles = (home_score + away_score) == 0
-          condicion_remates = (total_remates >= 8) or (total_remates_puerta >= 4)
 
-          if condicion_minuto and condicion_goles and condicion_remates:
+          if condicion_minuto and condicion_goles:
+            # Filtro VIP por estadísticas avanzadas
+            es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
+
             partidos_candidatos.append({
                 "equipo_local": home_name,
                 "equipo_visita": away_name,
@@ -100,13 +97,14 @@ async def extraer_futbol_en_vivo():
                 "remates": total_remates,
                 "remates_puerta": total_remates_puerta,
                 "presion": equipo_mas_activo,
+                "tipo": "VIP" if es_vip else "GLOBAL",
             })
         except Exception:
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol con"
-          " filtros (Remates >=8 o A puerta >=4).",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos totales para Radar y"
+          " VIP.",
           flush=True,
       )
     else:
@@ -118,8 +116,5 @@ async def extraer_futbol_en_vivo():
   return partidos_candidatos
 
 
-# ==========================================
-# 🏀 BALONCESTO PAUSADO
-# ==========================================
 async def extraer_basket_en_vivo():
   return []

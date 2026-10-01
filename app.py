@@ -51,18 +51,17 @@ def enviar_alerta_telegram_futbol(
         flush=True,
     )
   except Exception as e:
-    print(f"⚠️️ Error enviando a Telegram (Fútbol): {e}", flush=True)
+    print(f"⚠️ Error enviando a Telegram (Fútbol): {e}", flush=True)
 
 
 def bucle_escaneo_futbol():
   global partidos_00_en_vivo
-  INTERVALO_SEGUNDOS = 180  # Escaneo cada 3 minutos (100% Gratis e ilimitado)
+  INTERVALO_SEGUNDOS = 180  # Escaneo cada 3 minutos
 
   print("🚀 Bucle de escaneo Fútbol con Scraper iniciado...", flush=True)
 
   while True:
     try:
-      # Ejecutamos la función asíncrona de Playwright desde el hilo sincrónico
       candidatos = asyncio.run(extraer_futbol_en_vivo())
       partidos_00_en_vivo = candidatos
 
@@ -126,7 +125,7 @@ def enviar_alerta_telegram_basket(
         flush=True,
     )
   except Exception as e:
-    print(f"⚠️ Error enviando a Telegram (Basket): {e}", flush=True)
+    print(f"⚠️️ Error enviando a Telegram (Basket): {e}", flush=True)
 
 
 def bucle_escaneo_basket():
@@ -198,6 +197,21 @@ def api_basket_alertas():
   return jsonify(alertas_basket_db)
 
 
+# RUTA DE PRUEBA EN VIVO DEL SCRAPER
+@app.route("/probar-scraper")
+def probar_scraper():
+  try:
+    futbol = asyncio.run(extraer_futbol_en_vivo())
+    basket = asyncio.run(extraer_basket_en_vivo())
+    return jsonify({
+        "status": "OK",
+        "futbol_candidatos_detectados": futbol,
+        "basket_candidatos_detectados": basket,
+    })
+  except Exception as e:
+    return jsonify({"status": "ERROR", "detalle": str(e)})
+
+
 @app.route("/probar-alerta")
 def probar_alerta():
   try:
@@ -213,7 +227,7 @@ def probar_alerta():
     try:
       guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
     except Exception as db_err:
-      print(f"⚠️️ DB Prueba: {db_err}", flush=True)
+      print(f"⚠️ DB Prueba: {db_err}", flush=True)
 
     return "<h1>✅ Alerta de prueba de Fútbol enviada a Telegram.</h1>"
   except Exception as e:
@@ -234,7 +248,7 @@ def probar_basket():
     )
     return "<h1>✅ Alerta de prueba de Baloncesto enviada a Telegram.</h1>"
   except Exception as e:
-    return f"<h1>⚠️ Error en prueba Basket: {e}</h1>"
+    return f"<h1>⚠️️ Error en prueba Basket: {e}</h1>"
 
 
 # Inicializar Base de Datos y lanzar Hilos

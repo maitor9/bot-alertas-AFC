@@ -1,7 +1,27 @@
 import asyncio
+import os
 import re
+import subprocess
+import sys
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
+
+
+# Garantizar descarga automática de Chromium si falta el ejecutable
+def asegurar_navegador():
+  try:
+    from playwright.cli.main import main
+
+    # Fuerza la instalación del binario exacto requerido por Playwright
+    subprocess.run(
+        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
+    )
+  except Exception as e:
+    print(f"⚠️ Error al asegurar binario de Playwright: {e}", flush=True)
+
+
+asegurar_navegador()
+
 
 # ==========================================
 # ⚽ SCRAPER DE FÚTBOL EN VIVO
@@ -10,7 +30,6 @@ async def extraer_futbol_en_vivo():
   partidos_candidatos = []
 
   async with async_playwright() as p:
-    # Se usa launch() estándar forzando los argumentos para Linux en Render
     browser = await p.chromium.launch(
         headless=True,
         args=[
@@ -29,8 +48,8 @@ async def extraer_futbol_en_vivo():
     page = await context.new_page()
 
     try:
-      await page.goto("https://www.flashscore.es/", timeout=30000)
-      await page.wait_for_selector(".sportName", timeout=15000)
+      await page.goto("https://www.flashscore.es/", timeout=35000)
+      await page.wait_for_selector(".sportName", timeout=20000)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
@@ -118,8 +137,8 @@ async def extraer_basket_en_vivo():
     page = await context.new_page()
 
     try:
-      await page.goto("https://www.flashscore.es/baloncesto/", timeout=30000)
-      await page.wait_for_selector(".sportName", timeout=15000)
+      await page.goto("https://www.flashscore.es/baloncesto/", timeout=35000)
+      await page.wait_for_selector(".sportName", timeout=20000)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")

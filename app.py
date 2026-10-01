@@ -248,7 +248,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK / IA & NEÓN DORADO
+# 🎨 DISEÑO CYBERPUNK / NÚCLEO NEURAL & BARRAS LÁSER
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -256,7 +256,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - AI Cyber Engine</title>
+    <title>AFC Analytics - Neural Scouting Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -331,7 +331,7 @@ HTML_TEMPLATE = """
 
         .hero-section {
             max-width: 1240px; margin: 40px auto; padding: 0 24px;
-            display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 40px; align-items: center;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;
         }
 
         .badge-tag {
@@ -342,7 +342,7 @@ HTML_TEMPLATE = """
         }
 
         .hero-title { 
-            font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
+            font-family: 'Orbitron', sans-serif; font-size: 38px; font-weight: 900; 
             line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
         }
         .highlight-gold { 
@@ -361,68 +361,109 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* RADAR ESTILO IA CYBERPUNK */
-        .radar-card {
+        /* MÓDULO NÚCLEO NEURAL & BARRAS LÁSER */
+        .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 28px; padding: 35px; text-align: center; position: relative;
+            border-radius: 28px; padding: 30px 24px; text-align: center; position: relative;
             box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
             backdrop-filter: blur(16px); overflow: hidden;
         }
 
-        .radar-box {
-            width: 210px; height: 210px; margin: 0 auto 24px auto; border-radius: 50%;
-            border: 1px solid rgba(245, 158, 11, 0.4); position: relative;
+        .laser-line {
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold-bright), var(--accent-cyan), transparent);
+            box-shadow: 0 0 15px var(--accent-gold-bright);
+            animation: laser-scan 4s ease-in-out infinite alternate;
+            z-index: 5;
+        }
+
+        @keyframes laser-scan {
+            0% { top: 0%; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { top: 98%; opacity: 0.3; }
+        }
+
+        .scout-display {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 280px; margin: 0 auto 20px auto; height: 190px; position: relative;
+        }
+
+        /* NÚCLEO NEURAL CENTRAL */
+        .neural-core {
+            width: 140px; height: 140px; border-radius: 50%; position: relative;
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 75%);
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
-            overflow: hidden;
+            border: 1px dashed rgba(245, 158, 11, 0.4);
+            animation: spin-core 12s linear infinite;
         }
 
-        .radar-box::before {
-            content: ''; position: absolute; width: 100%; height: 1px;
-            background: rgba(245, 158, 11, 0.25);
-        }
-        .radar-box::after {
-            content: ''; position: absolute; height: 100%; width: 1px;
-            background: rgba(245, 158, 11, 0.25);
-        }
-
-        .radar-circle-inner {
-            position: absolute; width: 130px; height: 130px; border-radius: 50%;
-            border: 1px solid rgba(245, 158, 11, 0.25);
-        }
-
-        .radar-circle-center {
-            position: absolute; width: 55px; height: 55px; border-radius: 50%;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-
-        .radar-sweep {
-            position: absolute; width: 105px; height: 105px; top: 0; right: 0;
-            background: conic-gradient(from 0deg at 0% 100%, rgba(245, 158, 11, 0.5) 0deg, transparent 90deg);
-            border-radius: 100% 0 0 0; transform-origin: 0% 100%;
-            animation: sweep 3s linear infinite;
-        }
-
-        @keyframes sweep {
+        @keyframes spin-core {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        .blip {
-            position: absolute; width: 7px; height: 7px; background: var(--accent-cyan);
-            border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); animation: blip-flash 2s infinite alternate;
+        .core-inner-ring {
+            width: 95px; height: 95px; border-radius: 50%;
+            border: 2px solid var(--accent-cyan);
+            border-top-color: transparent; border-bottom-color: transparent;
+            position: absolute; animation: spin-inner 4s linear infinite reverse;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
         }
-        .blip1 { top: 35%; left: 65%; animation-delay: 0.4s; }
-        .blip2 { top: 68%; left: 28%; animation-delay: 1.1s; }
 
-        @keyframes blip-flash {
-            0% { opacity: 0.3; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1.4); }
+        @keyframes spin-inner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
+
+        .core-center-node {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-gold-bright) 0%, rgba(245, 158, 11, 0.2) 80%);
+            box-shadow: 0 0 25px var(--accent-gold-bright);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 900; color: #000;
+            animation: core-pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes core-pulse {
+            0% { transform: scale(0.85); box-shadow: 0 0 15px var(--accent-gold); }
+            100% { transform: scale(1.1); box-shadow: 0 0 35px var(--accent-gold-bright); }
+        }
+
+        /* BARRAS LÁSER LATERALES (EQUALIZER) */
+        .bars-container {
+            display: flex; gap: 5px; align-items: flex-end; height: 120px;
+        }
+
+        .bar-item {
+            width: 8px; background: rgba(245, 158, 11, 0.2); border-radius: 4px;
+            position: relative; overflow: hidden;
+        }
+
+        .bar-fill {
+            width: 100%; background: linear-gradient(to top, var(--accent-gold), var(--accent-gold-bright));
+            border-radius: 4px; box-shadow: 0 0 10px var(--accent-gold);
+            animation: bar-bounce 2s ease-in-out infinite alternate;
+        }
+
+        .bar-cyan .bar-fill {
+            background: linear-gradient(to top, #0284c7, var(--accent-cyan));
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        @keyframes bar-bounce {
+            0% { height: 15%; }
+            50% { height: 85%; }
+            100% { height: 40%; }
+        }
+
+        .b1 .bar-fill { animation-delay: 0.1s; }
+        .b2 .bar-fill { animation-delay: 0.5s; }
+        .b3 .bar-fill { animation-delay: 0.2s; }
+        .b4 .bar-fill { animation-delay: 0.7s; }
+        .b5 .bar-fill { animation-delay: 0.3s; }
+        .b6 .bar-fill { animation-delay: 0.8s; }
 
         .stats-counter { 
-            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
+            font-family: 'Orbitron', sans-serif; font-size: 50px; font-weight: 900; 
             color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
             margin-bottom: 2px; 
         }
@@ -536,13 +577,28 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <div class="radar-card">
-            <div class="radar-box">
-                <div class="radar-circle-inner"></div>
-                <div class="radar-circle-center"></div>
-                <div class="radar-sweep"></div>
-                <div class="blip blip1"></div>
-                <div class="blip blip2"></div>
+        <div class="neural-card">
+            <div class="laser-line"></div>
+            <div class="scout-display">
+                <!-- Barras Láser Izquierda -->
+                <div class="bars-container">
+                    <div class="bar-item b1"><div class="bar-fill" style="height: 60%;"></div></div>
+                    <div class="bar-item b2 bar-cyan"><div class="bar-fill" style="height: 85%;"></div></div>
+                    <div class="bar-item b3"><div class="bar-fill" style="height: 40%;"></div></div>
+                </div>
+
+                <!-- Núcleo Neural Central -->
+                <div class="neural-core">
+                    <div class="core-inner-ring"></div>
+                    <div class="core-center-node">⚡</div>
+                </div>
+
+                <!-- Barras Láser Derecha -->
+                <div class="bars-container">
+                    <div class="bar-item b4 bar-cyan"><div class="bar-fill" style="height: 75%;"></div></div>
+                    <div class="bar-item b5"><div class="bar-fill" style="height: 90%;"></div></div>
+                    <div class="bar-item b6 bar-cyan"><div class="bar-fill" style="height: 50%;"></div></div>
+                </div>
             </div>
             <div class="stats-counter" id="alertas-counter">0</div>
             <div class="stats-label">alertas confirmadas hoy</div>

@@ -162,7 +162,6 @@ def bucle_escaneo():
 
   while True:
     try:
-      print("🔄 Iniciando ciclo de escaneo Fútbol en API...", flush=True)
       response = requests.get(
           URL_LIVE_FOOTBALL,
           headers=HEADERS_FOOTBALL,
@@ -197,11 +196,6 @@ def bucle_escaneo():
               candidatos_validos.append((fixture_id, item, minuto))
 
         partidos_00_en_vivo = temp_00
-        print(
-            f"🔎 [DIAGNÓSTICO FÚTBOL] Partidos 0-0 en min 46'-78':"
-            f" {len(temp_00)}",
-            flush=True,
-        )
 
         for fixture_id, item, minuto in candidatos_validos[:3]:
           home_name = item["teams"]["home"]["name"]
@@ -229,12 +223,6 @@ def bucle_escaneo():
               "stats": stats,
           })
 
-          print(
-              f"📊 Evaluando Fútbol {home_name} vs {away_name} (Min"
-              f" {minuto}') -> ¿Es Alerta?: {es_alerta}",
-              flush=True,
-          )
-
           if es_alerta:
             try:
               guardar_alerta(
@@ -254,11 +242,6 @@ def bucle_escaneo():
             alertas_disparadas.add(fixture_id)
 
         ultimas_stats_evaluadas = stats_recientes
-      else:
-        print(
-            f"⚠️ Error respuesta API Fútbol: Status {response.status_code}",
-            flush=True,
-        )
     except Exception as e:
       print(f"Error escaneo Fútbol: {e}", flush=True)
 
@@ -376,7 +359,7 @@ def bucle_escaneo_basket():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK / IA & DEPORTES
+# 🎨 INTERFAZ MULTIDEPORTE CYBERPUNK
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -596,10 +579,10 @@ HTML_TEMPLATE = """
         </div>
         
         <div class="sport-selector">
-            <button id="btn-sport-futbol" class="sport-btn active-football" onclick="seleccionarDeporte('futbol')">
+            <button id="btn-sport-futbol" class="sport-btn active-football" onclick="switchSport('futbol')">
                 ⚽ FÚTBOL
             </button>
-            <button id="btn-sport-basket" class="sport-btn" onclick="seleccionarDeporte('basket')">
+            <button id="btn-sport-basket" class="sport-btn" onclick="switchSport('basket')">
                 🏀 BALONCESTO
             </button>
         </div>
@@ -661,7 +644,7 @@ HTML_TEMPLATE = """
         <div class="hero-section">
             <div>
                 <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Alertas de <span class="highlight-gold" style="color: var(--accent-orange);">Remontadas en Vivo</span></h1>
+                <h1 class="hero-title">Alertas de <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Remontadas en Vivo</span></h1>
                 <p class="hero-desc">Detección de favoritos con desventajas de 10+ puntos en el 2º Cuarto o Descanso para aprovechar la regresión a la media.</p>
             </div>
 
@@ -684,13 +667,13 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        function seleccionarDeporte(deporte) {
+        function switchSport(sport) {
             const btnFutbol = document.getElementById('btn-sport-futbol');
             const btnBasket = document.getElementById('btn-sport-basket');
             const secFutbol = document.getElementById('seccion-futbol');
             const secBasket = document.getElementById('seccion-basket');
 
-            if (deporte === 'futbol') {
+            if (sport === 'futbol') {
                 btnFutbol.className = 'sport-btn active-football';
                 btnBasket.className = 'sport-btn';
                 secFutbol.style.display = 'block';
@@ -783,7 +766,7 @@ HTML_TEMPLATE = """
                         grid.innerHTML = data.map(b => `
                             <div class="match-card">
                                 <div class="match-meta">
-                                    <span class="league-badge">🏆 ${b.liga}</span>
+                                    <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${b.liga}</span>
                                     <span class="minute-badge" style="color: var(--accent-orange);">⏱️ ${b.periodo}</span>
                                 </div>
                                 <div class="teams-title">${b.local} ${b.marcador} ${b.visita}</div>
@@ -850,11 +833,11 @@ def probar_alerta():
     try:
       guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
     except Exception as db_err:
-      print(f"⚠️️ Nota de DB en prueba: {db_err}", flush=True)
+      print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
 
-    return "<h1>✅ Alerta de prueba de Fútbol ejecutada exitosamente. Revisa Telegram y el Dashboard.</h1>"
+    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
   except Exception as e:
-    print(f"❌ Error en prueba Fútbol: {e}", flush=True)
+    print(f"❌ Error en prueba: {e}", flush=True)
     return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
 
 
@@ -885,5 +868,8 @@ hilo_basket = threading.Thread(target=bucle_escaneo_basket, daemon=True)
 hilo_basket.start()
 
 if __name__ == "__main__":
-  print("🚀 Servidor Web Multideporte iniciado en http://127.0.0.1:5000", flush=True)
+  print(
+      "🚀 Servidor Web Multideporte iniciado en http://127.0.0.1:5000",
+      flush=True,
+  )
   app.run(host="0.0.0.0", port=5000, debug=False)

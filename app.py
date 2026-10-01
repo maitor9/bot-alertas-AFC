@@ -15,7 +15,7 @@ alertas_disparadas = set()
 partidos_00_en_vivo = []
 ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
 
-def enviar_alerta_telegram_futbol(home_name, away_name, league_name, minuto, equipo_cumple):
+def enviar_alerta_telegram_futbol(home_name, away_name, league_name, minuto, remates, remates_puerta, equipo_cumple):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
     mensaje = (
@@ -23,8 +23,9 @@ def enviar_alerta_telegram_futbol(home_name, away_name, league_name, minuto, equ
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
         f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
-        f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
-        f"📈 <i>Detectado vía Sofascore API en vivo.</i>"
+        f"📊 <b>Remates Totales:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n"
+        f"🔥 <b>Más activo:</b> {equipo_cumple}\n\n"
+        f"📈 <i>Detectado con filtro ofensivo avanzado.</i>"
     )
     try:
         requests.post(
@@ -43,7 +44,7 @@ def bucle_escaneo_unificado():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            print("🔄 Consultando partidos de fútbol...", flush=True)
+            print("🔄 Consultando partidos de fútbol con estadísticas...", flush=True)
             candidatos_futbol = loop.run_until_complete(extraer_futbol_en_vivo())
             partidos_00_en_vivo = candidatos_futbol
 
@@ -51,10 +52,18 @@ def bucle_escaneo_unificado():
                 partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
                 if partido_id not in alertas_disparadas:
                     try:
-                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['equipo_local'])
+                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['presion'])
                     except Exception:
                         pass
-                    enviar_alerta_telegram_futbol(p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['equipo_local'])
+                    enviar_alerta_telegram_futbol(
+                        p['equipo_local'], 
+                        p['equipo_visita'], 
+                        p['liga'], 
+                        p['minuto'], 
+                        p.get('remates', 0), 
+                        p.get('remates_puerta', 0), 
+                        p['presion']
+                    )
                     alertas_disparadas.add(partido_id)
 
             ultimo_escaneo_status = {
@@ -74,7 +83,6 @@ def bucle_escaneo_unificado():
         finally:
             loop.close()
 
-        # Pausa exacta de 60 segundos para no saturar CPU ni red
         time.sleep(60)
 
 @app.route('/')

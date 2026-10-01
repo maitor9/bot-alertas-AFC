@@ -51,12 +51,12 @@ def enviar_alerta_telegram_futbol(
         flush=True,
     )
   except Exception as e:
-    print(f"⚠️ Error enviando a Telegram (Fútbol): {e}", flush=True)
+    print(f"⚠️️ Error enviando a Telegram (Fútbol): {e}", flush=True)
 
 
 def bucle_escaneo_futbol():
   global partidos_00_en_vivo
-  INTERVALO_SEGUNDOS = 180  # Escaneo cada 3 minutos
+  INTERVALO_SEGUNDOS = 180
 
   print("🚀 Bucle de escaneo Fútbol con Scraper iniciado...", flush=True)
 
@@ -125,12 +125,12 @@ def enviar_alerta_telegram_basket(
         flush=True,
     )
   except Exception as e:
-    print(f"⚠️️ Error enviando a Telegram (Basket): {e}", flush=True)
+    print(f"⚠️ Error enviando a Telegram (Basket): {e}", flush=True)
 
 
 def bucle_escaneo_basket():
-  global alertas_basket_db
-  INTERVALO_SEGUNDOS = 180  # Escaneo cada 3 minutos
+  global alertas_basket_db, alertas_basket_disparadas
+  INTERVALO_SEGUNDOS = 180
 
   print("🚀 Bucle de escaneo Baloncesto con Scraper iniciado...", flush=True)
 
@@ -197,7 +197,7 @@ def api_basket_alertas():
   return jsonify(alertas_basket_db)
 
 
-# RUTA DE PRUEBA EN VIVO DEL SCRAPER
+# RUTA DE PRUEBA DEL SCRAPER (Habilitada)
 @app.route("/probar-scraper")
 def probar_scraper():
   try:
@@ -248,10 +248,9 @@ def probar_basket():
     )
     return "<h1>✅ Alerta de prueba de Baloncesto enviada a Telegram.</h1>"
   except Exception as e:
-    return f"<h1>⚠️️ Error en prueba Basket: {e}</h1>"
+    return f"<h1>⚠️ Error en prueba Basket: {e}</h1>"
 
 
-# Inicializar Base de Datos y lanzar Hilos
 inicializar_db()
 
 hilo_futbol = threading.Thread(target=bucle_escaneo_futbol, daemon=True)

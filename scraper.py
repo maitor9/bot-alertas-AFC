@@ -1,8 +1,7 @@
 import re
+import requests
 from bs4 import BeautifulSoup
-from curl_cffi import requests
 
-# Headers para simular un navegador real sin abrir Chromium
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -10,7 +9,6 @@ HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "x-fsign": "SW90ZXN0",
 }
 
 
@@ -23,10 +21,7 @@ async def extraer_futbol_en_vivo():
 
   try:
     response = requests.get(
-        "https://www.flashscore.es/",
-        headers=HEADERS,
-        impersonate="chrome120",
-        timeout=15,
+        "https://www.flashscore.es/", headers=HEADERS, timeout=15
     )
 
     if response.status_code == 200:
@@ -102,10 +97,7 @@ async def extraer_basket_en_vivo():
 
   try:
     response = requests.get(
-        "https://www.flashscore.es/baloncesto/",
-        headers=HEADERS,
-        impersonate="chrome120",
-        timeout=15,
+        "https://www.flashscore.es/baloncesto/", headers=HEADERS, timeout=15
     )
 
     if response.status_code == 200:

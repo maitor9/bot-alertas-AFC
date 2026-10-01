@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 import subprocess
 import sys
@@ -7,14 +6,13 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 
-# Descarga/Instalación automática si falta el binario exacto en el contenedor
 def asegurar_navegador():
   try:
     subprocess.run(
         [sys.executable, "-m", "playwright", "install", "chromium"], check=True
     )
   except Exception as e:
-    print(f"⚠️ Error al asegurar binario de Playwright: {e}", flush=True)
+    print(f"⚠️ Error instalando Chromium: {e}", flush=True)
 
 
 asegurar_navegador()
@@ -37,30 +35,20 @@ async def extraer_futbol_en_vivo():
         ],
     )
     context = await browser.new_context(
+        viewport={"width": 1280, "height": 800},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
+        ),
     )
     page = await context.new_page()
 
-    # Bloquear recursos pesados (imágenes, fuentes, css estáticos) para acelerar la carga
-    await page.route(
-        "**/*.{png,jpg,jpeg,svg,gif,woff,woff2}", lambda route: route.abort()
-    )
-
     try:
-      # Esperamos solo 'domcontentloaded' en lugar de 'load' completo
-      await page.goto(
-          "https://www.flashscore.es/",
-          wait_until="domcontentloaded",
-          timeout=45000,
-      )
-      await page.wait_for_selector(".sportName", timeout=25000)
+      await page.goto("https://www.flashscore.es/", timeout=45000)
+      await asyncio.sleep(5)  # Tiempo de espera para renderizado dinámico
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
-
       eventos = soup.find_all("div", class_=re.compile("event__match"))
 
       for evento in eventos:
@@ -83,7 +71,6 @@ async def extraer_futbol_en_vivo():
             continue
 
           minuto_txt = minuto_elem.text.strip().replace("'", "")
-
           if not minuto_txt.isdigit():
             continue
 
@@ -136,28 +123,20 @@ async def extraer_basket_en_vivo():
         ],
     )
     context = await browser.new_context(
+        viewport={"width": 1280, "height": 800},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
+        ),
     )
     page = await context.new_page()
 
-    await page.route(
-        "**/*.{png,jpg,jpeg,svg,gif,woff,woff2}", lambda route: route.abort()
-    )
-
     try:
-      await page.goto(
-          "https://www.flashscore.es/baloncesto/",
-          wait_until="domcontentloaded",
-          timeout=45000,
-      )
-      await page.wait_for_selector(".sportName", timeout=25000)
+      await page.goto("https://www.flashscore.es/baloncesto/", timeout=45000)
+      await asyncio.sleep(5)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
-
       eventos = soup.find_all("div", class_=re.compile("event__match"))
 
       for evento in eventos:

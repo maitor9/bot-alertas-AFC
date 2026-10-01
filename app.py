@@ -25,250 +25,230 @@ ultimas_stats_evaluadas = []
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return
+  if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+    return
 
-    mensaje = (
-        f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
-        f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
-        f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
-        f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
-        f"📈 <i>Filtros cumplidos: Remates + Tiros a puerta en 2da mitad.</i>"
+  mensaje = (
+      f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
+      f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
+      f"🏆 <b>Liga:</b> {league_name}\n"
+      f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
+      f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
+      f"📈 <i>Filtros cumplidos: Remates + Tiros a puerta en 2da mitad.</i>"
+  )
+
+  url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+  payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
+
+  try:
+    requests.post(url, data=payload, timeout=5)
+    print(
+        f"📱 Alerta enviada a Telegram: {home_name} vs {away_name}", flush=True
     )
-
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensaje,
-        "parse_mode": "HTML",
-    }
-
-    try:
-        requests.post(url, data=payload, timeout=5)
-        print(
-            f"📱 Alerta enviada a Telegram: {home_name} vs {away_name}",
-            flush=True,
-        )
-    except Exception as e:
-        print(f"⚠️ Error enviando a Telegram: {e}", flush=True)
+  except Exception as e:
+    print(f"⚠️ Error enviando a Telegram: {e}", flush=True)
 
 
 def obtener_estadisticas_partido(fixture_id):
-    try:
-        response = requests.get(
-            URL_STATS_FOOTBALL,
-            headers=HEADERS_FOOTBALL,
-            params={"fixture": fixture_id},
-            timeout=8,
-        )
-        if response.status_code != 200:
-            return {}
-        data = response.json().get("response", [])
-        if not data or len(data) < 2:
-            return {}
+  try:
+    response = requests.get(
+        URL_STATS_FOOTBALL,
+        headers=HEADERS_FOOTBALL,
+        params={"fixture": fixture_id},
+        timeout=8,
+    )
+    if response.status_code != 200:
+      return {}
+    data = response.json().get("response", [])
+    if not data or len(data) < 2:
+      return {}
 
-        stats_local = {
-            item["type"]: item["value"] for item in data[0]["statistics"]
-        }
-        stats_visita = {
-            item["type"]: item["value"] for item in data[1]["statistics"]
-        }
+    stats_local = {item["type"]: item["value"] for item in data[0]["statistics"]}
+    stats_visita = {
+        item["type"]: item["value"] for item in data[1]["statistics"]
+    }
 
-        def limpiar(val):
-            if val is None:
-                return 0.0
-            if isinstance(val, str):
-                val = val.replace("%", "")
-            try:
-                return float(val)
-            except ValueError:
-                return 0.0
+    def limpiar(val):
+      if val is None:
+        return 0.0
+      if isinstance(val, str):
+        val = val.replace("%", "")
+      try:
+        return float(val)
+      except ValueError:
+        return 0.0
 
-        return {
-            "remates_local": limpiar(stats_local.get("Total Shots")),
-            "puerta_local": limpiar(stats_local.get("Shots on Goal")),
-            "xg_local": limpiar(stats_local.get("expected_goals")),
-            "ataques_p_local": limpiar(stats_local.get("Dangerous Attacks")),
-            "remates_visita": limpiar(stats_visita.get("Total Shots")),
-            "puerta_visita": limpiar(stats_visita.get("Shots on Goal")),
-            "xg_visita": limpiar(stats_visita.get("expected_goals")),
-            "ataques_p_visita": limpiar(stats_visita.get("Dangerous Attacks")),
-        }
-    except Exception as e:
-        print(f"⚠️ Error obteniendo stats: {e}", flush=True)
-        return {}
+    return {
+        "remates_local": limpiar(stats_local.get("Total Shots")),
+        "puerta_local": limpiar(stats_local.get("Shots on Goal")),
+        "xg_local": limpiar(stats_local.get("expected_goals")),
+        "ataques_p_local": limpiar(stats_local.get("Dangerous Attacks")),
+        "remates_visita": limpiar(stats_visita.get("Total Shots")),
+        "puerta_visita": limpiar(stats_visita.get("Shots on Goal")),
+        "xg_visita": limpiar(stats_visita.get("expected_goals")),
+        "ataques_p_visita": limpiar(stats_visita.get("Dangerous Attacks")),
+    }
+  except Exception as e:
+    print(f"⚠️ Error obteniendo stats: {e}", flush=True)
+    return {}
 
 
 def evaluar_reglas_estrictas(datos):
-    minuto = datos.get("minuto", 0)
-    if not (46 <= minuto <= 78):
-        return False, None
-    if (datos.get("goles_local", 0) + datos.get("goles_visita", 0)) != 0:
-        return False, None
-
-    l_xg, l_remates, l_puerta, l_ataques = (
-        datos.get("xg_local", 0.0),
-        datos.get("remates_local", 0),
-        datos.get("puerta_local", 0),
-        datos.get("ataques_p_local", 0),
-    )
-    v_xg, v_remates, v_puerta, v_ataques = (
-        datos.get("xg_visita", 0.0),
-        datos.get("remates_visita", 0),
-        datos.get("puerta_visita", 0),
-        datos.get("ataques_p_visita", 0),
-    )
-
-    local_xg_ok = (l_xg >= 0.8) if l_xg > 0 else True
-    cumple_local = (
-        local_xg_ok
-        and l_remates >= 8
-        and l_puerta >= 3
-        and (l_ataques >= 30 or l_ataques == 0)
-    )
-
-    visita_xg_ok = (v_xg >= 0.8) if v_xg > 0 else True
-    cumple_visita = (
-        visita_xg_ok
-        and v_remates >= 8
-        and v_puerta >= 3
-        and (v_ataques >= 30 or v_ataques == 0)
-    )
-
-    if cumple_local or cumple_visita:
-        equipo = (
-            datos["equipo_local"] if cumple_local else datos["equipo_visita"]
-        )
-        return True, equipo
+  minuto = datos.get("minuto", 0)
+  if not (46 <= minuto <= 78):
     return False, None
+  if (datos.get("goles_local", 0) + datos.get("goles_visita", 0)) != 0:
+    return False, None
+
+  l_xg, l_remates, l_puerta, l_ataques = (
+      datos.get("xg_local", 0.0),
+      datos.get("remates_local", 0),
+      datos.get("puerta_local", 0),
+      datos.get("ataques_p_local", 0),
+  )
+  v_xg, v_remates, v_puerta, v_ataques = (
+      datos.get("xg_visita", 0.0),
+      datos.get("remates_visita", 0),
+      datos.get("puerta_visita", 0),
+      datos.get("ataques_p_visita", 0),
+  )
+
+  local_xg_ok = (l_xg >= 0.8) if l_xg > 0 else True
+  cumple_local = (
+      local_xg_ok
+      and l_remates >= 8
+      and l_puerta >= 3
+      and (l_ataques >= 30 or l_ataques == 0)
+  )
+
+  visita_xg_ok = (v_xg >= 0.8) if v_xg > 0 else True
+  cumple_visita = (
+      visita_xg_ok
+      and v_remates >= 8
+      and v_puerta >= 3
+      and (v_ataques >= 30 or v_ataques == 0)
+  )
+
+  if cumple_local or cumple_visita:
+    equipo = datos["equipo_local"] if cumple_local else datos["equipo_visita"]
+    return True, equipo
+  return False, None
 
 
 def bucle_escaneo():
-    global partidos_00_en_vivo, ultimas_stats_evaluadas
-    INTERVALO_SEGUNDOS = 300  # Reducido a 5 minutos (300 segundos)
+  global partidos_00_en_vivo, ultimas_stats_evaluadas
+  INTERVALO_SEGUNDOS = 300
 
-    print("🚀 Bucle de escaneo adaptativo iniciado (cada 5 min)...", flush=True)
+  print("🚀 Bucle de escaneo IA iniciado (cada 5 min)...", flush=True)
 
-    while True:
-        try:
-            print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
-            response = requests.get(
-                URL_LIVE,
-                headers=HEADERS_FOOTBALL,
-                params={"live": "all"},
-                timeout=10,
-            )
-            if response.status_code == 200:
-                partidos = response.json().get("response", [])
-                temp_00 = []
-                candidatos_validos = []
-                stats_recientes = []
+  while True:
+    try:
+      print("🔄 Iniciando ciclo de escaneo en API...", flush=True)
+      response = requests.get(
+          URL_LIVE, headers=HEADERS_FOOTBALL, params={"live": "all"}, timeout=10
+      )
+      if response.status_code == 200:
+        partidos = response.json().get("response", [])
+        temp_00 = []
+        candidatos_validos = []
+        stats_recientes = []
 
-                for item in partidos:
-                    fixture_id = item["fixture"]["id"]
-                    minuto = item["fixture"]["status"]["elapsed"] or 0
-                    goles_h = item["goals"]["home"] or 0
-                    goles_a = item["goals"]["away"] or 0
-                    home_name = item["teams"]["home"]["name"] or "Local"
-                    away_name = item["teams"]["away"]["name"] or "Visitante"
-                    league_name = item["league"]["name"] or "Liga"
+        for item in partidos:
+          fixture_id = item["fixture"]["id"]
+          minuto = item["fixture"]["status"]["elapsed"] or 0
+          goles_h = item["goals"]["home"] or 0
+          goles_a = item["goals"]["away"] or 0
+          home_name = item["teams"]["home"]["name"] or "Local"
+          away_name = item["teams"]["away"]["name"] or "Visitante"
+          league_name = item["league"]["name"] or "Liga"
 
-                    if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
-                        temp_00.append({
-                            "fixture_id": fixture_id,
-                            "equipo_local": home_name,
-                            "equipo_visita": away_name,
-                            "liga": league_name,
-                            "minuto": minuto,
-                        })
+          if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
+            temp_00.append({
+                "fixture_id": fixture_id,
+                "equipo_local": home_name,
+                "equipo_visita": away_name,
+                "liga": league_name,
+                "minuto": minuto,
+            })
 
-                        if fixture_id not in alertas_disparadas:
-                            candidatos_validos.append((
-                                fixture_id,
-                                item,
-                                minuto,
-                            ))
+            if fixture_id not in alertas_disparadas:
+              candidatos_validos.append((fixture_id, item, minuto))
 
-                partidos_00_en_vivo = temp_00
-                print(
-                    f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78': {len(temp_00)}",
-                    flush=True,
-                )
-
-                for fixture_id, item, minuto in candidatos_validos[:3]:
-                    home_name = item["teams"]["home"]["name"]
-                    away_name = item["teams"]["away"]["name"]
-                    league_name = item["league"]["name"]
-
-                    stats = obtener_estadisticas_partido(fixture_id)
-                    datos_partido = {
-                        "fixture_id": fixture_id,
-                        "equipo_local": home_name,
-                        "equipo_visita": away_name,
-                        "minuto": minuto,
-                        "goles_local": 0,
-                        "goles_visita": 0,
-                        **stats,
-                    }
-
-                    es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
-
-                    stats_recientes.append({
-                        "partido": f"{home_name} vs {away_name}",
-                        "liga": league_name,
-                        "minuto": minuto,
-                        "es_alerta": es_alerta,
-                        "stats": stats,
-                    })
-
-                    print(
-                        f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es Alerta?: {es_alerta}",
-                        flush=True,
-                    )
-
-                    if es_alerta:
-                        try:
-                            guardar_alerta(
-                                fixture_id,
-                                home_name,
-                                away_name,
-                                league_name,
-                                minuto,
-                                equipo,
-                            )
-                        except Exception as e_db:
-                            print(
-                                f"⚠️ Error guardando en DB: {e_db}", flush=True
-                            )
-
-                        enviar_alerta_telegram(
-                            home_name,
-                            away_name,
-                            league_name,
-                            minuto,
-                            equipo,
-                        )
-                        alertas_disparadas.add(fixture_id)
-
-                ultimas_stats_evaluadas = stats_recientes
-            else:
-                print(
-                    f"⚠️ Error en respuesta de API: Status {response.status_code}",
-                    flush=True,
-                )
-        except Exception as e:
-            print(f"Error durante el escaneo: {e}", flush=True)
-
+        partidos_00_en_vivo = temp_00
         print(
-            f"💤 Esperando {INTERVALO_SEGUNDOS} segundos para el próximo ciclo...",
+            f"🔎 [DIAGNÓSTICO] Partidos 0-0 detectados en ventana 46'-78':"
+            f" {len(temp_00)}",
             flush=True,
         )
-        time.sleep(INTERVALO_SEGUNDOS)
+
+        for fixture_id, item, minuto in candidatos_validos[:3]:
+          home_name = item["teams"]["home"]["name"]
+          away_name = item["teams"]["away"]["name"]
+          league_name = item["league"]["name"]
+
+          stats = obtener_estadisticas_partido(fixture_id)
+          datos_partido = {
+              "fixture_id": fixture_id,
+              "equipo_local": home_name,
+              "equipo_visita": away_name,
+              "minuto": minuto,
+              "goles_local": 0,
+              "goles_visita": 0,
+              **stats,
+          }
+
+          es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
+
+          stats_recientes.append({
+              "partido": f"{home_name} vs {away_name}",
+              "liga": league_name,
+              "minuto": minuto,
+              "es_alerta": es_alerta,
+              "stats": stats,
+          })
+
+          print(
+              f"📊 Evaluando {home_name} vs {away_name} (Min {minuto}') -> ¿Es"
+              f" Alerta?: {es_alerta}",
+              flush=True,
+          )
+
+          if es_alerta:
+            try:
+              guardar_alerta(
+                  fixture_id,
+                  home_name,
+                  away_name,
+                  league_name,
+                  minuto,
+                  equipo,
+              )
+            except Exception as e_db:
+              print(f"⚠️ Error guardando en DB: {e_db}", flush=True)
+
+            enviar_alerta_telegram(
+                home_name, away_name, league_name, minuto, equipo
+            )
+            alertas_disparadas.add(fixture_id)
+
+        ultimas_stats_evaluadas = stats_recientes
+      else:
+        print(
+            f"⚠️ Error en respuesta de API: Status {response.status_code}",
+            flush=True,
+        )
+    except Exception as e:
+      print(f"Error durante el escaneo: {e}", flush=True)
+
+    print(
+        f"💤 Esperando {INTERVALO_SEGUNDOS} segundos para el próximo ciclo...",
+        flush=True,
+    )
+    time.sleep(INTERVALO_SEGUNDOS)
 
 
 # ==========================================
-# 🎨 DISEÑO PRO CON RADAR DINÁMICO & NEÓN
+# 🎨 DISEÑO CYBERPUNK / IA & NEÓN DORADO
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -276,30 +256,32 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Herramienta de Análisis en Vivo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>AFC Analytics - AI Cyber Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #05080e;
-            --card-bg: rgba(13, 19, 29, 0.85);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --accent-green: #10b981;
-            --accent-green-glow: rgba(16, 185, 129, 0.35);
-            --text-primary: #ffffff;
+            --bg-color: #030508;
+            --card-bg: rgba(10, 14, 23, 0.85);
+            --card-border: rgba(245, 158, 11, 0.18);
+            --accent-gold: #f59e0b;
+            --accent-gold-bright: #fbbf24;
+            --accent-gold-glow: rgba(245, 158, 11, 0.4);
+            --accent-cyan: #06b6d4;
+            --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
 
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
             color: var(--text-primary);
             margin: 0; padding: 0;
             min-height: 100vh;
@@ -307,106 +289,119 @@ HTML_TEMPLATE = """
 
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 5%;
-            background: rgba(5, 8, 14, 0.85);
-            backdrop-filter: blur(16px);
+            padding: 20px 6%;
+            background: rgba(3, 5, 8, 0.9);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--card-border);
             position: sticky; top: 0; z-index: 100;
         }
 
-        .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; }
+        .brand { 
+            display: flex; align-items: center; gap: 14px; 
+            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
+            letter-spacing: 1px; color: #fff;
+        }
         .brand-icon {
-            width: 38px; height: 38px;
-            background: radial-gradient(circle, var(--accent-green) 0%, rgba(16,185,129,0.2) 100%);
+            width: 42px; height: 42px;
+            background: radial-gradient(circle, var(--accent-gold) 0%, rgba(245,158,11,0.15) 100%);
             border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--accent-green);
-            box-shadow: 0 0 15px var(--accent-green-glow);
+            border: 1px solid var(--accent-gold);
+            box-shadow: 0 0 20px var(--accent-gold-glow);
+            font-size: 20px;
         }
 
         .status-pill {
-            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--accent-green); padding: 6px 16px; border-radius: 20px;
-            font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 0 12px var(--accent-green-glow);
+            background: rgba(245, 158, 11, 0.08); border: 1px solid var(--accent-gold);
+            color: var(--accent-gold-bright); padding: 7px 18px; border-radius: 30px;
+            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; gap: 10px; letter-spacing: 1px;
+            box-shadow: 0 0 15px var(--accent-gold-glow);
         }
 
         .pulse {
-            width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;
-            box-shadow: 0 0 10px var(--accent-green); animation: pulse-anim 2s infinite;
+            width: 8px; height: 8px; background: var(--accent-gold-bright); border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-gold-bright); animation: pulse-anim 1.8s infinite;
         }
 
         @keyframes pulse-anim {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
 
         .hero-section {
-            max-width: 1200px; margin: 40px auto; padding: 0 20px;
-            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;
+            max-width: 1240px; margin: 40px auto; padding: 0 24px;
+            display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 40px; align-items: center;
         }
 
         .badge-tag {
-            color: var(--accent-green); font-size: 12px; font-weight: 700;
-            letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px;
-            display: inline-block; background: rgba(16, 185, 129, 0.08); padding: 4px 12px;
-            border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--accent-gold-bright); font-family: 'Orbitron', sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
+            padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        .hero-title { font-size: 42px; font-weight: 800; line-height: 1.15; margin: 0 0 16px 0; letter-spacing: -1px; }
-        .highlight-green { color: var(--accent-green); text-shadow: 0 0 20px var(--accent-green-glow); }
-        .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 30px; max-width: 520px; }
+        .hero-title { 
+            font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
+            line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
+        }
+        .highlight-gold { 
+            color: var(--accent-gold-bright); 
+            text-shadow: 0 0 25px var(--accent-gold-glow); 
+        }
+        .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; max-width: 540px; line-height: 1.6; }
 
-        .features-grid { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .features-grid { display: flex; gap: 16px; margin-bottom: 30px; flex-wrap: wrap; }
         .feature-item {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border);
-            padding: 10px 16px; border-radius: 12px; backdrop-filter: blur(8px);
+            background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
+            padding: 12px 18px; border-radius: 14px; backdrop-filter: blur(10px);
         }
-        .feature-icon { color: var(--accent-green); font-size: 18px; }
-        .feature-title { font-size: 12px; font-weight: 700; }
+        .feature-icon { color: var(--accent-gold); font-size: 20px; }
+        .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
+        /* RADAR ESTILO IA CYBERPUNK */
         .radar-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 24px; padding: 35px; text-align: center; position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(16, 185, 129, 0.03);
-            backdrop-filter: blur(12px);
+            border-radius: 28px; padding: 35px; text-align: center; position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
+            backdrop-filter: blur(16px); overflow: hidden;
         }
 
         .radar-box {
-            width: 200px; height: 200px; margin: 0 auto 20px auto; border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.35); position: relative;
+            width: 210px; height: 210px; margin: 0 auto 24px auto; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.4); position: relative;
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 75%);
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 75%);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
             overflow: hidden;
         }
 
         .radar-box::before {
             content: ''; position: absolute; width: 100%; height: 1px;
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(245, 158, 11, 0.25);
         }
         .radar-box::after {
             content: ''; position: absolute; height: 100%; width: 1px;
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(245, 158, 11, 0.25);
         }
 
         .radar-circle-inner {
-            position: absolute; width: 120px; height: 120px; border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.25);
+            position: absolute; width: 130px; height: 130px; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.25);
         }
 
         .radar-circle-center {
-            position: absolute; width: 50px; height: 50px; border-radius: 50%;
-            border: 1px solid rgba(16, 185, 129, 0.25);
+            position: absolute; width: 55px; height: 55px; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .radar-sweep {
-            position: absolute; width: 100px; height: 100px; top: 0; right: 0;
-            background: conic-gradient(from 0deg at 0% 100%, rgba(16, 185, 129, 0.45) 0deg, transparent 90deg);
+            position: absolute; width: 105px; height: 105px; top: 0; right: 0;
+            background: conic-gradient(from 0deg at 0% 100%, rgba(245, 158, 11, 0.5) 0deg, transparent 90deg);
             border-radius: 100% 0 0 0; transform-origin: 0% 100%;
-            animation: sweep 3.5s linear infinite;
+            animation: sweep 3s linear infinite;
         }
 
         @keyframes sweep {
@@ -415,77 +410,83 @@ HTML_TEMPLATE = """
         }
 
         .blip {
-            position: absolute; width: 6px; height: 6px; background: #38bdf8;
-            border-radius: 50%; box-shadow: 0 0 8px #38bdf8; animation: blip-flash 2s infinite alternate;
+            position: absolute; width: 7px; height: 7px; background: var(--accent-cyan);
+            border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); animation: blip-flash 2s infinite alternate;
         }
-        .blip1 { top: 35%; left: 65%; animation-delay: 0.5s; }
-        .blip2 { top: 70%; left: 30%; animation-delay: 1.2s; }
+        .blip1 { top: 35%; left: 65%; animation-delay: 0.4s; }
+        .blip2 { top: 68%; left: 28%; animation-delay: 1.1s; }
 
         @keyframes blip-flash {
-            0% { opacity: 0.2; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1.3); }
+            0% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.4); }
         }
 
-        .stats-counter { font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
-        .stats-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stats-counter { 
+            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
+            color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
+            margin-bottom: 2px; 
+        }
+        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 
-        .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
 
         .tabs-nav {
-            display: flex; gap: 12px; margin-bottom: 30px;
-            border-bottom: 1px solid var(--card-border); padding-bottom: 15px;
+            display: flex; gap: 14px; margin-bottom: 30px;
+            border-bottom: 1px solid var(--card-border); padding-bottom: 16px;
         }
 
         .tab-btn {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 12px 24px; border-radius: 14px;
-            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.25s ease;
-            display: flex; align-items: center; gap: 10px;
+            background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
+            color: var(--text-secondary); padding: 14px 28px; border-radius: 16px;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; 
+            cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 12px;
         }
 
         .tab-btn.active {
-            background: var(--accent-green); color: #000; border-color: var(--accent-green);
-            font-weight: 700; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); 
+            color: #000; border-color: var(--accent-gold-bright);
+            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
         }
 
-        .tab-badge { background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .tab-badge { background: rgba(0,0,0,0.3); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
 
         .match-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 22px; transition: all 0.3s ease;
-            backdrop-filter: blur(10px); position: relative; overflow: hidden;
+            border-radius: 20px; padding: 24px; transition: all 0.3s ease;
+            backdrop-filter: blur(12px); position: relative; overflow: hidden;
         }
 
         .match-card::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
-            opacity: 0.6;
+            background: linear-gradient(90deg, transparent, var(--accent-gold-bright), transparent);
+            opacity: 0.7;
         }
 
         .match-card:hover {
-            border-color: rgba(16, 185, 129, 0.4); transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 15px rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-gold-bright); transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(245, 158, 11, 0.15);
         }
 
-        .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-        .league-badge { background: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
-        .minute-badge { color: #f59e0b; font-weight: 800; background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 6px; }
-        .teams-title { font-size: 18px; font-weight: 700; text-align: center; margin: 15px 0; line-height: 1.3; }
+        .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+        .league-badge { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); }
+        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; font-family: 'Orbitron', sans-serif; }
+        .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; line-height: 1.3; }
 
         .fulfilled-box {
-            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);
-            padding: 10px 14px; border-radius: 12px; font-size: 13px;
+            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 12px 16px; border-radius: 14px; font-size: 13px;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .team-pill { background: var(--accent-green); color: #000; font-weight: 700; padding: 3px 10px; border-radius: 8px; font-size: 12px; }
+        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
 
         .empty-card {
-            grid-column: 1 / -1; text-align: center; padding: 65px 20px;
+            grid-column: 1 / -1; text-align: center; padding: 70px 20px;
             background: var(--card-bg); border: 1px dashed var(--card-border);
-            border-radius: 20px; color: var(--text-secondary);
+            border-radius: 24px; color: var(--text-secondary);
         }
 
         @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
@@ -495,27 +496,27 @@ HTML_TEMPLATE = """
 
     <div class="navbar">
         <div class="brand">
-            <div class="brand-icon">⚡</div>
-            <span>AFC Analytics</span>
+            <div class="brand-icon">🧠</div>
+            <span>AFC ANALYTICS AI</span>
         </div>
         <div class="status-pill">
             <div class="pulse"></div>
-            SCANNER EN VIVO
+            SYSTEM ONLINE
         </div>
     </div>
 
     <div class="hero-section">
         <div>
-            <div class="badge-tag">Análisis Algorítmico en Vivo</div>
-            <h1 class="hero-title">Partidos 0-0 con alta presión para <span class="highlight-green">Gol Inminente</span></h1>
-            <p class="hero-desc">Monitoreo continuo de partidos globales entre el minuto 46' y 78' para detectar patrones de presión ofensiva (xG, remates y ataques peligrosos).</p>
+            <div class="badge-tag">Motor Algorítmico de IA</div>
+            <h1 class="hero-title">Rastreo de Partidos 0-0 con <span class="highlight-gold">Presión Inminente</span></h1>
+            <p class="hero-desc">Análisis predictivo de patrones de ataque en vivo (ventana min 46'-78') evaluando métricas avanzadas de xG, disparos directos y volumen ofensivo.</p>
 
             <div class="features-grid">
                 <div class="feature-item">
-                    <span class="feature-icon">📡</span>
+                    <span class="feature-icon">🤖</span>
                     <div>
-                        <div class="feature-title">Análisis</div>
-                        <div class="feature-sub">Tiempo real</div>
+                        <div class="feature-title">Algoritmo</div>
+                        <div class="feature-sub">Filtro Adaptativo</div>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -526,10 +527,10 @@ HTML_TEMPLATE = """
                     </div>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">📊</span>
+                    <span class="feature-icon">🎯</span>
                     <div>
-                        <div class="feature-title">Datos</div>
-                        <div class="feature-sub">xG, Remates, Ataques</div>
+                        <div class="feature-title">Métricas</div>
+                        <div class="feature-sub">xG & Shot Volume</div>
                     </div>
                 </div>
             </div>
@@ -544,7 +545,7 @@ HTML_TEMPLATE = """
                 <div class="blip blip2"></div>
             </div>
             <div class="stats-counter" id="alertas-counter">0</div>
-            <div class="stats-label">alertas registradas hoy</div>
+            <div class="stats-label">alertas confirmadas hoy</div>
         </div>
     </div>
 
@@ -554,7 +555,7 @@ HTML_TEMPLATE = """
                 📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
             </button>
             <button class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
-                🔥 Alertas VIP Cumplidas <span class="tab-badge" id="count-alertas">0</span>
+                ⚡ Alertas VIP AI <span class="tab-badge" id="count-alertas">0</span>
             </button>
         </div>
 
@@ -570,8 +571,8 @@ HTML_TEMPLATE = """
         <div id="pestana-alertas" style="display: none;">
             <div id="grid-alertas" class="grid">
                 <div class="empty-card">
-                    <h3>🔥 Sin alertas VIP confirmadas hoy</h3>
-                    <p>Las alertas que cumplan el 100% de las reglas aparecerán aquí y en Telegram.</p>
+                    <h3>⚡ Sin alertas VIP confirmadas hoy</h3>
+                    <p>Las oportunidades que cumplan el 100% de los filtros de presión aparecerán aquí y en Telegram.</p>
                 </div>
             </div>
         </div>
@@ -624,7 +625,7 @@ HTML_TEMPLATE = """
                     counter.innerText = total;
 
                     if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🔥 Sin alertas VIP confirmadas hoy</h3><p>Las alertas que cumplan el 100% de las reglas aparecerán aquí y en Telegram.</p></div>';
+                        grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3><p>Las oportunidades que cumplan el 100% de los filtros de presión aparecerán aquí y en Telegram.</p></div>';
                     } else {
                         grid.innerHTML = data.map(a => `
                             <div class="match-card">
@@ -634,7 +635,7 @@ HTML_TEMPLATE = """
                                 </div>
                                 <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
                                 <div class="fulfilled-box">
-                                    <span>Alta presión detectada:</span>
+                                    <span>Presión IA Detectada:</span>
                                     <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
                                 </div>
                             </div>
@@ -654,50 +655,50 @@ HTML_TEMPLATE = """
 
 @app.route("/")
 def index():
-    return render_template_string(HTML_TEMPLATE)
+  return render_template_string(HTML_TEMPLATE)
 
 
 @app.route("/api/alertas")
 def api_alertas():
-    try:
-        alertas = obtener_alertas()
-        return jsonify(alertas if alertas else [])
-    except Exception as e:
-        print(f"Error en API alertas: {e}", flush=True)
-        return jsonify([])
+  try:
+    alertas = obtener_alertas()
+    return jsonify(alertas if alertas else [])
+  except Exception as e:
+    print(f"Error en API alertas: {e}", flush=True)
+    return jsonify([])
 
 
 @app.route("/api/partidos_00")
 def api_partidos_00():
-    return jsonify(partidos_00_en_vivo)
+  return jsonify(partidos_00_en_vivo)
 
 
 @app.route("/ver-stats")
 def ver_stats():
-    return jsonify(ultimas_stats_evaluadas)
+  return jsonify(ultimas_stats_evaluadas)
 
 
 @app.route("/probar-alerta")
 def probar_alerta():
+  try:
+    home = "Real Madrid (Prueba)"
+    away = "Barcelona (Prueba)"
+    liga = "Liga Santander"
+    minuto = 65
+    equipo = "Real Madrid (Prueba)"
+    fixture_id = 999999
+
+    enviar_alerta_telegram(home, away, liga, minuto, equipo)
+
     try:
-        home = "Real Madrid (Prueba)"
-        away = "Barcelona (Prueba)"
-        liga = "Liga Santander"
-        minuto = 65
-        equipo = "Real Madrid (Prueba)"
-        fixture_id = 999999
+      guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+    except Exception as db_err:
+      print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
 
-        enviar_alerta_telegram(home, away, liga, minuto, equipo)
-
-        try:
-            guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
-        except Exception as db_err:
-            print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
-
-        return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
-    except Exception as e:
-        print(f"❌ Error en prueba: {e}", flush=True)
-        return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
+    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
+  except Exception as e:
+    print(f"❌ Error en prueba: {e}", flush=True)
+    return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
 
 
 inicializar_db()
@@ -705,5 +706,5 @@ hilo_bot = threading.Thread(target=bucle_escaneo, daemon=True)
 hilo_bot.start()
 
 if __name__ == "__main__":
-    print("🚀 Servidor Web iniciado en http://127.0.0.1:5000", flush=True)
-    app.run(host="0.0.0.0", port=5000, debug=False)
+  print("🚀 Servidor Web iniciado en http://127.0.0.1:5000", flush=True)
+  app.run(host="0.0.0.0", port=5000, debug=False)

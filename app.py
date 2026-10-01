@@ -11,12 +11,12 @@ app = Flask(__name__)
 # ==========================================
 API_KEY_SPORTS = "1919b9af07c4eeae00a059f0086f6473"
 
-# FÚTBOL
+# FÚTBOL (API-Football)
 URL_LIVE_FOOTBALL = "https://v3.football.api-sports.io/fixtures"
 URL_STATS_FOOTBALL = "https://v3.football.api-sports.io/fixtures/statistics"
 HEADERS_FOOTBALL = {"x-apisports-key": API_KEY_SPORTS}
 
-# BALONCESTO
+# BALONCESTO (API-Basketball)
 URL_LIVE_BASKET = "https://v1.basketball.api-sports.io/games"
 HEADERS_BASKET = {"x-apisports-key": API_KEY_SPORTS}
 
@@ -24,24 +24,26 @@ HEADERS_BASKET = {"x-apisports-key": API_KEY_SPORTS}
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
 
-# MEMORIA
+# ESTADOS EN MEMORIA - FÚTBOL
 alertas_disparadas = set()
 partidos_00_en_vivo = []
 ultimas_stats_evaluadas = []
 
+# ESTADOS EN MEMORIA - BALONCESTO
 alertas_basket_disparadas = set()
 partidos_basket_en_vivo = []
 alertas_basket_db = []
 
 
 # ==========================================
-# ⚽ FÚTBOL
+# ⚽ LÓGICA DE FÚTBOL
 # ==========================================
 def enviar_alerta_telegram(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
   if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
     return
+
   mensaje = (
       f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
       f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
@@ -50,12 +52,18 @@ def enviar_alerta_telegram(
       f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
       f"📈 <i>Filtros cumplidos: Remates + Tiros a puerta en 2da mitad.</i>"
   )
+
   url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
   payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
+
   try:
     requests.post(url, data=payload, timeout=5)
+    print(
+        f"📱 Alerta Fútbol enviada a Telegram: {home_name} vs {away_name}",
+        flush=True,
+    )
   except Exception as e:
-    print(f"Error Telegram Fútbol: {e}", flush=True)
+    print(f"⚠️ Error enviando a Telegram (Fútbol): {e}", flush=True)
 
 
 def obtener_estadisticas_partido(fixture_id):
@@ -71,6 +79,7 @@ def obtener_estadisticas_partido(fixture_id):
     data = response.json().get("response", [])
     if not data or len(data) < 2:
       return {}
+
     stats_local = {
         item["type"]: item["value"] for item in data[0]["statistics"]
     }
@@ -98,7 +107,8 @@ def obtener_estadisticas_partido(fixture_id):
         "xg_visita": limpiar(stats_visita.get("expected_goals")),
         "ataques_p_visita": limpiar(stats_visita.get("Dangerous Attacks")),
     }
-  except Exception:
+  except Exception as e:
+    print(f"⚠️ Error obteniendo stats: {e}", flush=True)
     return {}
 
 
@@ -146,6 +156,10 @@ def evaluar_reglas_estrictas(datos):
 
 def bucle_escaneo():
   global partidos_00_en_vivo, ultimas_stats_evaluadas
+  INTERVALO_SEGUNDOS = 300
+
+  print("🚀 Bucle de escaneo Fútbol IA iniciado (cada 5 min)...", flush=True)
+
   while True:
     try:
       response = requests.get(
@@ -177,6 +191,7 @@ def bucle_escaneo():
                 "liga": league_name,
                 "minuto": minuto,
             })
+
             if fixture_id not in alertas_disparadas:
               candidatos_validos.append((fixture_id, item, minuto))
 
@@ -186,6 +201,7 @@ def bucle_escaneo():
           home_name = item["teams"]["home"]["name"]
           away_name = item["teams"]["away"]["name"]
           league_name = item["league"]["name"]
+
           stats = obtener_estadisticas_partido(fixture_id)
           datos_partido = {
               "fixture_id": fixture_id,
@@ -196,7 +212,9 @@ def bucle_escaneo():
               "goles_visita": 0,
               **stats,
           }
+
           es_alerta, equipo = evaluar_reglas_estrictas(datos_partido)
+
           stats_recientes.append({
               "partido": f"{home_name} vs {away_name}",
               "liga": league_name,
@@ -204,6 +222,7 @@ def bucle_escaneo():
               "es_alerta": es_alerta,
               "stats": stats,
           })
+
           if es_alerta:
             try:
               guardar_alerta(
@@ -214,26 +233,30 @@ def bucle_escaneo():
                   minuto,
                   equipo,
               )
-            except Exception:
-              pass
+            except Exception as e_db:
+              print(f"⚠️ Error guardando en DB Fútbol: {e_db}", flush=True)
+
             enviar_alerta_telegram(
                 home_name, away_name, league_name, minuto, equipo
             )
             alertas_disparadas.add(fixture_id)
+
         ultimas_stats_evaluadas = stats_recientes
     except Exception as e:
       print(f"Error escaneo Fútbol: {e}", flush=True)
-    time.sleep(300)
+
+    time.sleep(INTERVALO_SEGUNDOS)
 
 
 # ==========================================
-# 🏀 BALONCESTO
+# 🏀 LÓGICA DE BALONCESTO
 # ==========================================
 def enviar_alerta_telegram_basket(
     home_name, away_name, league_name, periodo, marcador, favorito, dif
 ):
   if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
     return
+
   mensaje = (
       f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
       f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
@@ -243,16 +266,26 @@ def enviar_alerta_telegram_basket(
       f"📈 <i>Patrón Detectado: Desviación atípica en 1ra mitad. Alta"
       f" probabilidad de regresión a la media.</i>"
   )
+
   url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
   payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
+
   try:
     requests.post(url, data=payload, timeout=5)
+    print(
+        f"📱 Alerta Basket enviada a Telegram: {home_name} vs {away_name}",
+        flush=True,
+    )
   except Exception as e:
-    print(f"Error Telegram Basket: {e}", flush=True)
+    print(f"⚠️️ Error enviando a Telegram (Basket): {e}", flush=True)
 
 
 def bucle_escaneo_basket():
   global partidos_basket_en_vivo, alertas_basket_db
+  INTERVALO_SEGUNDOS = 300
+
+  print("🚀 Bucle de escaneo Baloncesto IA iniciado (cada 5 min)...", flush=True)
+
   while True:
     try:
       response = requests.get(
@@ -270,6 +303,7 @@ def bucle_escaneo_basket():
           league_name = game["league"]["name"]
           home_name = game["teams"]["home"]["name"]
           away_name = game["teams"]["away"]["name"]
+
           status_short = game.get("status", {}).get("short", "IN PROGRESS")
           scores = game.get("scores", {})
           p_home = (
@@ -278,6 +312,7 @@ def bucle_escaneo_basket():
           p_away = (
               scores.get("away", {}).get("total") if scores.get("away") else 0
           )
+
           p_home = p_home if p_home is not None else 0
           p_away = p_away if p_away is not None else 0
           marcador_str = f"{p_home} - {p_away}"
@@ -315,14 +350,16 @@ def bucle_escaneo_basket():
                   dif,
               )
               alertas_basket_disparadas.add(game_id)
+
         partidos_basket_en_vivo = temp_live
     except Exception as e:
       print(f"Error escaneo Basket: {e}", flush=True)
-    time.sleep(300)
+
+    time.sleep(INTERVALO_SEGUNDOS)
 
 
 # ==========================================
-# 🎨 INTERFAZ WEB CORREGIDA (DIRECTA)
+# 🎨 INTERFAZ MULTIDEPORTE CYBERPUNK (CORREGIDA)
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -330,7 +367,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Multi-Sport</title>
+    <title>AFC Analytics - AI Cyber Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -339,6 +376,7 @@ HTML_TEMPLATE = """
             --card-border: rgba(245, 158, 11, 0.18);
             --accent-gold: #f59e0b;
             --accent-gold-bright: #fbbf24;
+            --accent-gold-glow: rgba(245, 158, 11, 0.4);
             --accent-cyan: #06b6d4;
             --accent-orange: #f97316;
             --text-primary: #f8fafc;
@@ -350,6 +388,12 @@ HTML_TEMPLATE = """
         body {
             font-family: 'Space Grotesk', sans-serif;
             background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
             color: var(--text-primary);
             margin: 0; padding: 0; min-height: 100vh;
         }
@@ -357,108 +401,373 @@ HTML_TEMPLATE = """
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 20px 6%; background: rgba(3, 5, 8, 0.95);
-            border-bottom: 1px solid var(--card-border);
-            position: sticky; top: 0; z-index: 1000;
+            backdrop-filter: blur(20px); border-bottom: 1px solid var(--card-border);
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .brand { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .brand { 
+            display: flex; align-items: center; gap: 14px; 
+            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
+            letter-spacing: 1px; color: #fff;
+        }
+        .brand-icon {
+            width: 42px; height: 42px;
+            background: radial-gradient(circle, var(--accent-gold) 0%, rgba(245,158,11,0.15) 100%);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--accent-gold); box-shadow: 0 0 20px var(--accent-gold-glow);
+            font-size: 20px;
+        }
 
         .sport-selector { display: flex; gap: 12px; }
         .sport-btn {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border);
-            color: #fff; padding: 10px 22px; border-radius: 12px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px;
-            cursor: pointer; transition: all 0.2s ease;
+            background: rgba(10, 14, 23, 0.8); border: 1px solid var(--card-border);
+            color: var(--text-secondary); padding: 10px 22px; border-radius: 12px;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px;
+            cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px;
         }
-        .sport-btn.active-fut { background: var(--accent-gold); color: #000; border-color: var(--accent-gold-bright); }
-        .sport-btn.active-bas { background: var(--accent-orange); color: #000; border-color: var(--accent-orange); }
+        .sport-btn.active-fut {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%);
+            color: #000 !important; border-color: var(--accent-gold-bright);
+            box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+        }
+        .sport-btn.active-bas {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
+            color: #000 !important; border-color: var(--accent-orange);
+            box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4);
+        }
+
+        .status-pill {
+            background: rgba(245, 158, 11, 0.08); border: 1px solid var(--accent-gold);
+            color: var(--accent-gold-bright); padding: 7px 18px; border-radius: 30px;
+            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; gap: 10px; letter-spacing: 1px;
+            box-shadow: 0 0 15px var(--accent-gold-glow);
+        }
+
+        .pulse {
+            width: 8px; height: 8px; background: var(--accent-gold-bright); border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-gold-bright); animation: pulse-anim 1.8s infinite;
+        }
+
+        @keyframes pulse-anim {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        .hero-section {
+            max-width: 1240px; margin: 40px auto; padding: 0 24px;
+            display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 40px; align-items: center;
+        }
+
+        .badge-tag {
+            color: var(--accent-gold-bright); font-family: 'Orbitron', sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
+            padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .hero-title { 
+            font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
+            line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
+        }
+        .highlight-gold { color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow); }
+        .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; max-width: 540px; line-height: 1.6; }
+
+        .radar-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 28px; padding: 35px; text-align: center; position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
+            backdrop-filter: blur(16px); overflow: hidden;
+        }
+
+        .radar-box {
+            width: 210px; height: 210px; margin: 0 auto 24px auto; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.4); position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 75%);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15); overflow: hidden;
+        }
+        .radar-box::before { content: ''; position: absolute; width: 100%; height: 1px; background: rgba(245, 158, 11, 0.25); }
+        .radar-box::after { content: ''; position: absolute; height: 100%; width: 1px; background: rgba(245, 158, 11, 0.25); }
+
+        .radar-circle-inner { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 1px solid rgba(245, 158, 11, 0.25); }
+        .radar-circle-center { position: absolute; width: 55px; height: 55px; border-radius: 50%; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .radar-sweep {
+            position: absolute; width: 105px; height: 105px; top: 0; right: 0;
+            background: conic-gradient(from 0deg at 0% 100%, rgba(245, 158, 11, 0.5) 0deg, transparent 90deg);
+            border-radius: 100% 0 0 0; transform-origin: 0% 100%;
+            animation: sweep 3s linear infinite;
+        }
+        @keyframes sweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .blip { position: absolute; width: 7px; height: 7px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); animation: blip-flash 2s infinite alternate; }
+        .blip1 { top: 35%; left: 65%; animation-delay: 0.4s; }
+        .blip2 { top: 68%; left: 28%; animation-delay: 1.1s; }
+        @keyframes blip-flash { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.4); } }
+
+        .stats-counter { 
+            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
+            color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
+            margin-bottom: 2px; 
+        }
+        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 
         .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; }
+
+        .tab-btn {
+            background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
+            color: var(--text-secondary); padding: 14px 28px; border-radius: 16px;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; 
+            cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); 
+            color: #000; border-color: var(--accent-gold-bright);
+            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
+        }
+        .tab-badge { background: rgba(0,0,0,0.3); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
 
         .match-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 24px; backdrop-filter: blur(12px);
+            border-radius: 20px; padding: 24px; transition: all 0.3s ease;
+            backdrop-filter: blur(12px); position: relative; overflow: hidden;
+        }
+        .match-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold-bright), transparent);
+            opacity: 0.7;
+        }
+        .match-card:hover {
+            border-color: var(--accent-gold-bright); transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(245, 158, 11, 0.15);
         }
 
-        .league-badge { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); font-size: 12px; }
-        .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; }
+        .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+        .league-badge { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); }
+        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; font-family: 'Orbitron', sans-serif; }
+        .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; line-height: 1.3; }
+
+        .fulfilled-box {
+            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 12px 16px; border-radius: 14px; font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .fulfilled-box-orange {
+            background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 12px 16px; border-radius: 14px; font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
         .empty-card { grid-column: 1 / -1; text-align: center; padding: 70px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
+
+        @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div class="brand">🧠 AFC ANALYTICS</div>
+        <div class="brand">
+            <div class="brand-icon">🧠</div>
+            <span>AFC ANALYTICS AI</span>
+        </div>
+        
         <div class="sport-selector">
-            <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarFutbol()">⚽ FÚTBOL</button>
-            <button id="btnBasket" class="sport-btn" onclick="mostrarBasket()">🏀 BALONCESTO</button>
+            <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarFutbol()">
+                ⚽ FÚTBOL
+            </button>
+            <button id="btnBasket" class="sport-btn" onclick="mostrarBasket()">
+                🏀 BALONCESTO
+            </button>
+        </div>
+
+        <div class="status-pill">
+            <div class="pulse"></div>
+            SYSTEM ONLINE
         </div>
     </div>
 
-    <div class="main-container">
-        <!-- VISTA FÚTBOL -->
-        <div id="vistaFutbol" style="display: block;">
-            <h2>⚽ Radar de Fútbol (0-0 en min 46'-78')</h2>
-            <div id="gridFutbol" class="grid">
-                <div class="empty-card"><h3>🔎 Buscando partidos de fútbol en vivo...</h3></div>
+    <!-- SECCIÓN FÚTBOL -->
+    <div id="seccion-futbol" style="display: block;">
+        <div class="hero-section">
+            <div>
+                <div class="badge-tag">Motor Algorítmico de IA - Fútbol</div>
+                <h1 class="hero-title">Rastreo de Partidos 0-0 con <span class="highlight-gold">Presión Inminente</span></h1>
+                <p class="hero-desc">Análisis predictivo de patrones de ataque en vivo (ventana min 46'-78') evaluando métricas avanzadas de xG, disparos directos y volumen ofensivo.</p>
+            </div>
+
+            <div class="radar-card">
+                <div class="radar-box">
+                    <div class="radar-circle-inner"></div>
+                    <div class="radar-circle-center"></div>
+                    <div class="radar-sweep"></div>
+                    <div class="blip blip1"></div>
+                    <div class="blip blip2"></div>
+                </div>
+                <div class="stats-counter" id="alertas-counter">0</div>
+                <div class="stats-label">alertas confirmadas hoy</div>
             </div>
         </div>
 
-        <!-- VISTA BALONCESTO -->
-        <div id="vistaBasket" style="display: none;">
-            <h2>🏀 Alertas de Baloncesto (Remontada Favorito)</h2>
-            <div id="gridBasket" class="grid">
-                <div class="empty-card"><h3>🏀 Buscando partidos de baloncesto en vivo...</h3></div>
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="cambiarPestana(event, 'radar')">
+                    📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
+                </button>
+                <button class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
+                    ⚡ Alertas VIP AI <span class="tab-badge" id="count-alertas">0</span>
+                </button>
+            </div>
+
+            <div id="pestana-radar">
+                <div id="grid-radar" class="grid">
+                    <div class="empty-card"><h3>🔎 Buscando partidos 0-0 en ventana 46'-78'...</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-alertas" style="display: none;">
+                <div id="grid-alertas" class="grid">
+                    <div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN BALONCESTO -->
+    <div id="seccion-basket" style="display: none;">
+        <div class="hero-section">
+            <div>
+                <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
+                <h1 class="hero-title">Alertas de <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Remontadas en Vivo</span></h1>
+                <p class="hero-desc">Detección de favoritos con desventajas de 10+ puntos en el 2º Cuarto o Descanso para aprovechar la regresión a la media.</p>
+            </div>
+
+            <div class="radar-card">
+                <div class="radar-box" style="border-color: var(--accent-orange);">
+                    <div class="radar-circle-inner"></div>
+                    <div class="radar-circle-center"></div>
+                    <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
+                </div>
+                <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
+                <div class="stats-label">remontadas detectadas</div>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="grid" id="grid-basket-alertas">
+                <div class="empty-card"><h3>🏀 Buscando remontadas en vivo...</h3></div>
             </div>
         </div>
     </div>
 
     <script>
         function mostrarFutbol() {
-            document.getElementById('vistaFutbol').style.display = 'block';
-            document.getElementById('vistaBasket').style.display = 'none';
+            document.getElementById('seccion-futbol').style.display = 'block';
+            document.getElementById('seccion-basket').style.display = 'none';
             document.getElementById('btnFutbol').className = 'sport-btn active-fut';
             document.getElementById('btnBasket').className = 'sport-btn';
         }
 
         function mostrarBasket() {
-            document.getElementById('vistaFutbol').style.display = 'none';
-            document.getElementById('vistaBasket').style.display = 'block';
+            document.getElementById('seccion-futbol').style.display = 'none';
+            document.getElementById('seccion-basket').style.display = 'block';
             document.getElementById('btnFutbol').className = 'sport-btn';
             document.getElementById('btnBasket').className = 'sport-btn active-bas';
         }
 
+        function cambiarPestana(evt, pestana) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+            if (pestana === 'radar') {
+                document.getElementById('pestana-radar').style.display = 'block';
+                document.getElementById('pestana-alertas').style.display = 'none';
+            } else {
+                document.getElementById('pestana-radar').style.display = 'none';
+                document.getElementById('pestana-alertas').style.display = 'block';
+            }
+        }
+
         function cargarDatos() {
+            // Cargar Fútbol 0-0
             fetch('/api/partidos_00')
-                .then(r => r.json())
-                .then(d => {
-                    const g = document.getElementById('gridFutbol');
-                    if (!d || d.length === 0) {
-                        g.innerHTML = '<div class="empty-card"><h3>🔎 Sin partidos 0-0 en ventana 46\'-78\'</h3></div>';
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-radar');
+                    document.getElementById('count-radar').innerText = data ? data.length : 0;
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3></div>';
                     } else {
-                        g.innerHTML = d.map(p => `
+                        grid.innerHTML = data.map(p => `
                             <div class="match-card">
-                                <div><span class="league-badge">🏆 ${p.liga}</span> ⏱️ Min ${p.minuto}'</div>
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${p.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
+                                </div>
                                 <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
                             </div>
                         `).join('');
                     }
                 });
 
-            fetch('/api/basket_alertas')
-                .then(r => r.json())
-                .then(d => {
-                    const g = document.getElementById('gridBasket');
-                    if (!d || d.length === 0) {
-                        g.innerHTML = '<div class="empty-card"><h3>🏀 Sin alertas de remontada en este momento</h3></div>';
+            // Cargar Alertas Fútbol
+            fetch('/api/alertas')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-alertas');
+                    const counter = document.getElementById('alertas-counter');
+                    const total = data ? data.length : 0;
+                    document.getElementById('count-alertas').innerText = total;
+                    counter.innerText = total;
+
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>';
                     } else {
-                        g.innerHTML = d.map(b => `
+                        grid.innerHTML = data.map(a => `
                             <div class="match-card">
-                                <div><span class="league-badge" style="color:var(--accent-orange);">🏆 ${b.liga}</span> ⏱️ ${b.periodo}</div>
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${a.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
+                                </div>
+                                <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
+                                <div class="fulfilled-box">
+                                    <span>Presión IA Detectada:</span>
+                                    <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+
+            // Cargar Alertas Baloncesto
+            fetch('/api/basket_alertas')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-basket-alertas');
+                    const counter = document.getElementById('basket-counter');
+                    const total = data ? data.length : 0;
+                    counter.innerText = total;
+
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>🏀 Sin alertas de remontada actualmente</h3></div>';
+                    } else {
+                        grid.innerHTML = data.map(b => `
+                            <div class="match-card">
+                                <div class="match-meta">
+                                    <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${b.liga}</span>
+                                    <span class="minute-badge" style="color: var(--accent-orange);">⏱️ ${b.periodo}</span>
+                                </div>
                                 <div class="teams-title">${b.local} ${b.marcador} ${b.visita}</div>
-                                <div style="background:rgba(249,115,22,0.1); padding:10px; border-radius:10px;">
-                                    <b>Favorito Abajo:</b> ${b.favorito} (-${b.diferencia} pts)
+                                <div class="fulfilled-box-orange">
+                                    <span>Favorito Abajo: <b>${b.favorito}</b></span>
+                                    <span class="team-pill" style="background: var(--accent-orange); color: #000;">-${b.diferencia} PTS</span>
                                 </div>
                             </div>
                         `).join('');
@@ -482,8 +791,10 @@ def index():
 @app.route("/api/alertas")
 def api_alertas():
   try:
-    return jsonify(obtener_alertas() or [])
-  except Exception:
+    alertas = obtener_alertas()
+    return jsonify(alertas if alertas else [])
+  except Exception as e:
+    print(f"Error en API alertas: {e}", flush=True)
     return jsonify([])
 
 
@@ -504,37 +815,56 @@ def ver_stats():
 
 @app.route("/probar-alerta")
 def probar_alerta():
-  enviar_alerta_telegram(
-      "Real Madrid (Prueba)",
-      "Barcelona (Prueba)",
-      "Liga Santander",
-      65,
-      "Real Madrid (Prueba)",
-  )
-  return "<h1>✅ Alerta Fútbol enviada.</h1>"
+  try:
+    home = "Real Madrid (Prueba)"
+    away = "Barcelona (Prueba)"
+    liga = "Liga Santander"
+    minuto = 65
+    equipo = "Real Madrid (Prueba)"
+    fixture_id = 999999
+
+    enviar_alerta_telegram(home, away, liga, minuto, equipo)
+
+    try:
+      guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+    except Exception as db_err:
+      print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
+
+    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
+  except Exception as e:
+    print(f"❌ Error en prueba: {e}", flush=True)
+    return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
 
 
 @app.route("/probar-basket")
 def probar_basket():
-  enviar_alerta_telegram_basket(
-      "Lakers (Prueba)",
-      "Celtics (Prueba)",
-      "NBA",
-      "Q2",
-      "38 - 52",
-      "Lakers (Prueba)",
-      14,
-  )
-  return "<h1>✅ Alerta Basket enviada.</h1>"
+  try:
+    enviar_alerta_telegram_basket(
+        "Lakers (Prueba)",
+        "Celtics (Prueba)",
+        "NBA",
+        "Q2",
+        "38 - 52",
+        "Lakers (Prueba)",
+        14,
+    )
+    return "<h1>✅ Alerta de prueba de Baloncesto enviada a Telegram.</h1>"
+  except Exception as e:
+    print(f"❌ Error en prueba Basket: {e}", flush=True)
+    return f"<h1>⚠ Error en prueba Basket: {e}</h1>"
 
 
 inicializar_db()
 
-hilo_f = threading.Thread(target=bucle_escaneo, daemon=True)
-hilo_f.start()
+hilo_futbol = threading.Thread(target=bucle_escaneo, daemon=True)
+hilo_futbol.start()
 
-hilo_b = threading.Thread(target=bucle_escaneo_basket, daemon=True)
-hilo_b.start()
+hilo_basket = threading.Thread(target=bucle_escaneo_basket, daemon=True)
+hilo_basket.start()
 
 if __name__ == "__main__":
+  print(
+      "🚀 Servidor Web Multideporte iniciado en http://127.0.0.1:5000",
+      flush=True,
+  )
   app.run(host="0.0.0.0", port=5000, debug=False)

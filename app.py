@@ -14,24 +14,21 @@ app = Flask(__name__)
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
 
-# ESTADOS EN MEMORIA - FÚTBOL
+# ESTADOS EN MEMORIA
 alertas_disparadas = set()
 partidos_00_en_vivo = []
-
-# ESTADOS EN MEMORIA - BALONCESTO
 alertas_basket_disparadas = set()
 alertas_basket_db = []
 
 
 # ==========================================
-# ⚽ ENVÍO Y BUCLE DE FÚTBOL (SCRAPING)
+# ⚽ ENVÍO Y BUCLE DE FÚTBOL
 # ==========================================
 def enviar_alerta_telegram_futbol(
     home_name, away_name, league_name, minuto, equipo_cumple
 ):
   if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
     return
-
   mensaje = (
       f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
       f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
@@ -40,26 +37,24 @@ def enviar_alerta_telegram_futbol(
       f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
       f"📈 <i>Detectado vía Scraper autónomo en 2da mitad.</i>"
   )
-
   url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-  payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
-
   try:
-    requests.post(url, data=payload, timeout=5)
-    print(
-        f"📱 Alerta Fútbol enviada a Telegram: {home_name} vs {away_name}",
-        flush=True,
+    requests.post(
+        url,
+        data={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": mensaje,
+            "parse_mode": "HTML",
+        },
+        timeout=5,
     )
   except Exception as e:
-    print(f"⚠️ Error enviando a Telegram (Fútbol): {e}", flush=True)
+    print(f"⚠️ Error Telegram Fútbol: {e}", flush=True)
 
 
 def bucle_escaneo_futbol():
   global partidos_00_en_vivo
-  INTERVALO_SEGUNDOS = 180
-
-  print("🚀 Bucle de escaneo Fútbol con Scraper iniciado...", flush=True)
-
+  print("🚀 Bucle Fútbol iniciado...", flush=True)
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
 
@@ -70,9 +65,7 @@ def bucle_escaneo_futbol():
 
       for p in candidatos:
         partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
-
         if partido_id not in alertas_disparadas:
-          equipo_presion = p["equipo_local"]
           try:
             guardar_alerta(
                 partido_id,
@@ -80,35 +73,32 @@ def bucle_escaneo_futbol():
                 p["equipo_visita"],
                 p["liga"],
                 p["minuto"],
-                equipo_presion,
+                p["equipo_local"],
             )
-          except Exception as e_db:
-            print(f"⚠️ Error DB Fútbol: {e_db}", flush=True)
-
+          except Exception:
+            pass
           enviar_alerta_telegram_futbol(
               p["equipo_local"],
               p["equipo_visita"],
               p["liga"],
               p["minuto"],
-              equipo_presion,
+              p["equipo_local"],
           )
           alertas_disparadas.add(partido_id)
-
     except Exception as e:
-      print(f"⚠️ Error en ciclo de scraping Fútbol: {e}", flush=True)
+      print(f"⚠️ Error ciclo Fútbol: {e}", flush=True)
 
-    time.sleep(INTERVALO_SEGUNDOS)
+    time.sleep(180)
 
 
 # ==========================================
-# 🏀 ENVÍO Y BUCLE DE BALONCESTO (SCRAPING)
+# 🏀 ENVÍO Y BUCLE DE BALONCESTO
 # ==========================================
 def enviar_alerta_telegram_basket(
     home_name, away_name, league_name, periodo, marcador, favorito, dif
 ):
   if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
     return
-
   mensaje = (
       f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
       f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
@@ -117,47 +107,34 @@ def enviar_alerta_telegram_basket(
       f"⏱ <b>Momento:</b> {periodo} | <b>Marcador:</b> {marcador}\n\n"
       f"📈 <i>Desventaja atípica detectada en 1ra mitad vía Scraper.</i>"
   )
-
   url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-  payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
-
   try:
-    requests.post(url, data=payload, timeout=5)
-    print(
-        f"📱 Alerta Basket enviada a Telegram: {home_name} vs {away_name}",
-        flush=True,
+    requests.post(
+        url,
+        data={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": mensaje,
+            "parse_mode": "HTML",
+        },
+        timeout=5,
     )
   except Exception as e:
-    print(f"⚠️ Error enviando a Telegram (Basket): {e}", flush=True)
+    print(f"⚠️ Error Telegram Basket: {e}", flush=True)
 
 
 def bucle_escaneo_basket():
   global alertas_basket_db, alertas_basket_disparadas
-  INTERVALO_SEGUNDOS = 180
-
-  print("🚀 Bucle de escaneo Baloncesto con Scraper iniciado...", flush=True)
-
+  print("🚀 Bucle Basket iniciado...", flush=True)
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
 
   while True:
     try:
       candidatos = loop.run_until_complete(extraer_basket_en_vivo())
-
       for b in candidatos:
         game_id = f"{b['local']}_{b['visita']}"
-
         if game_id not in alertas_basket_disparadas:
-          alerta_obj = {
-              "liga": b["liga"],
-              "local": b["local"],
-              "visita": b["visita"],
-              "marcador": b["marcador"],
-              "periodo": b["periodo"],
-              "favorito": b["favorito"],
-              "diferencia": b["diferencia"],
-          }
-          alertas_basket_db.append(alerta_obj)
+          alertas_basket_db.append(b)
           enviar_alerta_telegram_basket(
               b["local"],
               b["visita"],
@@ -168,15 +145,14 @@ def bucle_escaneo_basket():
               b["diferencia"],
           )
           alertas_basket_disparadas.add(game_id)
-
     except Exception as e:
-      print(f"⚠️ Error en ciclo de scraping Basket: {e}", flush=True)
+      print(f"⚠️ Error ciclo Basket: {e}", flush=True)
 
-    time.sleep(INTERVALO_SEGUNDOS)
+    time.sleep(180)
 
 
 # ==========================================
-# 🎨 RUTAS DE LA APLICACIÓN WEB
+# 🎨 RUTAS WEB
 # ==========================================
 @app.route("/")
 def index():
@@ -188,8 +164,7 @@ def api_alertas():
   try:
     alertas = obtener_alertas()
     return jsonify(alertas if alertas else [])
-  except Exception as e:
-    print(f"Error en API alertas: {e}", flush=True)
+  except Exception:
     return jsonify([])
 
 
@@ -205,58 +180,30 @@ def api_basket_alertas():
 
 @app.route("/probar-scraper")
 def probar_scraper():
-  try:
+  resultado = {"futbol": [], "basket": [], "error": None}
+
+  def ejecutar():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    futbol = loop.run_until_complete(extraer_futbol_en_vivo())
-    basket = loop.run_until_complete(extraer_basket_en_vivo())
-    loop.close()
-    return jsonify({
-        "status": "OK",
-        "futbol_candidatos_detectados": futbol,
-        "basket_candidatos_detectados": basket,
-    })
-  except Exception as e:
-    return jsonify({"status": "ERROR", "detalle": str(e)})
-
-
-@app.route("/probar-alerta")
-def probar_alerta():
-  try:
-    home = "Real Madrid (Prueba Scraper)"
-    away = "Barcelona (Prueba Scraper)"
-    liga = "Liga Santander"
-    minuto = 65
-    equipo = "Real Madrid (Prueba Scraper)"
-    fixture_id = "test_999999"
-
-    enviar_alerta_telegram_futbol(home, away, liga, minuto, equipo)
-
     try:
-      guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
-    except Exception as db_err:
-      print(f"⚠️ DB Prueba: {db_err}", flush=True)
+      resultado["futbol"] = loop.run_until_complete(extraer_futbol_en_vivo())
+      resultado["basket"] = loop.run_until_complete(extraer_basket_en_vivo())
+    except Exception as e:
+      resultado["error"] = str(e)
+    finally:
+      loop.close()
 
-    return "<h1>✅ Alerta de prueba de Fútbol enviada a Telegram.</h1>"
-  except Exception as e:
-    return f"<h1>⚠️ Error en prueba: {e}</h1>"
+  t = threading.Thread(target=ejecutar)
+  t.start()
+  t.join(timeout=60)
 
-
-@app.route("/probar-basket")
-def probar_basket():
-  try:
-    enviar_alerta_telegram_basket(
-        "Lakers (Prueba Scraper)",
-        "Celtics (Prueba Scraper)",
-        "NBA",
-        "Q2",
-        "38 - 52",
-        "Lakers (Prueba Scraper)",
-        14,
-    )
-    return "<h1>✅ Alerta de prueba de Baloncesto enviada a Telegram.</h1>"
-  except Exception as e:
-    return f"<h1>⚠️ Error en prueba Basket: {e}</h1>"
+  if resultado["error"]:
+    return jsonify({"status": "ERROR", "detalle": resultado["error"]})
+  return jsonify({
+      "status": "OK",
+      "futbol_candidatos_detectados": resultado["futbol"],
+      "basket_candidatos_detectados": resultado["basket"],
+  })
 
 
 inicializar_db()

@@ -18,6 +18,7 @@ HEADERS_FOOTBALL = {"x-apisports-key": API_KEY_SPORTS}
 
 # BALONCESTO (API-Basketball)
 URL_LIVE_BASKET = "https://v1.basketball.api-sports.io/games"
+URL_ODDS_BASKET = "https://v1.basketball.api-sports.io/odds"
 HEADERS_BASKET = {"x-apisports-key": API_KEY_SPORTS}
 
 # TELEGRAM
@@ -249,7 +250,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🏀 LÓGICA DE BALONCESTO
+# 🏀 LÓGICA DE BALONCESTO CON CUOTAS REALES
 # ==========================================
 def enviar_alerta_telegram_basket(
     home_name, away_name, league_name, periodo, marcador, favorito, dif
@@ -259,12 +260,12 @@ def enviar_alerta_telegram_basket(
 
   mensaje = (
       f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
-      f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
+      f"🔥 <b>Favorito Real en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
       f"⚔️ <b>Partido:</b> {home_name} vs {away_name}\n"
       f"🏆 <b>Liga:</b> {league_name}\n"
       f"⏱ <b>Momento:</b> {periodo} | <b>Marcador:</b> {marcador}\n\n"
-      f"📈 <i>Patrón Detectado: Desviación atípica en 1ra mitad. Alta"
-      f" probabilidad de regresión a la media.</i>"
+      f"📈 <i>Patrón Verificado: Favorito con cuotas pre-partido en desventaja"
+      f" atípica. Alta probabilidad de regresión a la media.</i>"
   )
 
   url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -280,11 +281,62 @@ def enviar_alerta_telegram_basket(
     print(f"⚠️ Error enviando a Telegram (Basket): {e}", flush=True)
 
 
+def obtener_favorito_cuotas(game_id):
+  """Consulta las cuotas pre-partido para confirmar científicamente el favorito."""
+  try:
+    response = requests.get(
+        URL_ODDS_BASKET,
+        headers=HEADERS_BASKET,
+        params={"game": game_id},
+        timeout=8,
+    )
+    if response.status_code != 200:
+      return None
+
+    data = response.json().get("response", [])
+    if not data:
+      return None
+
+    for bookmaker in data[0].get("bookmakers", []):
+      for bet in bookmaker.get("bets", []):
+        if bet.get("name") in ["Home/Away", "Match Winner"]:
+          values = bet.get("values", [])
+          odd_home = next(
+              (
+                  float(v["odd"])
+                  for v in values
+                  if v["value"] in ["Home", "1"]
+              ),
+              None,
+          )
+          odd_away = next(
+              (
+                  float(v["odd"])
+                  for v in values
+                  if v["value"] in ["Away", "2"]
+              ),
+              None,
+          )
+
+          if odd_home and odd_away:
+            if odd_home < odd_away and odd_home <= 1.60:
+              return "Home"
+            elif odd_away < odd_home and odd_away <= 1.60:
+              return "Away"
+  except Exception as e:
+    print(f"⚠️ Error al consultar cuotas de basket ({game_id}): {e}", flush=True)
+
+  return None
+
+
 def bucle_escaneo_basket():
   global partidos_basket_en_vivo, alertas_basket_db
   INTERVALO_SEGUNDOS = 300
 
-  print("🚀 Bucle de escaneo Baloncesto IA iniciado (cada 5 min)...", flush=True)
+  print(
+      "🚀 Bucle de escaneo Baloncesto IA iniciado (Verificación de Cuotas)...",
+      flush=True,
+  )
 
   while True:
     try:
@@ -327,29 +379,46 @@ def bucle_escaneo_basket():
           })
 
           dif = abs(p_home - p_away)
+
+          # 1. Filtro de Momento (Q2 o HT) y Diferencia (>= 10 pts)
           if status_short in ["Q2", "HT"] and dif >= 10:
             if game_id not in alertas_basket_disparadas:
-              favorito = home_name if p_home < p_away else away_name
-              alerta_obj = {
-                  "liga": league_name,
-                  "local": home_name,
-                  "visita": away_name,
-                  "marcador": marcador_str,
-                  "periodo": status_short,
-                  "favorito": favorito,
-                  "diferencia": dif,
-              }
-              alertas_basket_db.append(alerta_obj)
-              enviar_alerta_telegram_basket(
-                  home_name,
-                  away_name,
-                  league_name,
-                  status_short,
-                  marcador_str,
-                  favorito,
-                  dif,
-              )
-              alertas_basket_disparadas.add(game_id)
+
+              # 2. Verificación estricta de cuotas pre-partido
+              fav_real = obtener_favorito_cuotas(game_id)
+
+              es_alerta_valida = False
+              favorito_nombre = ""
+
+              if fav_real == "Home" and p_home < p_away:
+                es_alerta_valida = True
+                favorito_nombre = home_name
+              elif fav_real == "Away" and p_away < p_home:
+                es_alerta_valida = True
+                favorito_nombre = away_name
+
+              # 3. Solo notificar si se confirma que el FAVORITO REAL va perdiendo
+              if es_alerta_valida:
+                alerta_obj = {
+                    "liga": league_name,
+                    "local": home_name,
+                    "visita": away_name,
+                    "marcador": marcador_str,
+                    "periodo": status_short,
+                    "favorito": favorito_nombre,
+                    "diferencia": dif,
+                }
+                alertas_basket_db.append(alerta_obj)
+                enviar_alerta_telegram_basket(
+                    home_name,
+                    away_name,
+                    league_name,
+                    status_short,
+                    marcador_str,
+                    favorito_nombre,
+                    dif,
+                )
+                alertas_basket_disparadas.add(game_id)
 
         partidos_basket_en_vivo = temp_live
     except Exception as e:

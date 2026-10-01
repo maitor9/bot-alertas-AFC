@@ -3,11 +3,11 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER DE FÚTBOL EN VIVO (ESPN API)
+# ⚽ SCRAPER DE FÚTBOL EN VIVO (ESPN API + FILTROS EXACTOS)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API pública de ESPN en vivo...", flush=True)
+  print("⏳ Consultando API pública de ESPN con estadísticas avanzadas...", flush=True)
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -22,11 +22,11 @@ async def extraer_futbol_en_vivo():
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
 
-          # Solo procesamos partidos que estén en juego ("in")
+          # Solo partidos en juego ("in")
           if state != "in":
             continue
 
-          # Extraer el minuto actual del partido
+          # Extraer el minuto actual
           display_clock = status.get("displayClock", "50")
           min_int = 50
           match_min = re.search(r"\d+", str(display_clock))
@@ -42,23 +42,54 @@ async def extraer_futbol_en_vivo():
 
           home_score, away_score = 0, 0
           home_name, away_name = "Local", "Visita"
+          home_shots, away_shots = 0, 0
+          home_sot, away_sot = 0, 0
 
           for team in competitors:
-            if team.get("homeAway") == "home":
-              home_name = team.get("team", {}).get("displayName", "Local")
-              home_score = int(team.get("score", 0))
-            else:
-              away_name = team.get("team", {}).get("displayName", "Visita")
-              away_score = int(team.get("score", 0))
+            is_home = team.get("homeAway") == "home"
+            name = team.get("team", {}).get("displayName", "Equipo")
+            score = int(team.get("score", 0))
 
-          # Obtener nombre de la liga o torneo
+            total_s = 0
+            on_target_s = 0
+            statistics = team.get("statistics", [])
+            for stat in statistics:
+              s_name = stat.get("name", "").lower()
+              s_val = stat.get("value", 0)
+              if "shotstotal" in s_name or s_name == "shots":
+                total_s = int(s_val)
+              elif "shotsontarget" in s_name:
+                on_target_s = int(s_val)
+
+            if is_home:
+              home_name = name
+              home_score = score
+              home_shots = total_s
+              home_sot = on_target_s
+            else:
+              away_name = name
+              away_score = score
+              away_shots = total_s
+              away_sot = on_target_s
+
+          total_remates = home_shots + away_shots
+          total_remates_puerta = home_sot + away_sot
+          equipo_mas_activo = home_name if home_shots >= away_shots else away_name
+
           league = "Liga en Vivo"
           leagues_info = comp.get("league", {})
           if leagues_info:
             league = leagues_info.get("name", "Liga en Vivo")
 
-          # Condición de alerta: Minuto 46 al 78 y marcador 0 - 0
-          if 46 <= min_int <= 78 and (home_score + away_score) == 0:
+          # Criterios actualizados:
+          # 1. Minuto entre 46 y 78
+          # 2. Marcador 0 - 0
+          # 3. Remates totales >= 8 O Remates a puerta >= 4
+          condicion_minuto = 46 <= min_int <= 78
+          condicion_goles = (home_score + away_score) == 0
+          condicion_remates = (total_remates >= 8) or (total_remates_puerta >= 4)
+
+          if condicion_minuto and condicion_goles and condicion_remates:
             partidos_candidatos.append({
                 "equipo_local": home_name,
                 "equipo_visita": away_name,
@@ -66,20 +97,23 @@ async def extraer_futbol_en_vivo():
                 "goles_local": home_score,
                 "goles_visita": away_score,
                 "liga": league,
+                "remates": total_remates,
+                "remates_puerta": total_remates_puerta,
+                "presion": equipo_mas_activo,
             })
         except Exception:
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol desde"
-          " ESPN.",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol con"
+          " filtros (Remates >=8 o A puerta >=4).",
           flush=True,
       )
     else:
       print(f"⚠️ Status code ESPN: {response.status_code}", flush=True)
 
   except Exception as e:
-      print(f"⚠️ Error en consulta de ESPN: {e}", flush=True)
+    print(f"⚠️ Error en consulta de ESPN: {e}", flush=True)
 
   return partidos_candidatos
 
@@ -88,5 +122,4 @@ async def extraer_futbol_en_vivo():
 # 🏀 BALONCESTO PAUSADO
 # ==========================================
 async def extraer_basket_en_vivo():
-  return []
   return []

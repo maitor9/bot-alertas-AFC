@@ -1,37 +1,17 @@
+import re
 import requests
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Referer": "https://www.sofascore.com/",
-    "Origin": "https://www.sofascore.com",
-    "Sec-Ch-Ua": (
-        '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"'
-    ),
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-site",
-}
 
 
 # ==========================================
-# ⚽ SCRAPER DE FÚTBOL EN VIVO (SOFASCORE API)
+# ⚽ SCRAPER DE FÚTBOL EN VIVO (ESPN API)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando Sofascore Fútbol en vivo...", flush=True)
+  print("⏳ Consultando API pública de ESPN en vivo...", flush=True)
 
   try:
-    url = "https://api.sofascore.com/api/v1/sport/football/events/live"
-    response = requests.get(url, headers=HEADERS, timeout=12)
-
-    print(f"🔍 Status code recibido de Sofascore: {response.status_code}", flush=True)
+    url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
+    response = requests.get(url, timeout=12)
 
     if response.status_code == 200:
       data = response.json()
@@ -40,43 +20,66 @@ async def extraer_futbol_en_vivo():
       for event in events:
         try:
           status = event.get("status", {})
-          code = status.get("code")  # 7 = 2da mitad
+          state = status.get("type", {}).get("state", "")
 
-          if code != 7:
+          # Solo procesamos partidos que estén en juego ("in")
+          if state != "in":
             continue
 
-          time_info = event.get("time", {})
-          minuto = time_info.get("played", 50)
+          # Extraer el minuto actual del partido
+          display_clock = status.get("displayClock", "50")
+          min_int = 50
+          match_min = re.search(r"\d+", str(display_clock))
+          if match_min:
+            min_int = int(match_min.group())
 
-          home_score = event.get("homeScore", {}).get("current", 0)
-          away_score = event.get("awayScore", {}).get("current", 0)
+          competitions = event.get("competitions", [])
+          if not competitions:
+            continue
 
-          if 46 <= minuto <= 78 and (home_score + away_score) == 0:
-            local = event.get("homeTeam", {}).get("name", "Local")
-            visita = event.get("awayTeam", {}).get("name", "Visita")
-            liga = event.get("tournament", {}).get("name", "Liga")
+          comp = competitions[0]
+          competitors = comp.get("competitors", [])
 
+          home_score, away_score = 0, 0
+          home_name, away_name = "Local", "Visita"
+
+          for team in competitors:
+            if team.get("homeAway") == "home":
+              home_name = team.get("team", {}).get("displayName", "Local")
+              home_score = int(team.get("score", 0))
+            else:
+              away_name = team.get("team", {}).get("displayName", "Visita")
+              away_score = int(team.get("score", 0))
+
+          # Obtener nombre de la liga o torneo
+          league = "Liga en Vivo"
+          leagues_info = comp.get("league", {})
+          if leagues_info:
+            league = leagues_info.get("name", "Liga en Vivo")
+
+          # Condición de alerta: Minuto 46 al 78 y marcador 0 - 0
+          if 46 <= min_int <= 78 and (home_score + away_score) == 0:
             partidos_candidatos.append({
-                "equipo_local": local,
-                "equipo_visita": visita,
-                "minuto": minuto,
+                "equipo_local": home_name,
+                "equipo_visita": away_name,
+                "minuto": min_int,
                 "goles_local": home_score,
                 "goles_visita": away_score,
-                "liga": liga,
+                "liga": league,
             })
         except Exception:
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol de"
-          " Sofascore.",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol desde"
+          " ESPN.",
           flush=True,
       )
     else:
-      print(f"⚠️ Sofascore denegó el acceso (Status: {response.status_code})", flush=True)
+      print(f"⚠️ Status code ESPN: {response.status_code}", flush=True)
 
   except Exception as e:
-    print(f"⚠️️ Error en consulta de Sofascore: {e}", flush=True)
+      print(f"⚠️ Error en consulta de ESPN: {e}", flush=True)
 
   return partidos_candidatos
 
@@ -85,4 +88,5 @@ async def extraer_futbol_en_vivo():
 # 🏀 BALONCESTO PAUSADO
 # ==========================================
 async def extraer_basket_en_vivo():
+  return []
   return []

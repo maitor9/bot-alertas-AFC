@@ -1,79 +1,54 @@
-import re
 import requests
-from bs4 import BeautifulSoup
 
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    "x-fsign": "SW90ZXN0",
+    "Referer": "https://www.flashscore.es/",
 }
 
 
 # ==========================================
-# ⚽ SCRAPER DE FÚTBOL EN VIVO
+# ⚽ SCRAPER DE FÚTBOL EN VIVO (FEED DIRECTO)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando Flashscore Fútbol vía HTTP...", flush=True)
+  print("⏳ Consultando feed de Flashscore Fútbol...", flush=True)
 
   try:
-    response = requests.get(
-        "https://www.flashscore.es/", headers=HEADERS, timeout=15
-    )
+    # Endpoint directo de partidos en directo (fútbol)
+    url = "https://3.net.flashscore.es/2/x/feed/r_1_1"
+    response = requests.get(url, headers=HEADERS, timeout=10)
 
     if response.status_code == 200:
-      soup = BeautifulSoup(response.text, "html.parser")
-      eventos = soup.find_all("div", class_=re.compile("event__match"))
+      raw_data = response.text
+      bloques = raw_data.split("~")
 
-      for evento in eventos:
-        try:
-          minuto_elem = evento.find("div", class_=re.compile("event__stage"))
-          local_elem = evento.find(
-              "div", class_=re.compile("event__homeParticipant")
-          )
-          visita_elem = evento.find(
-              "div", class_=re.compile("event__awayParticipant")
-          )
-          score_home = evento.find(
-              "div", class_=re.compile("event__score--home")
-          )
-          score_away = evento.find(
-              "div", class_=re.compile("event__score--away")
-          )
-
-          if not (minuto_elem and local_elem and visita_elem):
-            continue
-
-          minuto_txt = minuto_elem.text.strip().replace("'", "")
-          if not minuto_txt.isdigit():
-            continue
-
-          minuto = int(minuto_txt)
-          goles_h = (
-              int(score_home.text.strip())
-              if score_home and score_home.text.strip().isdigit()
-              else 0
-          )
-          goles_a = (
-              int(score_away.text.strip())
-              if score_away and score_away.text.strip().isdigit()
-              else 0
-          )
-
-          if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
-            partidos_candidatos.append({
-                "equipo_local": local_elem.text.strip(),
-                "equipo_visita": visita_elem.text.strip(),
-                "minuto": minuto,
-                "goles_local": goles_h,
-                "goles_visita": goles_a,
-                "liga": "En Vivo",
-            })
-        except Exception:
+      partido_actual = {}
+      for bloque in bloques:
+        if "÷" not in bloque:
           continue
+        clave, valor = bloque.split("÷", 1)
+
+        if clave == "AA":  # ID de partido (inicio de un evento)
+          if partido_actual:
+            _procesar_partido_futbol(partido_actual, partidos_candidatos)
+          partido_actual = {}
+        elif clave == "CX":
+          partido_actual["local"] = valor
+        elif clave == "CY":
+          partido_actual["visita"] = valor
+        elif clave == "AG":
+          partido_actual["goles_local"] = valor
+        elif clave == "AH":
+          partido_actual["goles_visita"] = valor
+        elif clave == "AC":
+          partido_actual["etapa"] = valor
+
+      if partido_actual:
+        _procesar_partido_futbol(partido_actual, partidos_candidatos)
 
       print(
           f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol.",
@@ -83,86 +58,73 @@ async def extraer_futbol_en_vivo():
       print(f"⚠️ Status code Fútbol: {response.status_code}", flush=True)
 
   except Exception as e:
-    print(f"⚠️ Error HTTP en scraping de fútbol: {e}", flush=True)
+    print(f"⚠️ Error en feed de fútbol: {e}", flush=True)
 
   return partidos_candidatos
 
 
+def _procesar_partido_futbol(p, candidatos):
+  try:
+    etapa = p.get("etapa", "").replace("'", "").strip()
+    if not etapa.isdigit():
+      return
+
+    minuto = int(etapa)
+    goles_h = int(p.get("goles_local", 0))
+    goles_a = int(p.get("goles_visita", 0))
+
+    if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
+      candidatos.append({
+          "equipo_local": p.get("local", "Local"),
+          "equipo_visita": p.get("visita", "Visita"),
+          "minuto": minuto,
+          "goles_local": goles_h,
+          "goles_visita": goles_a,
+          "liga": "En Vivo",
+      })
+  except Exception:
+    pass
+
+
 # ==========================================
-# 🏀 SCRAPER DE BALONCESTO EN VIVO
+# 🏀 SCRAPER DE BALONCESTO EN VIVO (FEED DIRECTO)
 # ==========================================
 async def extraer_basket_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando Flashscore Basket vía HTTP...", flush=True)
+  print("⏳ Consultando feed de Flashscore Basket...", flush=True)
 
   try:
-    response = requests.get(
-        "https://www.flashscore.es/baloncesto/", headers=HEADERS, timeout=15
-    )
+    # Endpoint directo de partidos en directo (baloncesto)
+    url = "https://3.net.flashscore.es/2/x/feed/r_3_1"
+    response = requests.get(url, headers=HEADERS, timeout=10)
 
     if response.status_code == 200:
-      soup = BeautifulSoup(response.text, "html.parser")
-      eventos = soup.find_all("div", class_=re.compile("event__match"))
+      raw_data = response.text
+      bloques = raw_data.split("~")
 
-      for evento in eventos:
-        try:
-          etapa_elem = evento.find("div", class_=re.compile("event__stage"))
-          local_elem = evento.find(
-              "div", class_=re.compile("event__homeParticipant")
-          )
-          visita_elem = evento.find(
-              "div", class_=re.compile("event__awayParticipant")
-          )
-          score_home = evento.find(
-              "div", class_=re.compile("event__score--home")
-          )
-          score_away = evento.find(
-              "div", class_=re.compile("event__score--away")
-          )
-
-          if not (
-              etapa_elem
-              and local_elem
-              and visita_elem
-              and score_home
-              and score_away
-          ):
-            continue
-
-          etapa = etapa_elem.text.strip()
-          p_home = (
-              int(score_home.text.strip())
-              if score_home.text.strip().isdigit()
-              else 0
-          )
-          p_away = (
-              int(score_away.text.strip())
-              if score_away.text.strip().isdigit()
-              else 0
-          )
-
-          dif = abs(p_home - p_away)
-          es_q2_o_ht = any(
-              term in etapa.upper() for term in ["Q2", "2º", "HT", "DESCANSO"]
-          )
-
-          if es_q2_o_ht and dif >= 10:
-            favorito = (
-                local_elem.text.strip()
-                if p_home < p_away
-                else visita_elem.text.strip()
-            )
-            partidos_candidatos.append({
-                "local": local_elem.text.strip(),
-                "visita": visita_elem.text.strip(),
-                "marcador": f"{p_home} - {p_away}",
-                "periodo": etapa,
-                "favorito": favorito,
-                "diferencia": dif,
-                "liga": "Liga Basket",
-            })
-        except Exception:
+      partido_actual = {}
+      for bloque in bloques:
+        if "÷" not in bloque:
           continue
+        clave, valor = bloque.split("÷", 1)
+
+        if clave == "AA":
+          if partido_actual:
+            _procesar_partido_basket(partido_actual, partidos_candidatos)
+          partido_actual = {}
+        elif clave == "CX":
+          partido_actual["local"] = valor
+        elif clave == "CY":
+          partido_actual["visita"] = valor
+        elif clave == "AG":
+          partido_actual["p_home"] = valor
+        elif clave == "AH":
+          partido_actual["p_away"] = valor
+        elif clave == "AC":
+          partido_actual["etapa"] = valor
+
+      if partido_actual:
+        _procesar_partido_basket(partido_actual, partidos_candidatos)
 
       print(
           f"✅ Extraídos {len(partidos_candidatos)} partidos de Basket.",
@@ -172,6 +134,36 @@ async def extraer_basket_en_vivo():
       print(f"⚠️ Status code Basket: {response.status_code}", flush=True)
 
   except Exception as e:
-    print(f"⚠️ Error HTTP en scraping de basket: {e}", flush=True)
+    print(f"⚠️ Error en feed de basket: {e}", flush=True)
 
   return partidos_candidatos
+
+
+def _procesar_partido_basket(p, candidatos):
+  try:
+    etapa = p.get("etapa", "").upper()
+    p_home = int(p.get("p_home", 0))
+    p_away = int(p.get("p_away", 0))
+
+    dif = abs(p_home - p_away)
+    es_q2_o_ht = any(
+        term in etapa for term in ["Q2", "2º", "HT", "DESCANSO", "2ND"]
+    )
+
+    if es_q2_o_ht and dif >= 10:
+      favorito = (
+          p.get("local", "Local")
+          if p_home < p_away
+          else p.get("visita", "Visita")
+      )
+      candidatos.append({
+          "local": p.get("local", "Local"),
+          "visita": p.get("visita", "Visita"),
+          "marcador": f"{p_home} - {p_away}",
+          "periodo": etapa,
+          "favorito": favorito,
+          "diferencia": dif,
+          "liga": "Liga Basket",
+      })
+  except Exception:
+    pass

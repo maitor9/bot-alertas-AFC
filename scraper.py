@@ -1,21 +1,7 @@
 import asyncio
 import re
-import subprocess
-import sys
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
-
-
-def asegurar_navegador():
-  try:
-    subprocess.run(
-        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
-    )
-  except Exception as e:
-    print(f"⚠️ Error instalando Chromium: {e}", flush=True)
-
-
-asegurar_navegador()
 
 
 # ==========================================
@@ -31,12 +17,12 @@ async def extraer_futbol_en_vivo():
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
-            "--single-process",
             "--disable-gpu",
+            "--single-process",
         ],
     )
     context = await browser.new_context(
-        viewport={"width": 1366, "height": 768},
+        viewport={"width": 1280, "height": 720},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -45,7 +31,6 @@ async def extraer_futbol_en_vivo():
     page = await context.new_page()
 
     try:
-      # Navegación resiliente
       try:
         await page.goto(
             "https://www.flashscore.es/",
@@ -53,9 +38,9 @@ async def extraer_futbol_en_vivo():
             timeout=25000,
         )
       except Exception:
-        pass  # Si vence el timeout de red, procedemos con lo que haya cargado en el DOM
+        pass
 
-      await asyncio.sleep(3)
+      await asyncio.sleep(4)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
@@ -129,12 +114,12 @@ async def extraer_basket_en_vivo():
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
-            "--single-process",
             "--disable-gpu",
+            "--single-process",
         ],
     )
     context = await browser.new_context(
-        viewport={"width": 1366, "height": 768},
+        viewport={"width": 1280, "height": 720},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -152,7 +137,7 @@ async def extraer_basket_en_vivo():
       except Exception:
         pass
 
-      await asyncio.sleep(3)
+      await asyncio.sleep(4)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")

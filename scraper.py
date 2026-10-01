@@ -44,9 +44,19 @@ async def extraer_futbol_en_vivo():
     )
     page = await context.new_page()
 
+    # Bloquear recursos pesados (imágenes, fuentes, css estáticos) para acelerar la carga
+    await page.route(
+        "**/*.{png,jpg,jpeg,svg,gif,woff,woff2}", lambda route: route.abort()
+    )
+
     try:
-      await page.goto("https://www.flashscore.es/", timeout=35000)
-      await page.wait_for_selector(".sportName", timeout=20000)
+      # Esperamos solo 'domcontentloaded' en lugar de 'load' completo
+      await page.goto(
+          "https://www.flashscore.es/",
+          wait_until="domcontentloaded",
+          timeout=45000,
+      )
+      await page.wait_for_selector(".sportName", timeout=25000)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
@@ -133,9 +143,17 @@ async def extraer_basket_en_vivo():
     )
     page = await context.new_page()
 
+    await page.route(
+        "**/*.{png,jpg,jpeg,svg,gif,woff,woff2}", lambda route: route.abort()
+    )
+
     try:
-      await page.goto("https://www.flashscore.es/baloncesto/", timeout=35000)
-      await page.wait_for_selector(".sportName", timeout=20000)
+      await page.goto(
+          "https://www.flashscore.es/baloncesto/",
+          wait_until="domcontentloaded",
+          timeout=45000,
+      )
+      await page.wait_for_selector(".sportName", timeout=25000)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")

@@ -32,20 +32,30 @@ async def extraer_futbol_en_vivo():
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--single-process",
+            "--disable-gpu",
         ],
     )
     context = await browser.new_context(
-        viewport={"width": 1280, "height": 800},
+        viewport={"width": 1366, "height": 768},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         ),
     )
     page = await context.new_page()
 
     try:
-      await page.goto("https://www.flashscore.es/", timeout=45000)
-      await asyncio.sleep(5)  # Tiempo de espera para renderizado dinámico
+      # Navegación resiliente
+      try:
+        await page.goto(
+            "https://www.flashscore.es/",
+            wait_until="domcontentloaded",
+            timeout=25000,
+        )
+      except Exception:
+        pass  # Si vence el timeout de red, procedemos con lo que haya cargado en el DOM
+
+      await asyncio.sleep(3)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")
@@ -120,20 +130,29 @@ async def extraer_basket_en_vivo():
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--single-process",
+            "--disable-gpu",
         ],
     )
     context = await browser.new_context(
-        viewport={"width": 1280, "height": 800},
+        viewport={"width": 1366, "height": 768},
         user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            " (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         ),
     )
     page = await context.new_page()
 
     try:
-      await page.goto("https://www.flashscore.es/baloncesto/", timeout=45000)
-      await asyncio.sleep(5)
+      try:
+        await page.goto(
+            "https://www.flashscore.es/baloncesto/",
+            wait_until="domcontentloaded",
+            timeout=25000,
+        )
+      except Exception:
+        pass
+
+      await asyncio.sleep(3)
 
       content = await page.content()
       soup = BeautifulSoup(content, "html.parser")

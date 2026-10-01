@@ -1,145 +1,158 @@
 import asyncio
-import threading
-import time
-import requests
-from flask import Flask, jsonify, render_template
-from database import inicializar_db, guardar_alerta, obtener_alertas
-from scraper import extraer_futbol_en_vivo, extraer_basket_en_vivo
+import re
+from bs4 import BeautifulSoup
+from playwright.async_api import async_playwright
 
-app = Flask(__name__)
-
-TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
-TELEGRAM_CHAT_ID = "8470398609"
-
-alertas_disparadas = set()
-partidos_00_en_vivo = []
-alertas_basket_disparadas = set()
-alertas_basket_db = []
-ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
-
-def enviar_alerta_telegram_futbol(home_name, away_name, league_name, minuto, equipo_cumple):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return
-    mensaje = (
-        f"🚨 <b>¡ALERTA AFC OVER 0.5 GOALS!</b> 🚨\n\n"
-        f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
-        f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
-        f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
-        f"📈 <i>Detectado vía Scraper autónomo en 2da mitad.</i>"
-    )
+# ==========================================
+# ⚽ SCRAPER DE FÚTBOL EN VIVO
+# ==========================================
+async def extraer_futbol_en_vivo():
+    partidos_candidatos = []
+    print("⏳ Iniciando navegador para Fútbol...", flush=True)
+    
     try:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-            data={"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"},
-            timeout=5
-        )
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--single-process"
+                ]
+            )
+            context = await browser.new_context(
+                viewport={"width": 1280, "height": 720},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
+            page = await context.new_page()
+
+            try:
+                print("⏳ Navegando a Flashscore Fútbol...", flush=True)
+                await page.goto("https://www.flashscore.es/", wait_until="domcontentloaded", timeout=20000)
+            except Exception as e_goto:
+                print(f"⚠️ Aviso en goto Fútbol: {e_goto}", flush=True)
+                
+            await asyncio.sleep(3)
+            
+            content = await page.content()
+            soup = BeautifulSoup(content, "html.parser")
+            eventos = soup.find_all("div", class_=re.compile("event__match"))
+
+            for evento in eventos:
+                try:
+                    minuto_elem = evento.find("div", class_=re.compile("event__stage"))
+                    local_elem = evento.find("div", class_=re.compile("event__homeParticipant"))
+                    visita_elem = evento.find("div", class_=re.compile("event__awayParticipant"))
+                    score_home = evento.find("div", class_=re.compile("event__score--home"))
+                    score_away = evento.find("div", class_=re.compile("event__score--away"))
+
+                    if not (minuto_elem and local_elem and visita_elem):
+                        continue
+
+                    minuto_txt = minuto_elem.text.strip().replace("'", "")
+                    if not minuto_txt.isdigit():
+                        continue
+
+                    minuto = int(minuto_txt)
+                    goles_h = int(score_home.text.strip()) if score_home and score_home.text.strip().isdigit() else 0
+                    goles_a = int(score_away.text.strip()) if score_away and score_away.text.strip().isdigit() else 0
+
+                    if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
+                        partidos_candidatos.append({
+                            "equipo_local": local_elem.text.strip(),
+                            "equipo_visita": visita_elem.text.strip(),
+                            "minuto": minuto,
+                            "goles_local": goles_h,
+                            "goles_visita": goles_a,
+                            "liga": "En Vivo"
+                        })
+                except Exception:
+                    continue
+
+            await browser.close()
+            print(f"✅ Extraídos {len(partidos_candidatos)} partidos de Fútbol.", flush=True)
+
     except Exception as e:
-        print(f"⚠️ Error Telegram Fútbol: {e}", flush=True)
+        print(f"⚠️ Error general en scraping de fútbol: {e}", flush=True)
 
-def enviar_alerta_telegram_basket(home_name, away_name, league_name, periodo, marcador, favorito, dif):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return
-    mensaje = (
-        f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
-        f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
-        f"⚔️ <b>Partido:</b> {home_name} vs {away_name}\n"
-        f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱ <b>Momento:</b> {periodo} | <b>Marcador:</b> {marcador}\n\n"
-        f"📈 <i>Desventaja atípica detectada en 1ra mitad vía Scraper.</i>"
-    )
+    return partidos_candidatos
+
+
+# ==========================================
+# 🏀 SCRAPER DE BALONCESTO EN VIVO
+# ==========================================
+async def extraer_basket_en_vivo():
+    partidos_candidatos = []
+    print("⏳ Iniciando navegador para Basket...", flush=True)
+    
     try:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-            data={"chat_id": TELEGRAM_CHAT_ID, "text": mensaje, "parse_mode": "HTML"},
-            timeout=5
-        )
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--single-process"
+                ]
+            )
+            context = await browser.new_context(
+                viewport={"width": 1280, "height": 720},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
+            page = await context.new_page()
+
+            try:
+                print("⏳ Navegando a Flashscore Basket...", flush=True)
+                await page.goto("https://www.flashscore.es/baloncesto/", wait_until="domcontentloaded", timeout=20000)
+            except Exception as e_goto:
+                print(f"⚠️ Aviso en goto Basket: {e_goto}", flush=True)
+                
+            await asyncio.sleep(3)
+            
+            content = await page.content()
+            soup = BeautifulSoup(content, "html.parser")
+            eventos = soup.find_all("div", class_=re.compile("event__match"))
+
+            for evento in eventos:
+                try:
+                    etapa_elem = evento.find("div", class_=re.compile("event__stage"))
+                    local_elem = evento.find("div", class_=re.compile("event__homeParticipant"))
+                    visita_elem = evento.find("div", class_=re.compile("event__awayParticipant"))
+                    score_home = evento.find("div", class_=re.compile("event__score--home"))
+                    score_away = evento.find("div", class_=re.compile("event__score--away"))
+
+                    if not (etapa_elem and local_elem and visita_elem and score_home and score_away):
+                        continue
+
+                    etapa = etapa_elem.text.strip()
+                    p_home = int(score_home.text.strip()) if score_home.text.strip().isdigit() else 0
+                    p_away = int(score_away.text.strip()) if score_away.text.strip().isdigit() else 0
+
+                    dif = abs(p_home - p_away)
+                    es_q2_o_ht = any(term in etapa.upper() for term in ["Q2", "2º", "HT", "DESCANSO"])
+
+                    if es_q2_o_ht and dif >= 10:
+                        favorito = local_elem.text.strip() if p_home < p_away else visita_elem.text.strip()
+                        partidos_candidatos.append({
+                            "local": local_elem.text.strip(),
+                            "visita": visita_elem.text.strip(),
+                            "marcador": f"{p_home} - {p_away}",
+                            "periodo": etapa,
+                            "favorito": favorito,
+                            "diferencia": dif,
+                            "liga": "Liga Basket"
+                        })
+                except Exception:
+                    continue
+
+            await browser.close()
+            print(f"✅ Extraídos {len(partidos_candidatos)} partidos de Basket.", flush=True)
+
     except Exception as e:
-        print(f"⚠️ Error Telegram Basket: {e}", flush=True)
+        print(f"⚠️ Error general en scraping de basket: {e}", flush=True)
 
-def bucle_escaneo_unificado():
-    global partidos_00_en_vivo, alertas_basket_db, ultimo_escaneo_status
-    print("🚀 Bucle unificado de escaneo iniciado...", flush=True)
-
-    while True:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            print("🔄 Iniciando ciclo de scraping...", flush=True)
-            candidatos_futbol = loop.run_until_complete(extraer_futbol_en_vivo())
-            partidos_00_en_vivo = candidatos_futbol
-
-            for p in candidatos_futbol:
-                partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
-                if partido_id not in alertas_disparadas:
-                    try:
-                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['equipo_local'])
-                    except Exception:
-                        pass
-                    enviar_alerta_telegram_futbol(p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['equipo_local'])
-                    alertas_disparadas.add(partido_id)
-
-            candidatos_basket = loop.run_until_complete(extraer_basket_en_vivo())
-            for b in candidatos_basket:
-                game_id = f"{b['local']}_{b['visita']}"
-                if game_id not in alertas_basket_disparadas:
-                    alertas_basket_db.append(b)
-                    enviar_alerta_telegram_basket(b['local'], b['visita'], b['liga'], b['periodo'], b['marcador'], b['favorito'], b['diferencia'])
-                    alertas_basket_disparadas.add(game_id)
-
-            ultimo_escaneo_status = {
-                "status": "OK",
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "futbol_count": len(candidatos_futbol),
-                "basket_count": len(candidatos_basket)
-            }
-            print(f"✨ Ciclo completado con éxito a las {ultimo_escaneo_status['timestamp']}", flush=True)
-
-        except Exception as e:
-            print(f"⚠️ Error crítico en bucle unificado: {e}", flush=True)
-            ultimo_escaneo_status = {
-                "status": "ERROR",
-                "detalle": str(e),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
-        finally:
-            loop.close()
-
-        time.sleep(120)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/api/alertas')
-def api_alertas():
-    try:
-        alertas = obtener_alertas()
-        return jsonify(alertas if alertas else [])
-    except Exception:
-        return jsonify([])
-
-@app.route('/api/partidos_00')
-def api_partidos_00():
-    return jsonify(partidos_00_en_vivo)
-
-@app.route('/api/basket_alertas')
-def api_basket_alertas():
-    return jsonify(alertas_basket_db)
-
-@app.route('/probar-scraper')
-def probar_scraper():
-    return jsonify({
-        "estado_servicio": "Servidor Activo",
-        "ultimo_escaneo": ultimo_escaneo_status,
-        "futbol_candidatos_detectados": partidos_00_en_vivo,
-        "basket_candidatos_detectados": alertas_basket_db
-    })
-
-inicializar_db()
-
-hilo_unificado = threading.Thread(target=bucle_escaneo_unificado, daemon=True)
-hilo_unificado.start()
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    return partidos_candidatos

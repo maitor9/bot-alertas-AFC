@@ -19,10 +19,11 @@ alertas_disparadas = set()
 partidos_00_en_vivo = []
 alertas_basket_disparadas = set()
 alertas_basket_db = []
+ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
 
 
 # ==========================================
-# ⚽ ENVÍO Y BUCLE DE FÚTBOL
+# ⚽ ENVÍO DE ALERTAS
 # ==========================================
 def enviar_alerta_telegram_futbol(
     home_name, away_name, league_name, minuto, equipo_cumple
@@ -37,10 +38,9 @@ def enviar_alerta_telegram_futbol(
       f"🔥 <b>Presión ofensiva:</b> {equipo_cumple}\n\n"
       f"📈 <i>Detectado vía Scraper autónomo en 2da mitad.</i>"
   )
-  url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
   try:
     requests.post(
-        url,
+        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         data={
             "chat_id": TELEGRAM_CHAT_ID,
             "text": mensaje,
@@ -52,18 +52,50 @@ def enviar_alerta_telegram_futbol(
     print(f"⚠️ Error Telegram Fútbol: {e}", flush=True)
 
 
-def bucle_escaneo_futbol():
-  global partidos_00_en_vivo
-  print("🚀 Bucle Fútbol iniciado...", flush=True)
+def enviar_alerta_telegram_basket(
+    home_name, away_name, league_name, periodo, marcador, favorito, dif
+):
+  if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+    return
+  mensaje = (
+      f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
+      f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
+      f"⚔️ <b>Partido:</b> {home_name} vs {away_name}\n"
+      f"🏆 <b>Liga:</b> {league_name}\n"
+      f"⏱ <b>Momento:</b> {periodo} | <b>Marcador:</b> {marcador}\n\n"
+      f"📈 <i>Desventaja atípica detectada en 1ra mitad vía Scraper.</i>"
+  )
+  try:
+    requests.post(
+        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+        data={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": mensaje,
+            "parse_mode": "HTML",
+        },
+        timeout=5,
+    )
+  except Exception as e:
+    print(f"⚠️ Error Telegram Basket: {e}", flush=True)
+
+
+# ==========================================
+# 🔄 BUCLE UNIFICADO EN SEGUNDO PLANO
+# ==========================================
+def bucle_escaneo_unificado():
+  global partidos_00_en_vivo, alertas_basket_db, ultimo_escaneo_status
+  print("🚀 Bucle unificado de escaneo iniciado...", flush=True)
+
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
 
   while True:
     try:
-      candidatos = loop.run_until_complete(extraer_futbol_en_vivo())
-      partidos_00_en_vivo = candidatos
+      # Escaneo de Fútbol
+      candidatos_futbol = loop.run_until_complete(extraer_futbol_en_vivo())
+      partidos_00_en_vivo = candidatos_futbol
 
-      for p in candidatos:
+      for p in candidatos_futbol:
         partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
         if partido_id not in alertas_disparadas:
           try:
@@ -85,53 +117,10 @@ def bucle_escaneo_futbol():
               p["equipo_local"],
           )
           alertas_disparadas.add(partido_id)
-    except Exception as e:
-      print(f"⚠️ Error ciclo Fútbol: {e}", flush=True)
 
-    time.sleep(180)
-
-
-# ==========================================
-# 🏀 ENVÍO Y BUCLE DE BALONCESTO
-# ==========================================
-def enviar_alerta_telegram_basket(
-    home_name, away_name, league_name, periodo, marcador, favorito, dif
-):
-  if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-    return
-  mensaje = (
-      f"🏀 <b>¡ALERTA BALONCESTO - REMONTADA FAVORITO!</b> 🏀\n\n"
-      f"🔥 <b>Favorito en Apuros:</b> {favorito} (Abajo por {dif} pts)\n"
-      f"⚔️ <b>Partido:</b> {home_name} vs {away_name}\n"
-      f"🏆 <b>Liga:</b> {league_name}\n"
-      f"⏱ <b>Momento:</b> {periodo} | <b>Marcador:</b> {marcador}\n\n"
-      f"📈 <i>Desventaja atípica detectada en 1ra mitad vía Scraper.</i>"
-  )
-  url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-  try:
-    requests.post(
-        url,
-        data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": mensaje,
-            "parse_mode": "HTML",
-        },
-        timeout=5,
-    )
-  except Exception as e:
-    print(f"⚠️ Error Telegram Basket: {e}", flush=True)
-
-
-def bucle_escaneo_basket():
-  global alertas_basket_db, alertas_basket_disparadas
-  print("🚀 Bucle Basket iniciado...", flush=True)
-  loop = asyncio.new_event_loop()
-  asyncio.set_event_loop(loop)
-
-  while True:
-    try:
-      candidatos = loop.run_until_complete(extraer_basket_en_vivo())
-      for b in candidatos:
+      # Escaneo de Baloncesto
+      candidatos_basket = loop.run_until_complete(extraer_basket_en_vivo())
+      for b in candidatos_basket:
         game_id = f"{b['local']}_{b['visita']}"
         if game_id not in alertas_basket_disparadas:
           alertas_basket_db.append(b)
@@ -145,10 +134,23 @@ def bucle_escaneo_basket():
               b["diferencia"],
           )
           alertas_basket_disparadas.add(game_id)
-    except Exception as e:
-      print(f"⚠️ Error ciclo Basket: {e}", flush=True)
 
-    time.sleep(180)
+      ultimo_escaneo_status = {
+          "status": "OK",
+          "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+          "futbol_count": len(candidatos_futbol),
+          "basket_count": len(candidatos_basket),
+      }
+
+    except Exception as e:
+      print(f"⚠️ Error en ciclo de escaneo unificado: {e}", flush=True)
+      ultimo_escaneo_status = {
+          "status": "ERROR",
+          "detalle": str(e),
+          "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+      }
+
+    time.sleep(120)  # Escaneo cada 2 minutos
 
 
 # ==========================================
@@ -180,39 +182,21 @@ def api_basket_alertas():
 
 @app.route("/probar-scraper")
 def probar_scraper():
-  resultado = {"futbol": [], "basket": [], "error": None}
-
-  def ejecutar():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-      resultado["futbol"] = loop.run_until_complete(extraer_futbol_en_vivo())
-      resultado["basket"] = loop.run_until_complete(extraer_basket_en_vivo())
-    except Exception as e:
-      resultado["error"] = str(e)
-    finally:
-      loop.close()
-
-  t = threading.Thread(target=ejecutar)
-  t.start()
-  t.join(timeout=60)
-
-  if resultado["error"]:
-    return jsonify({"status": "ERROR", "detalle": resultado["error"]})
   return jsonify({
-      "status": "OK",
-      "futbol_candidatos_detectados": resultado["futbol"],
-      "basket_candidatos_detectados": resultado["basket"],
+      "estado_servicio": "Servidor Activo",
+      "ultimo_escaneo": ultimo_escaneo_status,
+      "futbol_candidatos_detectados": partidos_00_en_vivo,
+      "basket_candidatos_detectados": alertas_basket_db,
   })
 
 
 inicializar_db()
 
-hilo_futbol = threading.Thread(target=bucle_escaneo_futbol, daemon=True)
-hilo_futbol.start()
-
-hilo_basket = threading.Thread(target=bucle_escaneo_basket, daemon=True)
-hilo_basket.start()
+# Hilo único para evitar saturación de memoria en Render
+hilo_unificado = threading.Thread(
+    target=bucle_escaneo_unificado, daemon=True
+)
+hilo_unificado.start()
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=5000, debug=False)

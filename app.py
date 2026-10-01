@@ -248,35 +248,40 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 PLANTILLA HTML HTML_TEMPLATE
+# 🎨 DISEÑO CYBERPUNK / IA & NEÓN DORADO
 # ==========================================
-HTML_TEMPLATE = """<!DOCTYPE html>
+HTML_TEMPLATE = """
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - AI Neural Engine</title>
+    <title>AFC Analytics - AI Cyber Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #030508;
-            --card-bg: rgba(10, 14, 23, 0.9);
-            --card-border: rgba(245, 158, 11, 0.25);
+            --card-bg: rgba(10, 14, 23, 0.85);
+            --card-border: rgba(245, 158, 11, 0.18);
             --accent-gold: #f59e0b;
             --accent-gold-bright: #fbbf24;
-            --accent-gold-glow: rgba(245, 158, 11, 0.5);
+            --accent-gold-glow: rgba(245, 158, 11, 0.4);
             --accent-cyan: #06b6d4;
-            --text-primary: #ffffff;
+            --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
 
         * { box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 45%);
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
             color: var(--text-primary);
             margin: 0; padding: 0;
             min-height: 100vh;
@@ -284,8 +289,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 6%;
-            background: rgba(3, 5, 8, 0.95);
+            padding: 20px 6%;
+            background: rgba(3, 5, 8, 0.9);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--card-border);
             position: sticky; top: 0; z-index: 100;
@@ -293,8 +298,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         .brand { 
             display: flex; align-items: center; gap: 14px; 
-            font-weight: 900; font-size: 22px; 
-            letter-spacing: 1.5px; color: #fff;
+            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
+            letter-spacing: 1px; color: #fff;
         }
         .brand-icon {
             width: 42px; height: 42px;
@@ -308,8 +313,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .status-pill {
             background: rgba(245, 158, 11, 0.08); border: 1px solid var(--accent-gold);
             color: var(--accent-gold-bright); padding: 7px 18px; border-radius: 30px;
-            font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
-            display: flex; align-items: center; gap: 10px;
+            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; gap: 10px; letter-spacing: 1px;
             box-shadow: 0 0 15px var(--accent-gold-glow);
         }
 
@@ -326,18 +331,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         .hero-section {
             max-width: 1240px; margin: 40px auto; padding: 0 24px;
-            display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center;
+            display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 40px; align-items: center;
         }
 
         .badge-tag {
-            color: var(--accent-gold-bright);
-            font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--accent-gold-bright); font-family: 'Orbitron', sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
             margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
             padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .hero-title { 
-            font-size: 38px; font-weight: 900; 
+            font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
             line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
         }
         .highlight-gold { 
@@ -356,35 +361,72 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        .neural-card {
+        /* RADAR ESTILO IA CYBERPUNK */
+        .radar-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 28px; padding: 25px; text-align: center; position: relative;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(245, 158, 11, 0.05);
+            border-radius: 28px; padding: 35px; text-align: center; position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
             backdrop-filter: blur(16px); overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        .neural-svg-container {
-            width: 100%; height: 180px; position: relative; margin-bottom: 10px;
-            background: rgba(3, 5, 8, 0.8); border-radius: 18px; border: 1px solid rgba(245, 158, 11, 0.2);
-            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        .radar-box {
+            width: 210px; height: 210px; margin: 0 auto 24px auto; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.4); position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 75%);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+            overflow: hidden;
         }
 
-        .neural-node {
-            animation: node-pulse 2s infinite alternate ease-in-out;
+        .radar-box::before {
+            content: ''; position: absolute; width: 100%; height: 1px;
+            background: rgba(245, 158, 11, 0.25);
+        }
+        .radar-box::after {
+            content: ''; position: absolute; height: 100%; width: 1px;
+            background: rgba(245, 158, 11, 0.25);
         }
 
-        @keyframes node-pulse {
-            0% { r: 3.5; opacity: 0.6; }
-            100% { r: 6; opacity: 1; filter: drop-shadow(0 0 8px #fbbf24); }
+        .radar-circle-inner {
+            position: absolute; width: 130px; height: 130px; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .radar-circle-center {
+            position: absolute; width: 55px; height: 55px; border-radius: 50%;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .radar-sweep {
+            position: absolute; width: 105px; height: 105px; top: 0; right: 0;
+            background: conic-gradient(from 0deg at 0% 100%, rgba(245, 158, 11, 0.5) 0deg, transparent 90deg);
+            border-radius: 100% 0 0 0; transform-origin: 0% 100%;
+            animation: sweep 3s linear infinite;
+        }
+
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .blip {
+            position: absolute; width: 7px; height: 7px; background: var(--accent-cyan);
+            border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); animation: blip-flash 2s infinite alternate;
+        }
+        .blip1 { top: 35%; left: 65%; animation-delay: 0.4s; }
+        .blip2 { top: 68%; left: 28%; animation-delay: 1.1s; }
+
+        @keyframes blip-flash {
+            0% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.4); }
         }
 
         .stats-counter { 
-            font-size: 56px; font-weight: 900; 
-            color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow);
-            margin: 4px 0 2px 0; line-height: 1;
+            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
+            color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
+            margin-bottom: 2px; 
         }
-        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
+        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 
         .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
 
@@ -396,7 +438,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .tab-btn {
             background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
             color: var(--text-secondary); padding: 14px 28px; border-radius: 16px;
-            font-weight: 800; font-size: 13px; 
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; 
             cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
             display: flex; align-items: center; gap: 12px;
         }
@@ -430,7 +472,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
         .league-badge { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); }
-        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; }
+        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; font-family: 'Orbitron', sans-serif; }
         .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; line-height: 1.3; }
 
         .fulfilled-box {
@@ -439,7 +481,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; }
+        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
 
         .empty-card {
             grid-column: 1 / -1; text-align: center; padding: 70px 20px;
@@ -494,31 +536,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
         </div>
 
-        <div class="neural-card">
-            <div class="neural-svg-container">
-                <svg width="100%" height="100%" viewBox="0 0 320 180">
-                    <line x1="40" y1="50" x2="110" y2="30" stroke="#fbbf24" stroke-width="1" opacity="0.35" />
-                    <line x1="40" y1="50" x2="100" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
-                    <line x1="110" y1="30" x2="180" y2="60" stroke="#fbbf24" stroke-width="1.2" opacity="0.5" />
-                    <line x1="100" y1="90" x2="180" y2="60" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
-                    <line x1="100" y1="90" x2="160" y2="135" stroke="#fbbf24" stroke-width="1" opacity="0.3" />
-                    <line x1="180" y1="60" x2="260" y2="40" stroke="#fbbf24" stroke-width="1.5" opacity="0.6" />
-                    <line x1="180" y1="60" x2="250" y2="120" stroke="#06b6d4" stroke-width="1.2" opacity="0.5" />
-                    <line x1="160" y1="135" x2="250" y2="120" stroke="#fbbf24" stroke-width="1" opacity="0.35" />
-                    <line x1="260" y1="40" x2="290" y2="90" stroke="#fbbf24" stroke-width="1" opacity="0.4" />
-                    <line x1="250" y1="120" x2="290" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
-
-                    <circle class="neural-node" cx="40" cy="50" r="4" fill="#fbbf24" />
-                    <circle class="neural-node" cx="110" cy="30" r="5" fill="#06b6d4" style="animation-delay: 0.3s;" />
-                    <circle class="neural-node" cx="100" cy="90" r="4.5" fill="#fbbf24" style="animation-delay: 0.7s;" />
-                    <circle class="neural-node" cx="180" cy="60" r="6" fill="#fbbf24" style="animation-delay: 0.1s;" />
-                    <circle class="neural-node" cx="160" cy="135" r="4" fill="#06b6d4" style="animation-delay: 0.9s;" />
-                    <circle class="neural-node" cx="260" cy="40" r="5" fill="#fbbf24" style="animation-delay: 0.4s;" />
-                    <circle class="neural-node" cx="250" cy="120" r="5.5" fill="#06b6d4" style="animation-delay: 0.6s;" />
-                    <circle class="neural-node" cx="290" cy="90" r="4" fill="#fbbf24" style="animation-delay: 0.2s;" />
-                </svg>
+        <div class="radar-card">
+            <div class="radar-box">
+                <div class="radar-circle-inner"></div>
+                <div class="radar-circle-center"></div>
+                <div class="radar-sweep"></div>
+                <div class="blip blip1"></div>
+                <div class="blip blip2"></div>
             </div>
-
             <div class="stats-counter" id="alertas-counter">0</div>
             <div class="stats-label">alertas confirmadas hoy</div>
         </div>
@@ -573,9 +598,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-radar');
-                    const total = data ? data.length : 0;
-                    document.getElementById('count-radar').innerText = total;
-
+                    document.getElementById('count-radar').innerText = data ? data.length : 0;
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3><p>Escaneando continuamente la liga mundial...</p></div>';
                     } else {
@@ -598,9 +621,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     const grid = document.getElementById('grid-alertas');
                     const counter = document.getElementById('alertas-counter');
                     const total = data ? data.length : 0;
-
                     document.getElementById('count-alertas').innerText = total;
-                    if (counter) counter.innerText = total;
+                    counter.innerText = total;
 
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3><p>Las oportunidades que cumplan el 100% de los filtros de presión aparecerán aquí y en Telegram.</p></div>';

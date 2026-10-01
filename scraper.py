@@ -7,32 +7,27 @@ from playwright.async_api import async_playwright
 # ⚽ SCRAPER DE FÚTBOL EN VIVO
 # ==========================================
 async def extraer_futbol_en_vivo():
-    """
-    Extrae los partidos de fútbol en vivo que están 0-0 en la ventana del min 46' al 78'.
-    """
     partidos_candidatos = []
     
     async with async_playwright() as p:
-        # Lanzamos un navegador Chromium en modo sin interfaz (Headless)
-        browser = await p.chromium.launch(headless=True)
+        # Forzamos a Playwright a usar el binario de Chromium estándar
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox"]
+        )
         page = await browser.new_page()
         
         try:
-            # Navegamos a la sección en vivo de Flashscore / Sofascore
             await page.goto("https://www.flashscore.es/", timeout=30000)
-            
-            # Esperamos a que los elementos del marcador carguen en el DOM
             await page.wait_for_selector(".sportName", timeout=15000)
             
             content = await page.content()
             soup = BeautifulSoup(content, "html.parser")
             
-            # Buscamos los bloques de partidos
             eventos = soup.find_all("div", class_=re.compile("event__match"))
             
             for evento in eventos:
                 try:
-                    # Extracción de minutuje y marcador
                     minuto_elem = evento.find("div", class_=re.compile("event__stage"))
                     local_elem = evento.find("div", class_=re.compile("event__homeParticipant"))
                     visita_elem = evento.find("div", class_=re.compile("event__awayParticipant"))
@@ -44,7 +39,6 @@ async def extraer_futbol_en_vivo():
                         
                     minuto_txt = minuto_elem.text.strip().replace("'", "")
                     
-                    # Verificamos si es un número válido (minuto)
                     if not minuto_txt.isdigit():
                         continue
                         
@@ -52,7 +46,6 @@ async def extraer_futbol_en_vivo():
                     goles_h = int(score_home.text.strip()) if score_home and score_home.text.strip().isdigit() else 0
                     goles_a = int(score_away.text.strip()) if score_away and score_away.text.strip().isdigit() else 0
                     
-                    # Aplicamos las Reglas de Filtro: 0-0 entre Min 46 y Min 78
                     if 46 <= minuto <= 78 and (goles_h + goles_a) == 0:
                         partidos_candidatos.append({
                             "equipo_local": local_elem.text.strip(),
@@ -62,7 +55,7 @@ async def extraer_futbol_en_vivo():
                             "goles_visita": goles_a,
                             "liga": "En Vivo"
                         })
-                except Exception as e_item:
+                except Exception:
                     continue
 
         except Exception as e:
@@ -77,13 +70,13 @@ async def extraer_futbol_en_vivo():
 # 🏀 SCRAPER DE BALONCESTO EN VIVO
 # ==========================================
 async def extraer_basket_en_vivo():
-    """
-    Extrae los partidos de baloncesto en vivo en Q2 o HT con diferencia de 10+ puntos.
-    """
     partidos_candidatos = []
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox"]
+        )
         page = await browser.new_page()
         
         try:
@@ -106,13 +99,11 @@ async def extraer_basket_en_vivo():
                     if not (etapa_elem and local_elem and visita_elem and score_home and score_away):
                         continue
                         
-                    etapa = etapa_elem.text.strip() # Ej: "2º Cuarto", "Descanso", "Q2", "HT"
+                    etapa = etapa_elem.text.strip()
                     p_home = int(score_home.text.strip()) if score_home.text.strip().isdigit() else 0
                     p_away = int(score_away.text.strip()) if score_away.text.strip().isdigit() else 0
                     
                     dif = abs(p_home - p_away)
-                    
-                    # Filtro de Momento (Q2 o HT) y Diferencia de 10+ Puntos
                     es_q2_o_ht = any(term in etapa.upper() for term in ["Q2", "2º", "HT", "DESCANSO"])
                     
                     if es_q2_o_ht and dif >= 10:
@@ -126,7 +117,7 @@ async def extraer_basket_en_vivo():
                             "diferencia": dif,
                             "liga": "Liga Basket"
                         })
-                except Exception as e_item:
+                except Exception:
                     continue
         except Exception as e:
             print(f"⚠️ Error en scraping de basket: {e}", flush=True)

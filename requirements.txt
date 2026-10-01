@@ -1,5 +1,5 @@
 flask
 requests
 beautifulsoup4
-playwright
+playwright==1.41.0
 gunicorn

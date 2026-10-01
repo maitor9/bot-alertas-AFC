@@ -224,7 +224,7 @@ def bucle_escaneo():
                   equipo,
               )
             except Exception as e_db:
-              print(f"⚠️ Error guardando en DB: {e_db}", flush=True)
+              print(f"⚠️️ Error guardando en DB: {e_db}", flush=True)
 
             enviar_alerta_telegram(
                 home_name, away_name, league_name, minuto, equipo
@@ -248,7 +248,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK HIGH-TECH CON CANVAS DE RED NEURONAL VIVA
+# 🎨 DISEÑO CYBERPUNK CON CANVAS CORREGIDO
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -358,24 +358,25 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* MÓDULO CANVAS RED NEURONAL HIGH-TECH */
         .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 28px; padding: 25px; text-align: center; position: relative;
             box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(245, 158, 11, 0.05);
             backdrop-filter: blur(16px); overflow: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 280px;
         }
 
         #neural-canvas {
-            width: 100%; height: 210px;
-            border-radius: 16px; margin-bottom: 15px;
-            background: rgba(3, 5, 8, 0.7);
-            border: 1px solid rgba(245, 158, 11, 0.15);
+            width: 100%; height: 180px;
+            border-radius: 16px; margin-bottom: 12px;
+            background: rgba(3, 5, 8, 0.8);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            display: block;
         }
 
         .stats-counter { 
-            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
+            font-family: 'Orbitron', sans-serif; font-size: 48px; font-weight: 900; 
             color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow);
             margin-bottom: 2px; 
         }
@@ -490,9 +491,7 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="neural-card">
-            <!-- CANVAS DINÁMICO DE RED NEURONAL -->
             <canvas id="neural-canvas"></canvas>
-            
             <div class="stats-counter" id="alertas-counter">0</div>
             <div class="stats-label">alertas confirmadas hoy</div>
         </div>
@@ -529,34 +528,34 @@ HTML_TEMPLATE = """
 
     <script>
         /* ====================================================
-           🧠 SIMULADOR CANVAS DE RED NEURONAL Y IMPULSOS ELÉCTRICOS
+           🧠 MOTOR CANVAS CORREGIDO DE RED NEURONAL VIVA
            ==================================================== */
         const canvas = document.getElementById('neural-canvas');
         const ctx = canvas.getContext('2d');
 
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+        function initCanvas() {
+            canvas.width = canvas.parentElement.clientWidth - 50;
+            canvas.height = 180;
         }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        initCanvas();
+        window.addEventListener('resize', initCanvas);
 
         const nodes = [];
-        const nodeCount = 32;
+        const nodeCount = 35;
 
         for (let i = 0; i < nodeCount; i++) {
             nodes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 1.2,
-                vy: (Math.random() - 0.5) * 1.2,
+                x: Math.random() * (canvas.width || 300),
+                y: Math.random() * (canvas.height || 180),
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
                 radius: Math.random() * 2.5 + 1.5,
-                color: Math.random() > 0.3 ? '#fbbf24' : '#06b6d4',
+                color: Math.random() > 0.35 ? '#fbbf24' : '#06b6d4',
                 pulse: Math.random() * Math.PI * 2
             });
         }
 
-        function drawNeuralNetwork() {
+        function renderNetwork() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             for (let i = 0; i < nodes.length; i++) {
@@ -567,25 +566,25 @@ HTML_TEMPLATE = """
                 if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
                 if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
 
-                n.pulse += 0.05;
-                let currentRadius = n.radius + Math.sin(n.pulse) * 0.8;
+                n.pulse += 0.06;
+                let r = n.radius + Math.sin(n.pulse) * 0.9;
 
                 ctx.beginPath();
-                ctx.arc(n.x, n.y, Math.max(0.5, currentRadius), 0, Math.PI * 2);
+                ctx.arc(n.x, n.y, Math.max(0.5, r), 0, Math.PI * 2);
                 ctx.fillStyle = n.color;
                 ctx.shadowColor = n.color;
-                ctx.shadowBlur = 12;
+                ctx.shadowBlur = 10;
                 ctx.fill();
 
                 for (let j = i + 1; j < nodes.length; j++) {
                     let n2 = nodes[j];
                     let dist = Math.hypot(n.x - n2.x, n.y - n2.y);
 
-                    if (dist < 85) {
+                    if (dist < 80) {
                         ctx.beginPath();
                         ctx.moveTo(n.x, n.y);
                         ctx.lineTo(n2.x, n2.y);
-                        let alpha = (1 - dist / 85) * 0.5;
+                        let alpha = (1 - dist / 80) * 0.45;
                         ctx.strokeStyle = n.color === '#fbbf24' ? `rgba(251, 191, 36, ${alpha})` : `rgba(6, 182, 212, ${alpha})`;
                         ctx.lineWidth = 1;
                         ctx.shadowBlur = 0;
@@ -593,13 +592,12 @@ HTML_TEMPLATE = """
                     }
                 }
             }
-
-            requestAnimationFrame(drawNeuralNetwork);
+            requestAnimationFrame(renderNetwork);
         }
-        drawNeuralNetwork();
+        renderNetwork();
 
         /* ====================================================
-           📡 LÓGICA DE DATOS Y CONEXIÓN
+           📡 CÁRGA DE DATOS SEGURA
            ==================================================== */
         function cambiarPestana(evt, pestana) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -620,7 +618,9 @@ HTML_TEMPLATE = """
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('grid-radar');
-                    document.getElementById('count-radar').innerText = data ? data.length : 0;
+                    const total = data ? data.length : 0;
+                    document.getElementById('count-radar').innerText = total;
+
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3><p>Escaneando continuamente la liga mundial...</p></div>';
                     } else {
@@ -643,8 +643,9 @@ HTML_TEMPLATE = """
                     const grid = document.getElementById('grid-alertas');
                     const counter = document.getElementById('alertas-counter');
                     const total = data ? data.length : 0;
+
                     document.getElementById('count-alertas').innerText = total;
-                    counter.innerText = total;
+                    if (counter) counter.innerText = total;
 
                     if (!data || data.length === 0) {
                         grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3><p>Las oportunidades que cumplan el 100% de los filtros de presión aparecerán aquí y en Telegram.</p></div>';

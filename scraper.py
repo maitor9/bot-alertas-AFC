@@ -7,12 +7,9 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 
-# Garantizar descarga automática de Chromium si falta el ejecutable
+# Descarga/Instalación automática si falta el binario exacto en el contenedor
 def asegurar_navegador():
   try:
-    from playwright.cli.main import main
-
-    # Fuerza la instalación del binario exacto requerido por Playwright
     subprocess.run(
         [sys.executable, "-m", "playwright", "install", "chromium"], check=True
     )

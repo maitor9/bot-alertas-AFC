@@ -9,7 +9,8 @@ app = Flask(__name__)
 # ==========================================
 # 🔑 CONFIGURACIÓN DE APIS Y TELEGRAM
 # ==========================================
-API_KEY_SPORTS = "1919b9af07c4eeae00a059f0086f6473"
+# Nueva API Key configurada
+API_KEY_SPORTS = "eafd3b45a7be5171f6b04b37d4dc9042"
 
 # FÚTBOL (API-Football)
 URL_LIVE_FOOTBALL = "https://v3.football.api-sports.io/fixtures"

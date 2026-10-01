@@ -248,7 +248,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK / SOLO NÚCLEO NEURAL
+# 🎨 DISEÑO CYBERPUNK HIGH-TECH CON CANVAS DE RED NEURONAL VIVA
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -256,16 +256,16 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Neural Engine</title>
+    <title>AFC Analytics - Neural AI Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #030508;
             --card-bg: rgba(10, 14, 23, 0.85);
-            --card-border: rgba(245, 158, 11, 0.18);
+            --card-border: rgba(245, 158, 11, 0.22);
             --accent-gold: #f59e0b;
             --accent-gold-bright: #fbbf24;
-            --accent-gold-glow: rgba(245, 158, 11, 0.4);
+            --accent-gold-glow: rgba(245, 158, 11, 0.45);
             --accent-cyan: #06b6d4;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
@@ -277,11 +277,8 @@ HTML_TEMPLATE = """
             font-family: 'Space Grotesk', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
-                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
-                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 45%);
             color: var(--text-primary);
             margin: 0; padding: 0;
             min-height: 100vh;
@@ -290,7 +287,7 @@ HTML_TEMPLATE = """
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 20px 6%;
-            background: rgba(3, 5, 8, 0.9);
+            background: rgba(3, 5, 8, 0.92);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--card-border);
             position: sticky; top: 0; z-index: 100;
@@ -331,7 +328,7 @@ HTML_TEMPLATE = """
 
         .hero-section {
             max-width: 1240px; margin: 40px auto; padding: 0 24px;
-            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;
+            display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center;
         }
 
         .badge-tag {
@@ -361,76 +358,25 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* MÓDULO EXCLUSIVO NÚCLEO NEURAL */
+        /* MÓDULO CANVAS RED NEURONAL HIGH-TECH */
         .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 28px; padding: 35px 24px; text-align: center; position: relative;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
+            border-radius: 28px; padding: 25px; text-align: center; position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(245, 158, 11, 0.05);
             backdrop-filter: blur(16px); overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        .laser-line {
-            position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-gold-bright), var(--accent-cyan), transparent);
-            box-shadow: 0 0 15px var(--accent-gold-bright);
-            animation: laser-scan 4s ease-in-out infinite alternate;
-            z-index: 5;
-        }
-
-        @keyframes laser-scan {
-            0% { top: 0%; opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { top: 98%; opacity: 0.3; }
-        }
-
-        .scout-display {
-            display: flex; justify-content: center; align-items: center;
-            margin: 0 auto 20px auto; height: 180px; position: relative;
-        }
-
-        /* NÚCLEO NEURAL CENTRADO Y LIMPIO */
-        .neural-core {
-            width: 160px; height: 160px; border-radius: 50%; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px dashed rgba(245, 158, 11, 0.4);
-            animation: spin-core 12s linear infinite;
-        }
-
-        @keyframes spin-core {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .core-inner-ring {
-            width: 110px; height: 110px; border-radius: 50%;
-            border: 2px solid var(--accent-cyan);
-            border-top-color: transparent; border-bottom-color: transparent;
-            position: absolute; animation: spin-inner 4s linear infinite reverse;
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
-        }
-
-        @keyframes spin-inner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .core-center-node {
-            width: 55px; height: 55px; border-radius: 50%;
-            background: radial-gradient(circle, var(--accent-gold-bright) 0%, rgba(245, 158, 11, 0.2) 80%);
-            box-shadow: 0 0 25px var(--accent-gold-bright);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: 900; color: #000;
-            animation: core-pulse 1.5s ease-in-out infinite alternate;
-        }
-
-        @keyframes core-pulse {
-            0% { transform: scale(0.85); box-shadow: 0 0 15px var(--accent-gold); }
-            100% { transform: scale(1.1); box-shadow: 0 0 35px var(--accent-gold-bright); }
+        #neural-canvas {
+            width: 100%; height: 210px;
+            border-radius: 16px; margin-bottom: 15px;
+            background: rgba(3, 5, 8, 0.7);
+            border: 1px solid rgba(245, 158, 11, 0.15);
         }
 
         .stats-counter { 
             font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
-            color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
+            color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow);
             margin-bottom: 2px; 
         }
         .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
@@ -544,14 +490,9 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="neural-card">
-            <div class="laser-line"></div>
-            <div class="scout-display">
-                <!-- Núcleo Neural Exclusivo Centrado -->
-                <div class="neural-core">
-                    <div class="core-inner-ring"></div>
-                    <div class="core-center-node">⚡</div>
-                </div>
-            </div>
+            <!-- CANVAS DINÁMICO DE RED NEURONAL -->
+            <canvas id="neural-canvas"></canvas>
+            
             <div class="stats-counter" id="alertas-counter">0</div>
             <div class="stats-label">alertas confirmadas hoy</div>
         </div>
@@ -587,6 +528,79 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        /* ====================================================
+           🧠 SIMULADOR CANVAS DE RED NEURONAL Y IMPULSOS ELÉCTRICOS
+           ==================================================== */
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const nodes = [];
+        const nodeCount = 32;
+
+        for (let i = 0; i < nodeCount; i++) {
+            nodes.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: (Math.random() - 0.5) * 1.2,
+                radius: Math.random() * 2.5 + 1.5,
+                color: Math.random() > 0.3 ? '#fbbf24' : '#06b6d4',
+                pulse: Math.random() * Math.PI * 2
+            });
+        }
+
+        function drawNeuralNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < nodes.length; i++) {
+                let n = nodes[i];
+                n.x += n.vx;
+                n.y += n.vy;
+
+                if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+                if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+
+                n.pulse += 0.05;
+                let currentRadius = n.radius + Math.sin(n.pulse) * 0.8;
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, Math.max(0.5, currentRadius), 0, Math.PI * 2);
+                ctx.fillStyle = n.color;
+                ctx.shadowColor = n.color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+
+                for (let j = i + 1; j < nodes.length; j++) {
+                    let n2 = nodes[j];
+                    let dist = Math.hypot(n.x - n2.x, n.y - n2.y);
+
+                    if (dist < 85) {
+                        ctx.beginPath();
+                        ctx.moveTo(n.x, n.y);
+                        ctx.lineTo(n2.x, n2.y);
+                        let alpha = (1 - dist / 85) * 0.5;
+                        ctx.strokeStyle = n.color === '#fbbf24' ? `rgba(251, 191, 36, ${alpha})` : `rgba(6, 182, 212, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.shadowBlur = 0;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(drawNeuralNetwork);
+        }
+        drawNeuralNetwork();
+
+        /* ====================================================
+           📡 LÓGICA DE DATOS Y CONEXIÓN
+           ==================================================== */
         function cambiarPestana(evt, pestana) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             if (evt && evt.currentTarget) {

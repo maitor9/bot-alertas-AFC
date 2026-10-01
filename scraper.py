@@ -1,118 +1,124 @@
+import re
 import requests
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Origin": "https://www.sofascore.com",
-    "Referer": "https://www.sofascore.com/",
-}
 
 # ==========================================
-# ⚽ SCRAPER DE FÚTBOL EN VIVO (SOFASCORE LIVE API)
+# ⚽ SCRAPER HÍBRIDO (ESPN API: GLOBAL + VIP)
 # ==========================================
 async def extraer_futbol_en_vivo():
-    partidos_candidatos = []
-    print("⏳ Consultando API en vivo de Sofascore...", flush=True)
+  partidos_candidatos = []
+  print("⏳ Consultando API pública de ESPN (Radar Global y VIP)...", flush=True)
 
-    try:
-        url = "https://api.sofascore.com/api/v1/sport/football/events/live"
-        response = requests.get(url, headers=HEADERS, timeout=12)
+  try:
+    url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
+    response = requests.get(url, timeout=12)
 
-        print(f"🔍 Status code Sofascore Live: {response.status_code}", flush=True)
+    if response.status_code == 200:
+      data = response.json()
+      events = data.get("events", [])
 
-        if response.status_code == 200:
-            data = response.json()
-            events = data.get("events", [])
+      for event in events:
+        try:
+          status = event.get("status", {})
+          state = status.get("type", {}).get("state", "")
 
-            for event in events:
-                try:
-                    status = event.get("status", {})
-                    # code 7 = 2do tiempo, code 6 = 1er tiempo, code 31 = descanso (HT)
-                    code = status.get("code")
-                    
-                    # Queremos segunda mitad principalmente (code 7) o entretiempo (code 31)
-                    if code not in [7, 31]:
-                        continue
+          # Solo partidos en juego ("in")
+          if state != "in":
+            continue
 
-                    time_info = event.get("time", {})
-                    minuto = time_info.get("played", 50)
-                    if isinstance(minuto, str):
-                        minuto = int(re.search(r'\d+', minuto).group()) if re.search(r'\d+', minuto) else 50
+          # Extraer el minuto actual
+          display_clock = status.get("displayClock", "50")
+          min_int = 50
+          match_min = re.search(r"\d+", str(display_clock))
+          if match_min:
+            min_int = int(match_min.group())
 
-                    home_score = event.get("homeScore", {}).get("current", 0) or 0
-                    away_score = event.get("awayScore", {}).get("current", 0) or 0
+          competitions = event.get("competitions", [])
+          if not competitions:
+            continue
 
-                    # Filtro base: Minuto 46 a 78 y marcador 0 - 0
-                    if not (46 <= minuto <= 78 and (home_score + away_score) == 0):
-                        continue
+          comp = competitions[0]
+          competitors = comp.get("competitors", [])
 
-                    home_team = event.get("homeTeam", {})
-                    away_team = event.get("awayTeam", {})
-                    
-                    home_name = home_team.get("name", "Local")
-                    away_name = away_team.get("name", "Visita")
-                    
-                    tournament = event.get("tournament", {})
-                    league = tournament.get("name", "Liga en Vivo")
+          home_score, away_score = 0, 0
+          home_name, away_name = "Local", "Visita"
+          home_shots, away_shots = 0, 0
+          home_sot, away_sot = 0, 0
 
-                    # Consultar estadísticas detalladas del partido en tiempo real
-                    event_id = event.get("id")
-                    total_remates = 0
-                    total_remates_puerta = 0
-                    equipo_mas_activo = home_name
+          for team in competitors:
+            is_home = team.get("homeAway") == "home"
+            name = team.get("team", {}).get("displayName", "Equipo")
+            score = int(team.get("score", 0))
 
-                    if event_id:
-                        stats_url = f"https://api.sofascore.com/api/v1/event/{event_id}/statistics"
-                        stats_res = requests.get(stats_url, headers=HEADERS, timeout=5)
-                        if stats_res.status_code == 200:
-                            stats_data = stats_res.json()
-                            statistics = stats_data.get("statistics", [])
-                            
-                            for period in statistics:
-                                if period.get("period") == "ALL":
-                                    groups = period.get("groups", [])
-                                    for group in groups:
-                                        items = group.get("statisticsItems", [])
-                                        for item in items:
-                                            name = item.get("name", "")
-                                            if name == "Total shots":
-                                                home_shots = int(item.get("homeValue", 0) or 0)
-                                                away_shots = int(item.get("awayValue", 0) or 0)
-                                                total_remates = home_shots + away_shots
-                                                equipo_mas_activo = home_name if home_shots >= away_shots else away_name
-                                            elif name == "Shots on target":
-                                                home_sot = int(item.get("homeValue", 0) or 0)
-                                                away_sot = int(item.get("awayValue", 0) or 0)
-                                                total_remates_puerta = home_sot + away_sot
+            total_s = 0
+            on_target_s = 0
+            statistics = team.get("statistics", [])
+            for stat in statistics:
+              s_name = stat.get("name", "").lower()
+              s_val = stat.get("value", 0)
+              if "shotstotal" in s_name or s_name == "shots":
+                total_s = int(s_val)
+              elif "shotsontarget" in s_name:
+                on_target_s = int(s_val)
 
-                    # Criterio VIP AI (Remates totales >= 8 o Remates a puerta >= 4)
-                    es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
+            if is_home:
+              home_name = name
+              home_score = score
+              home_shots = total_s
+              home_sot = on_target_s
+            else:
+              away_name = name
+              away_score = score
+              away_shots = total_s
+              away_sot = on_target_s
 
-                    partidos_candidatos.append({
-                        "equipo_local": home_name,
-                        "equipo_visita": away_name,
-                        "minuto": minuto,
-                        "goles_local": home_score,
-                        "goles_visita": away_score,
-                        "liga": league,
-                        "remates": total_remates,
-                        "remates_puerta": total_remates_puerta,
-                        "presion": equipo_mas_activo,
-                        "tipo": "VIP" if es_vip else "GLOBAL"
-                    })
+          total_remates = home_shots + away_shots
+          total_remates_puerta = home_sot + away_sot
+          equipo_mas_activo = home_name if home_shots >= away_shots else away_name
 
-                except Exception:
-                    continue
+          league = "Liga en Vivo"
+          leagues_info = comp.get("league", {})
+          if leagues_info:
+            league = leagues_info.get("name", "Liga en Vivo")
 
-            print(f"✅ Extraídos {len(partidos_candidatos)} partidos de Sofascore.", flush=True)
-        else:
-            print(f"⚠️ Sofascore devolvió status: {response.status_code}", flush=True)
+          # Regla base estricta: Minuto 46 a 78 y marcador 0 - 0
+          condicion_minuto = 46 <= min_int <= 78
+          condicion_goles = (home_score + away_score) == 0
 
-    except Exception as e:
-        print(f"⚠️ Error consultando Sofascore: {e}", flush=True)
+          if condicion_minuto and condicion_goles:
+            # Filtro VIP: si la API provee estadísticas y cumplen con el umbral
+            es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
 
-    return partidos_candidatos
+            partidos_candidatos.append({
+                "equipo_local": home_name,
+                "equipo_visita": away_name,
+                "minuto": min_int,
+                "goles_local": home_score,
+                "goles_visita": away_score,
+                "liga": league,
+                "remates": total_remates,
+                "remates_puerta": total_remates_puerta,
+                "presion": equipo_mas_activo,
+                "tipo": "VIP" if es_vip else "GLOBAL",
+            })
+        except Exception:
+          continue
 
+      print(
+          f"✅ Extraídos {len(partidos_candidatos)} partidos totales desde ESPN.",
+          flush=True,
+      )
+    else:
+      print(f"⚠️ Status code ESPN: {response.status_code}", flush=True)
+
+  except Exception as e:
+    print(f"⚠️ Error en consulta de ESPN: {e}", flush=True)
+
+  return partidos_candidatos
+
+
+# ==========================================
+# 🏀 BALONCESTO PAUSADO
+# ==========================================
 async def extraer_basket_en_vivo():
-    return []
+  return []

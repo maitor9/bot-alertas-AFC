@@ -224,7 +224,7 @@ def bucle_escaneo():
                   equipo,
               )
             except Exception as e_db:
-              print(f"⚠️️ Error guardando en DB: {e_db}", flush=True)
+              print(f"⚠️ Error guardando en DB: {e_db}", flush=True)
 
             enviar_alerta_telegram(
                 home_name, away_name, league_name, minuto, equipo
@@ -248,7 +248,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK CON CANVAS CORREGIDO
+# 🎨 DISEÑO CYBERPUNK CON RED NEURONAL SVG/CSS
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -256,25 +256,24 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Neural AI Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <title>AFC Analytics - AI Neural Engine</title>
     <style>
         :root {
             --bg-color: #030508;
-            --card-bg: rgba(10, 14, 23, 0.85);
-            --card-border: rgba(245, 158, 11, 0.22);
+            --card-bg: rgba(10, 14, 23, 0.9);
+            --card-border: rgba(245, 158, 11, 0.25);
             --accent-gold: #f59e0b;
             --accent-gold-bright: #fbbf24;
-            --accent-gold-glow: rgba(245, 158, 11, 0.45);
+            --accent-gold-glow: rgba(245, 158, 11, 0.5);
             --accent-cyan: #06b6d4;
-            --text-primary: #f8fafc;
+            --text-primary: #ffffff;
             --text-secondary: #94a3b8;
         }
 
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
@@ -286,8 +285,8 @@ HTML_TEMPLATE = """
 
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 6%;
-            background: rgba(3, 5, 8, 0.92);
+            padding: 18px 6%;
+            background: rgba(3, 5, 8, 0.95);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--card-border);
             position: sticky; top: 0; z-index: 100;
@@ -295,8 +294,8 @@ HTML_TEMPLATE = """
 
         .brand { 
             display: flex; align-items: center; gap: 14px; 
-            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
-            letter-spacing: 1px; color: #fff;
+            font-weight: 900; font-size: 22px; 
+            letter-spacing: 1.5px; color: #fff;
         }
         .brand-icon {
             width: 42px; height: 42px;
@@ -310,8 +309,8 @@ HTML_TEMPLATE = """
         .status-pill {
             background: rgba(245, 158, 11, 0.08); border: 1px solid var(--accent-gold);
             color: var(--accent-gold-bright); padding: 7px 18px; border-radius: 30px;
-            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
-            display: flex; align-items: center; gap: 10px; letter-spacing: 1px;
+            font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+            display: flex; align-items: center; gap: 10px;
             box-shadow: 0 0 15px var(--accent-gold-glow);
         }
 
@@ -332,14 +331,14 @@ HTML_TEMPLATE = """
         }
 
         .badge-tag {
-            color: var(--accent-gold-bright); font-family: 'Orbitron', sans-serif;
-            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--accent-gold-bright);
+            font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
             margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
             padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .hero-title { 
-            font-family: 'Orbitron', sans-serif; font-size: 38px; font-weight: 900; 
+            font-size: 38px; font-weight: 900; 
             line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
         }
         .highlight-gold { 
@@ -358,29 +357,36 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
+        /* CONTENEDOR RED NEURONAL NATIVA SVG */
         .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 28px; padding: 25px; text-align: center; position: relative;
             box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(245, 158, 11, 0.05);
             backdrop-filter: blur(16px); overflow: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 280px;
         }
 
-        #neural-canvas {
-            width: 100%; height: 180px;
-            border-radius: 16px; margin-bottom: 12px;
-            background: rgba(3, 5, 8, 0.8);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            display: block;
+        .neural-svg-container {
+            width: 100%; height: 180px; position: relative; margin-bottom: 10px;
+            background: rgba(3, 5, 8, 0.8); border-radius: 18px; border: 1px solid rgba(245, 158, 11, 0.2);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+
+        .neural-node {
+            animation: node-pulse 2s infinite alternate ease-in-out;
+        }
+
+        @keyframes node-pulse {
+            0% { r: 3.5; opacity: 0.6; }
+            100% { r: 6; opacity: 1; filter: drop-shadow(0 0 8px #fbbf24); }
         }
 
         .stats-counter { 
-            font-family: 'Orbitron', sans-serif; font-size: 48px; font-weight: 900; 
+            font-size: 56px; font-weight: 900; 
             color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow);
-            margin-bottom: 2px; 
+            margin: 4px 0 2px 0; line-height: 1;
         }
-        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
 
         .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
 
@@ -392,7 +398,7 @@ HTML_TEMPLATE = """
         .tab-btn {
             background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
             color: var(--text-secondary); padding: 14px 28px; border-radius: 16px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; 
+            font-weight: 800; font-size: 13px; 
             cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
             display: flex; align-items: center; gap: 12px;
         }
@@ -426,7 +432,7 @@ HTML_TEMPLATE = """
 
         .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
         .league-badge { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); }
-        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; font-family: 'Orbitron', sans-serif; }
+        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; }
         .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; line-height: 1.3; }
 
         .fulfilled-box {
@@ -435,7 +441,7 @@ HTML_TEMPLATE = """
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
+        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; }
 
         .empty-card {
             grid-column: 1 / -1; text-align: center; padding: 70px 20px;
@@ -491,7 +497,33 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="neural-card">
-            <canvas id="neural-canvas"></canvas>
+            <!-- RED NEURONAL VIVA SVG / CSS NATIVA -->
+            <div class="neural-svg-container">
+                <svg width="100%" height="100%" viewBox="0 0 320 180">
+                    <!-- Líneas de Conexión de Neuronas -->
+                    <line x1="40" y1="50" x2="110" y2="30" stroke="#fbbf24" stroke-width="1" opacity="0.35" />
+                    <line x1="40" y1="50" x2="100" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
+                    <line x1="110" y1="30" x2="180" y2="60" stroke="#fbbf24" stroke-width="1.2" opacity="0.5" />
+                    <line x1="100" y1="90" x2="180" y2="60" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
+                    <line x1="100" y1="90" x2="160" y2="135" stroke="#fbbf24" stroke-width="1" opacity="0.3" />
+                    <line x1="180" y1="60" x2="260" y2="40" stroke="#fbbf24" stroke-width="1.5" opacity="0.6" />
+                    <line x1="180" y1="60" x2="250" y2="120" stroke="#06b6d4" stroke-width="1.2" opacity="0.5" />
+                    <line x1="160" y1="135" x2="250" y2="120" stroke="#fbbf24" stroke-width="1" opacity="0.35" />
+                    <line x1="260" y1="40" x2="290" y2="90" stroke="#fbbf24" stroke-width="1" opacity="0.4" />
+                    <line x1="250" y1="120" x2="290" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
+
+                    <!-- Nodos Neuronales con Pulso Latiendo -->
+                    <circle class="neural-node" cx="40" cy="50" r="4" fill="#fbbf24" />
+                    <circle class="neural-node" cx="110" cy="30" r="5" fill="#06b6d4" style="animation-delay: 0.3s;" />
+                    <circle class="neural-node" cx="100" cy="90" r="4.5" fill="#fbbf24" style="animation-delay: 0.7s;" />
+                    <circle class="neural-node" cx="180" cy="60" r="6" fill="#fbbf24" style="animation-delay: 0.1s;" />
+                    <circle class="neural-node" cx="160" cy="135" r="4" fill="#06b6d4" style="animation-delay: 0.9s;" />
+                    <circle class="neural-node" cx="260" cy="40" r="5" fill="#fbbf24" style="animation-delay: 0.4s;" />
+                    <circle class="neural-node" cx="250" cy="120" r="5.5" fill="#06b6d4" style="animation-delay: 0.6s;" />
+                    <circle class="neural-node" cx="290" cy="90" r="4" fill="#fbbf24" style="animation-delay: 0.2s;" />
+                </svg>
+            </div>
+
             <div class="stats-counter" id="alertas-counter">0</div>
             <div class="stats-label">alertas confirmadas hoy</div>
         </div>
@@ -527,78 +559,6 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        /* ====================================================
-           🧠 MOTOR CANVAS CORREGIDO DE RED NEURONAL VIVA
-           ==================================================== */
-        const canvas = document.getElementById('neural-canvas');
-        const ctx = canvas.getContext('2d');
-
-        function initCanvas() {
-            canvas.width = canvas.parentElement.clientWidth - 50;
-            canvas.height = 180;
-        }
-        initCanvas();
-        window.addEventListener('resize', initCanvas);
-
-        const nodes = [];
-        const nodeCount = 35;
-
-        for (let i = 0; i < nodeCount; i++) {
-            nodes.push({
-                x: Math.random() * (canvas.width || 300),
-                y: Math.random() * (canvas.height || 180),
-                vx: (Math.random() - 0.5) * 1.5,
-                vy: (Math.random() - 0.5) * 1.5,
-                radius: Math.random() * 2.5 + 1.5,
-                color: Math.random() > 0.35 ? '#fbbf24' : '#06b6d4',
-                pulse: Math.random() * Math.PI * 2
-            });
-        }
-
-        function renderNetwork() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            for (let i = 0; i < nodes.length; i++) {
-                let n = nodes[i];
-                n.x += n.vx;
-                n.y += n.vy;
-
-                if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
-                if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
-
-                n.pulse += 0.06;
-                let r = n.radius + Math.sin(n.pulse) * 0.9;
-
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, Math.max(0.5, r), 0, Math.PI * 2);
-                ctx.fillStyle = n.color;
-                ctx.shadowColor = n.color;
-                ctx.shadowBlur = 10;
-                ctx.fill();
-
-                for (let j = i + 1; j < nodes.length; j++) {
-                    let n2 = nodes[j];
-                    let dist = Math.hypot(n.x - n2.x, n.y - n2.y);
-
-                    if (dist < 80) {
-                        ctx.beginPath();
-                        ctx.moveTo(n.x, n.y);
-                        ctx.lineTo(n2.x, n2.y);
-                        let alpha = (1 - dist / 80) * 0.45;
-                        ctx.strokeStyle = n.color === '#fbbf24' ? `rgba(251, 191, 36, ${alpha})` : `rgba(6, 182, 212, ${alpha})`;
-                        ctx.lineWidth = 1;
-                        ctx.shadowBlur = 0;
-                        ctx.stroke();
-                    }
-                }
-            }
-            requestAnimationFrame(renderNetwork);
-        }
-        renderNetwork();
-
-        /* ====================================================
-           📡 CÁRGA DE DATOS SEGURA
-           ==================================================== */
         function cambiarPestana(evt, pestana) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             if (evt && evt.currentTarget) {
@@ -673,61 +633,3 @@ HTML_TEMPLATE = """
     </script>
 </body>
 </html>
-"""
-
-
-@app.route("/")
-def index():
-  return render_template_string(HTML_TEMPLATE)
-
-
-@app.route("/api/alertas")
-def api_alertas():
-  try:
-    alertas = obtener_alertas()
-    return jsonify(alertas if alertas else [])
-  except Exception as e:
-    print(f"Error en API alertas: {e}", flush=True)
-    return jsonify([])
-
-
-@app.route("/api/partidos_00")
-def api_partidos_00():
-  return jsonify(partidos_00_en_vivo)
-
-
-@app.route("/ver-stats")
-def ver_stats():
-  return jsonify(ultimas_stats_evaluadas)
-
-
-@app.route("/probar-alerta")
-def probar_alerta():
-  try:
-    home = "Real Madrid (Prueba)"
-    away = "Barcelona (Prueba)"
-    liga = "Liga Santander"
-    minuto = 65
-    equipo = "Real Madrid (Prueba)"
-    fixture_id = 999999
-
-    enviar_alerta_telegram(home, away, liga, minuto, equipo)
-
-    try:
-      guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
-    except Exception as db_err:
-      print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
-
-    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
-  except Exception as e:
-    print(f"❌ Error en prueba: {e}", flush=True)
-    return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
-
-
-inicializar_db()
-hilo_bot = threading.Thread(target=bucle_escaneo, daemon=True)
-hilo_bot.start()
-
-if __name__ == "__main__":
-  print("🚀 Servidor Web iniciado en http://127.0.0.1:5000", flush=True)
-  app.run(host="0.0.0.0", port=5000, debug=False)

@@ -51,7 +51,7 @@ def enviar_alerta_telegram_futbol(
         flush=True,
     )
   except Exception as e:
-    print(f"⚠️️ Error enviando a Telegram (Fútbol): {e}", flush=True)
+    print(f"⚠️ Error enviando a Telegram (Fútbol): {e}", flush=True)
 
 
 def bucle_escaneo_futbol():
@@ -60,9 +60,13 @@ def bucle_escaneo_futbol():
 
   print("🚀 Bucle de escaneo Fútbol con Scraper iniciado...", flush=True)
 
+  # Crear un event loop dedicado para este hilo
+  loop = asyncio.new_event_loop()
+  asyncio.set_event_loop(loop)
+
   while True:
     try:
-      candidatos = asyncio.run(extraer_futbol_en_vivo())
+      candidatos = loop.run_until_complete(extraer_futbol_en_vivo())
       partidos_00_en_vivo = candidatos
 
       for p in candidatos:
@@ -134,9 +138,13 @@ def bucle_escaneo_basket():
 
   print("🚀 Bucle de escaneo Baloncesto con Scraper iniciado...", flush=True)
 
+  # Crear un event loop dedicado para este hilo
+  loop = asyncio.new_event_loop()
+  asyncio.set_event_loop(loop)
+
   while True:
     try:
-      candidatos = asyncio.run(extraer_basket_en_vivo())
+      candidatos = loop.run_until_complete(extraer_basket_en_vivo())
 
       for b in candidatos:
         game_id = f"{b['local']}_{b['visita']}"
@@ -197,12 +205,14 @@ def api_basket_alertas():
   return jsonify(alertas_basket_db)
 
 
-# RUTA DE PRUEBA DEL SCRAPER (Habilitada)
 @app.route("/probar-scraper")
 def probar_scraper():
   try:
-    futbol = asyncio.run(extraer_futbol_en_vivo())
-    basket = asyncio.run(extraer_basket_en_vivo())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    futbol = loop.run_until_complete(extraer_futbol_en_vivo())
+    basket = loop.run_until_complete(extraer_basket_en_vivo())
+    loop.close()
     return jsonify({
         "status": "OK",
         "futbol_candidatos_detectados": futbol,

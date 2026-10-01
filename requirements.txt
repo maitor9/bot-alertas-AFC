@@ -1,5 +1,5 @@
-flask
-requests
-beautifulsoup4
-playwright==1.41.0
-gunicorn
+Flask==3.0.0
+gunicorn==21.2.0
+beautifulsoup4==4.12.2
+requests==2.31.0
+curl_cffi==0.5.10

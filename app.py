@@ -248,10 +248,9 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK CON RED NEURONAL SVG/CSS
+# 🎨 PLANTILLA HTML HTML_TEMPLATE
 # ==========================================
-HTML_TEMPLATE = """
-<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -357,7 +356,6 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* CONTENEDOR RED NEURONAL NATIVA SVG */
         .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 28px; padding: 25px; text-align: center; position: relative;
@@ -497,10 +495,8 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="neural-card">
-            <!-- RED NEURONAL VIVA SVG / CSS NATIVA -->
             <div class="neural-svg-container">
                 <svg width="100%" height="100%" viewBox="0 0 320 180">
-                    <!-- Líneas de Conexión de Neuronas -->
                     <line x1="40" y1="50" x2="110" y2="30" stroke="#fbbf24" stroke-width="1" opacity="0.35" />
                     <line x1="40" y1="50" x2="100" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
                     <line x1="110" y1="30" x2="180" y2="60" stroke="#fbbf24" stroke-width="1.2" opacity="0.5" />
@@ -512,7 +508,6 @@ HTML_TEMPLATE = """
                     <line x1="260" y1="40" x2="290" y2="90" stroke="#fbbf24" stroke-width="1" opacity="0.4" />
                     <line x1="250" y1="120" x2="290" y2="90" stroke="#06b6d4" stroke-width="1" opacity="0.4" />
 
-                    <!-- Nodos Neuronales con Pulso Latiendo -->
                     <circle class="neural-node" cx="40" cy="50" r="4" fill="#fbbf24" />
                     <circle class="neural-node" cx="110" cy="30" r="5" fill="#06b6d4" style="animation-delay: 0.3s;" />
                     <circle class="neural-node" cx="100" cy="90" r="4.5" fill="#fbbf24" style="animation-delay: 0.7s;" />
@@ -633,3 +628,61 @@ HTML_TEMPLATE = """
     </script>
 </body>
 </html>
+"""
+
+
+@app.route("/")
+def index():
+  return render_template_string(HTML_TEMPLATE)
+
+
+@app.route("/api/alertas")
+def api_alertas():
+  try:
+    alertas = obtener_alertas()
+    return jsonify(alertas if alertas else [])
+  except Exception as e:
+    print(f"Error en API alertas: {e}", flush=True)
+    return jsonify([])
+
+
+@app.route("/api/partidos_00")
+def api_partidos_00():
+  return jsonify(partidos_00_en_vivo)
+
+
+@app.route("/ver-stats")
+def ver_stats():
+  return jsonify(ultimas_stats_evaluadas)
+
+
+@app.route("/probar-alerta")
+def probar_alerta():
+  try:
+    home = "Real Madrid (Prueba)"
+    away = "Barcelona (Prueba)"
+    liga = "Liga Santander"
+    minuto = 65
+    equipo = "Real Madrid (Prueba)"
+    fixture_id = 999999
+
+    enviar_alerta_telegram(home, away, liga, minuto, equipo)
+
+    try:
+      guardar_alerta(fixture_id, home, away, liga, minuto, equipo)
+    except Exception as db_err:
+      print(f"⚠️ Nota de DB en prueba: {db_err}", flush=True)
+
+    return "<h1>✅ Alerta de prueba ejecutada exitosamente. Revisa tu Telegram y el Dashboard.</h1>"
+  except Exception as e:
+    print(f"❌ Error en prueba: {e}", flush=True)
+    return f"<h1>⚠ Ocurrió un error en la prueba: {e}</h1>"
+
+
+inicializar_db()
+hilo_bot = threading.Thread(target=bucle_escaneo, daemon=True)
+hilo_bot.start()
+
+if __name__ == "__main__":
+  print("🚀 Servidor Web iniciado en http://127.0.0.1:5000", flush=True)
+  app.run(host="0.0.0.0", port=5000, debug=False)

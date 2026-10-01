@@ -16,23 +16,25 @@ partidos_global_en_vivo = []
 partidos_vip_en_vivo = []
 ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
 
-def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto, remates, remates_puerta, es_vip):
+def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str, remates, remates_puerta, es_vip, es_descanso):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
     
-    # Personalizar el encabezado según si es VIP por estadísticas o Radar Global
-    if es_vip:
-        titulo = "⚡ ¡ALERTA VIP AI OVER 0.5 GOALS! ⚡"
-        detalle = f"📊 <b>Remates Totales:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯 <i>Cumple filtros avanzados de alta intensidad.</i>"
+    if es_descanso:
+        titulo = "☕ <b>¡ALERTA DESCANSO (HT) 0-0!</b> ☕"
+        detalle = "⏳ <i>Partido en mediotiempo con marcador cerrado. ¡Prepárate para el 2do tiempo!</i>"
+    elif es_vip:
+        titulo = "⚡ <b>¡ALERTA VIP AI OVER 0.5 GOALS!</b> ⚡"
+        detalle = f"📊 <b>Remates:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯 <i>Alta intensidad ofensiva detectada.</i>"
     else:
-        titulo = "🚨 ¡ALERTA RADAR GLOBAL 0-0! 🚨"
-        detalle = f"⏱ <i>Partido en rango 46'-78' con marcador cerrado 0-0.</i>"
+        titulo = "🚨 <b>¡ALERTA RADAR GLOBAL 0-0!</b> 🚨"
+        detalle = f"⏱ <i>Partido activo en rango 46'-78' con marcador 0-0.</i>"
 
     mensaje = (
         f"{titulo}\n\n"
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
-        f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
+        f"⏱ <b>Momento:</b> {minuto_str} | <b>Marcador:</b> 0 - 0\n"
         f"{detalle}"
     )
     try:
@@ -46,32 +48,32 @@ def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto, rem
 
 def bucle_escaneo_unificado():
     global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status
-    print("🚀 Bucle de escaneo general iniciado...", flush=True)
+    print("🚀 Bucle de escaneo general con descanso iniciado...", flush=True)
 
     while True:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            print("🔄 Consultando partidos para Radar Global y Alertas...", flush=True)
+            print("🔄 Consultando partidos (Juego y Descanso)...", flush=True)
             candidatos = loop.run_until_complete(extraer_futbol_en_vivo())
             
             global_list = []
             vip_list = []
 
             for p in candidatos:
-                # 1. Absolutamente todos van al Radar Global
                 global_list.append(p)
 
-                # 2. Si cumple como VIP, va también a la lista VIP
                 es_vip = (p['tipo'] == "VIP")
                 if es_vip:
                     vip_list.append(p)
 
-                # 3. Todos los partidos 0-0 disparan alerta a Telegram (evitando duplicados)
+                # Identificador único por partido
                 partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
+                
+                # Si el partido pasa a descanso o entra en el segundo tiempo, aseguramos la notificación
                 if partido_id not in alertas_disparadas:
                     try:
-                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['presion'])
+                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], str(p['minuto']), p['presion'])
                     except Exception:
                         pass
                     
@@ -82,7 +84,8 @@ def bucle_escaneo_unificado():
                         p['minuto'], 
                         p.get('remates', 0), 
                         p.get('remates_puerta', 0), 
-                        es_vip
+                        es_vip,
+                        p.get('es_descanso', False)
                     )
                     alertas_disparadas.add(partido_id)
 

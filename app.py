@@ -248,7 +248,7 @@ def bucle_escaneo():
 
 
 # ==========================================
-# 🎨 DISEÑO CYBERPUNK / NÚCLEO NEURAL & BARRAS LÁSER
+# 🎨 DISEÑO CYBERPUNK / SOLO NÚCLEO NEURAL
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -256,7 +256,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - Neural Scouting Engine</title>
+    <title>AFC Analytics - Neural Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -361,10 +361,10 @@ HTML_TEMPLATE = """
         .feature-title { font-size: 13px; font-weight: 700; }
         .feature-sub { font-size: 11px; color: var(--text-secondary); }
 
-        /* MÓDULO NÚCLEO NEURAL & BARRAS LÁSER */
+        /* MÓDULO EXCLUSIVO NÚCLEO NEURAL */
         .neural-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 28px; padding: 30px 24px; text-align: center; position: relative;
+            border-radius: 28px; padding: 35px 24px; text-align: center; position: relative;
             box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
             backdrop-filter: blur(16px); overflow: hidden;
         }
@@ -384,13 +384,13 @@ HTML_TEMPLATE = """
         }
 
         .scout-display {
-            display: flex; justify-content: space-between; align-items: center;
-            max-width: 280px; margin: 0 auto 20px auto; height: 190px; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 20px auto; height: 180px; position: relative;
         }
 
-        /* NÚCLEO NEURAL CENTRAL */
+        /* NÚCLEO NEURAL CENTRADO Y LIMPIO */
         .neural-core {
-            width: 140px; height: 140px; border-radius: 50%; position: relative;
+            width: 160px; height: 160px; border-radius: 50%; position: relative;
             display: flex; align-items: center; justify-content: center;
             border: 1px dashed rgba(245, 158, 11, 0.4);
             animation: spin-core 12s linear infinite;
@@ -402,7 +402,7 @@ HTML_TEMPLATE = """
         }
 
         .core-inner-ring {
-            width: 95px; height: 95px; border-radius: 50%;
+            width: 110px; height: 110px; border-radius: 50%;
             border: 2px solid var(--accent-cyan);
             border-top-color: transparent; border-bottom-color: transparent;
             position: absolute; animation: spin-inner 4s linear infinite reverse;
@@ -415,11 +415,11 @@ HTML_TEMPLATE = """
         }
 
         .core-center-node {
-            width: 45px; height: 45px; border-radius: 50%;
+            width: 55px; height: 55px; border-radius: 50%;
             background: radial-gradient(circle, var(--accent-gold-bright) 0%, rgba(245, 158, 11, 0.2) 80%);
             box-shadow: 0 0 25px var(--accent-gold-bright);
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 900; color: #000;
+            font-size: 22px; font-weight: 900; color: #000;
             animation: core-pulse 1.5s ease-in-out infinite alternate;
         }
 
@@ -428,42 +428,8 @@ HTML_TEMPLATE = """
             100% { transform: scale(1.1); box-shadow: 0 0 35px var(--accent-gold-bright); }
         }
 
-        /* BARRAS LÁSER LATERALES (EQUALIZER) */
-        .bars-container {
-            display: flex; gap: 5px; align-items: flex-end; height: 120px;
-        }
-
-        .bar-item {
-            width: 8px; background: rgba(245, 158, 11, 0.2); border-radius: 4px;
-            position: relative; overflow: hidden;
-        }
-
-        .bar-fill {
-            width: 100%; background: linear-gradient(to top, var(--accent-gold), var(--accent-gold-bright));
-            border-radius: 4px; box-shadow: 0 0 10px var(--accent-gold);
-            animation: bar-bounce 2s ease-in-out infinite alternate;
-        }
-
-        .bar-cyan .bar-fill {
-            background: linear-gradient(to top, #0284c7, var(--accent-cyan));
-            box-shadow: 0 0 10px var(--accent-cyan);
-        }
-
-        @keyframes bar-bounce {
-            0% { height: 15%; }
-            50% { height: 85%; }
-            100% { height: 40%; }
-        }
-
-        .b1 .bar-fill { animation-delay: 0.1s; }
-        .b2 .bar-fill { animation-delay: 0.5s; }
-        .b3 .bar-fill { animation-delay: 0.2s; }
-        .b4 .bar-fill { animation-delay: 0.7s; }
-        .b5 .bar-fill { animation-delay: 0.3s; }
-        .b6 .bar-fill { animation-delay: 0.8s; }
-
         .stats-counter { 
-            font-family: 'Orbitron', sans-serif; font-size: 50px; font-weight: 900; 
+            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
             color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
             margin-bottom: 2px; 
         }
@@ -580,24 +546,10 @@ HTML_TEMPLATE = """
         <div class="neural-card">
             <div class="laser-line"></div>
             <div class="scout-display">
-                <!-- Barras Láser Izquierda -->
-                <div class="bars-container">
-                    <div class="bar-item b1"><div class="bar-fill" style="height: 60%;"></div></div>
-                    <div class="bar-item b2 bar-cyan"><div class="bar-fill" style="height: 85%;"></div></div>
-                    <div class="bar-item b3"><div class="bar-fill" style="height: 40%;"></div></div>
-                </div>
-
-                <!-- Núcleo Neural Central -->
+                <!-- Núcleo Neural Exclusivo Centrado -->
                 <div class="neural-core">
                     <div class="core-inner-ring"></div>
                     <div class="core-center-node">⚡</div>
-                </div>
-
-                <!-- Barras Láser Derecha -->
-                <div class="bars-container">
-                    <div class="bar-item b4 bar-cyan"><div class="bar-fill" style="height: 75%;"></div></div>
-                    <div class="bar-item b5"><div class="bar-fill" style="height: 90%;"></div></div>
-                    <div class="bar-item b6 bar-cyan"><div class="bar-fill" style="height: 50%;"></div></div>
                 </div>
             </div>
             <div class="stats-counter" id="alertas-counter">0</div>

@@ -3,11 +3,11 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER HÍBRIDO (ESPN API: GLOBAL + VIP)
+# ⚽ SCRAPER HÍBRIDO (RADAR GLOBAL + VIP INTELIGENTE)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API pública de ESPN (Radar Global y VIP)...", flush=True)
+  print("⏳ Consultando API de ESPN para Radar Global y VIP...", flush=True)
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -22,11 +22,9 @@ async def extraer_futbol_en_vivo():
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
 
-          # Solo partidos en juego ("in")
           if state != "in":
             continue
 
-          # Extraer el minuto actual
           display_clock = status.get("displayClock", "50")
           min_int = 50
           match_min = re.search(r"\d+", str(display_clock))
@@ -81,12 +79,12 @@ async def extraer_futbol_en_vivo():
           if leagues_info:
             league = leagues_info.get("name", "Liga en Vivo")
 
-          # Regla base estricta: Minuto 46 a 78 y marcador 0 - 0
+          # Regla base: Todo partido 0-0 entre el minuto 46 y 78 va al Radar Global
           condicion_minuto = 46 <= min_int <= 78
           condicion_goles = (home_score + away_score) == 0
 
           if condicion_minuto and condicion_goles:
-            # Filtro VIP: si la API provee estadísticas y cumplen con el umbral
+            # Evaluar si cumple además como VIP por estadísticas
             es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
 
             partidos_candidatos.append({
@@ -105,7 +103,7 @@ async def extraer_futbol_en_vivo():
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos totales desde ESPN.",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos para Radar Global.",
           flush=True,
       )
     else:
@@ -117,8 +115,5 @@ async def extraer_futbol_en_vivo():
   return partidos_candidatos
 
 
-# ==========================================
-# 🏀 BALONCESTO PAUSADO
-# ==========================================
 async def extraer_basket_en_vivo():
   return []

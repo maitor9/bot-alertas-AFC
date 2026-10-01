@@ -16,17 +16,24 @@ partidos_global_en_vivo = []
 partidos_vip_en_vivo = []
 ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
 
-def enviar_alerta_telegram_vip(home_name, away_name, league_name, minuto, remates, remates_puerta, equipo_cumple):
+def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto, remates, remates_puerta, es_vip):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
+    
+    # Personalizar el encabezado según si es VIP por estadísticas o Radar Global
+    if es_vip:
+        titulo = "⚡ ¡ALERTA VIP AI OVER 0.5 GOALS! ⚡"
+        detalle = f"📊 <b>Remates Totales:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯 <i>Cumple filtros avanzados de alta intensidad.</i>"
+    else:
+        titulo = "🚨 ¡ALERTA RADAR GLOBAL 0-0! 🚨"
+        detalle = f"⏱ <i>Partido en rango 46'-78' con marcador cerrado 0-0.</i>"
+
     mensaje = (
-        f"⚡ <b>¡ALERTA VIP AI OVER 0.5 GOALS!</b> ⚡\n\n"
+        f"{titulo}\n\n"
         f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
         f"🏆 <b>Liga:</b> {league_name}\n"
         f"⏱ <b>Minuto:</b> {minuto}' | <b>Marcador:</b> 0 - 0\n"
-        f"📊 <b>Remates Totales:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n"
-        f"🔥 <b>Más activo:</b> {equipo_cumple}\n\n"
-        f"🎯 <i>Cumple filtros avanzados de alta intensidad.</i>"
+        f"{detalle}"
     )
     try:
         requests.post(
@@ -35,46 +42,49 @@ def enviar_alerta_telegram_vip(home_name, away_name, league_name, minuto, remate
             timeout=5
         )
     except Exception as e:
-        print(f"⚠️ Error Telegram VIP: {e}", flush=True)
+        print(f"⚠️ Error Telegram Global: {e}", flush=True)
 
 def bucle_escaneo_unificado():
     global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status
-    print("🚀 Bucle de escaneo separado iniciado...", flush=True)
+    print("🚀 Bucle de escaneo general iniciado...", flush=True)
 
     while True:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            print("🔄 Consultando partidos para Radar Global y VIP...", flush=True)
+            print("🔄 Consultando partidos para Radar Global y Alertas...", flush=True)
             candidatos = loop.run_until_complete(extraer_futbol_en_vivo())
             
-            # Separar listas
             global_list = []
             vip_list = []
 
             for p in candidatos:
-                # Todos van al Radar Global 0-0
+                # 1. Absolutamente todos van al Radar Global
                 global_list.append(p)
-                
-                # Si es VIP, va a la lista VIP y dispara Telegram
-                if p['tipo'] == "VIP":
+
+                # 2. Si cumple como VIP, va también a la lista VIP
+                es_vip = (p['tipo'] == "VIP")
+                if es_vip:
                     vip_list.append(p)
-                    partido_id = f"VIP_{p['equipo_local']}_{p['equipo_visita']}"
-                    if partido_id not in alertas_disparadas:
-                        try:
-                            guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['presion'])
-                        except Exception:
-                            pass
-                        enviar_alerta_telegram_vip(
-                            p['equipo_local'], 
-                            p['equipo_visita'], 
-                            p['liga'], 
-                            p['minuto'], 
-                            p.get('remates', 0), 
-                            p.get('remates_puerta', 0), 
-                            p['presion']
-                        )
-                        alertas_disparadas.add(partido_id)
+
+                # 3. Todos los partidos 0-0 disparan alerta a Telegram (evitando duplicados)
+                partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
+                if partido_id not in alertas_disparadas:
+                    try:
+                        guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], p['minuto'], p['presion'])
+                    except Exception:
+                        pass
+                    
+                    enviar_alerta_telegram_global(
+                        p['equipo_local'], 
+                        p['equipo_visita'], 
+                        p['liga'], 
+                        p['minuto'], 
+                        p.get('remates', 0), 
+                        p.get('remates_puerta', 0), 
+                        es_vip
+                    )
+                    alertas_disparadas.add(partido_id)
 
             partidos_global_en_vivo = global_list
             partidos_vip_en_vivo = vip_list
@@ -113,12 +123,10 @@ def api_alertas():
 
 @app.route('/api/partidos_00')
 def api_partidos_00():
-    # Devuelve el Radar Global 0-0
     return jsonify(partidos_global_en_vivo)
 
 @app.route('/api/vip_alertas')
 def api_vip_alertas():
-    # Devuelve las Alertas VIP AI
     return jsonify(partidos_vip_en_vivo)
 
 @app.route('/api/basket_alertas')

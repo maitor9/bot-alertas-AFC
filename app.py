@@ -60,7 +60,6 @@ def bucle_escaneo_futbol():
 
   print("🚀 Bucle de escaneo Fútbol con Scraper iniciado...", flush=True)
 
-  # Crear un event loop dedicado para este hilo
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
 
@@ -138,7 +137,6 @@ def bucle_escaneo_basket():
 
   print("🚀 Bucle de escaneo Baloncesto con Scraper iniciado...", flush=True)
 
-  # Crear un event loop dedicado para este hilo
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
 

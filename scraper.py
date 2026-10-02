@@ -3,11 +3,14 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER HÍBRIDO (RADAR GLOBAL: 0-0 EN JUEGO + DESCANSO)
+# ⚽ SCRAPER DE FÚTBOL PURIFICADO (EXCLUYE BASKETBALL Y OTROS)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API de ESPN (En juego y Descanso 0-0)...", flush=True)
+  print(
+      "⏳ Consultando API de ESPN (Filtrando estrictamente solo fútbol)...",
+      flush=True,
+  )
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -19,32 +22,51 @@ async def extraer_futbol_en_vivo():
 
       for event in events:
         try:
+          # Validar primero la liga y el nombre del torneo para descartar baloncesto u otros deportes colados
+          competitions = event.get("competitions", [])
+          if not competitions:
+            continue
+
+          comp = competitions[0]
+          leagues_info = comp.get("league", {})
+          league_name = (
+              leagues_info.get("name", "Liga en Vivo")
+              if leagues_info
+              else "Liga en Vivo"
+          )
+          league_lower = league_name.lower()
+
+          # Filtro de seguridad: Si la liga menciona baloncesto o basket, se descarta de inmediato
+          if (
+              "basketball" in league_lower
+              or "baloncesto" in league_lower
+              or "nba" in league_lower
+              or "ncaa" in league_lower
+          ):
+            continue
+
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
 
-          # Aceptamos partidos en juego ("in") o en descanso (estado "halftime" o "pre" / descripciones de descanso)
           status_desc = status.get("type", {}).get("description", "").lower()
-          is_halftime = "half" in status_desc or "descanso" in status_desc or state == "halftime"
+          is_halftime = (
+              "half" in status_desc
+              or "descanso" in status_desc
+              or state == "halftime"
+          )
 
           if state != "in" and not is_halftime:
             continue
 
-          # Extraer el minuto actual
           display_clock = status.get("displayClock", "45")
           min_int = 45
           match_min = re.search(r"\d+", str(display_clock))
           if match_min:
             min_int = int(match_min.group())
 
-          # Si está en descanso pero la API dice 0 o 45, lo fijamos en 45 (HT)
           if is_halftime:
             min_int = 45
 
-          competitions = event.get("competitions", [])
-          if not competitions:
-            continue
-
-          comp = competitions[0]
           competitors = comp.get("competitors", [])
 
           home_score, away_score = 0, 0
@@ -55,7 +77,9 @@ async def extraer_futbol_en_vivo():
           for team in competitors:
             is_home = team.get("homeAway") == "home"
             name = team.get("team", {}).get("displayName", "Equipo")
-            score = int(team.get("score", 0))
+
+            raw_score = team.get("score", 0)
+            score = int(raw_score) if str(raw_score).isdigit() else 0
 
             total_s = 0
             on_target_s = 0
@@ -83,43 +107,37 @@ async def extraer_futbol_en_vivo():
           total_remates_puerta = home_sot + away_sot
           equipo_mas_activo = home_name if home_shots >= away_shots else away_name
 
-          league = "Liga en Vivo"
-          leagues_info = comp.get("league", {})
-          if leagues_info:
-            league = leagues_info.get("name", "Liga en Vivo")
+          # --- VALIDACIÓN ESTRICTA DE 0-0 REAL EN FÚTBOL ---
+          marcador_total = home_score + away_score
+          if marcador_total != 0:
+            continue
 
-          # Reglas: 
-          # 1. Partidos en segundo tiempo entre min 46 y 78 con 0-0
-          # 2. O partidos en descanso (HT) con marcador 0-0
-          condicion_segundo_tiempo = (46 <= min_int <= 78) and ((home_score + away_score) == 0)
-          condicion_descanso = is_halftime and ((home_score + away_score) == 0)
+          condicion_segundo_tiempo = 46 <= min_int <= 78
+          condicion_descanso = is_halftime
 
           if condicion_segundo_tiempo or condicion_descanso:
-            # Etiquetar minuto visual si está en descanso
             minuto_mostrar = "HT (Descanso)" if is_halftime else f"{min_int}'"
-
-            # Filtro VIP por estadísticas (si aplica)
             es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
 
             partidos_candidatos.append({
                 "equipo_local": home_name,
                 "equipo_visita": away_name,
                 "minuto": minuto_mostrar,
-                "minuto_num": min_int, # Para orden interno si se requiere
                 "goles_local": home_score,
                 "goles_visita": away_score,
-                "liga": league,
+                "liga": league_name,
                 "remates": total_remates,
                 "remates_puerta": total_remates_puerta,
                 "presion": equipo_mas_activo,
                 "tipo": "VIP" if es_vip else "GLOBAL",
-                "es_descanso": is_halftime
+                "es_descanso": is_halftime,
             })
         except Exception:
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos para Radar Global (Juego y Descanso).",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos de fútbol"
+          " válidos.",
           flush=True,
       )
     else:

@@ -3,12 +3,13 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER VIP ESTRICTO (MIN 46-80, 0-0, REMATES >=8 O A PUERTA >=4)
+# ⚽ SCRAPER VIP ESTRICTO (MIN 46-80, 0-0, REMATES >=8 Y A PUERTA >=4)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
   print(
-      "⏳ Consultando API de ESPN con filtros estrictos de alta intensidad...",
+      "⏳ Consultando API de ESPN con filtro estricto (Remates >=8 Y A puerta"
+      " >=4)...",
       flush=True,
   )
 
@@ -104,14 +105,14 @@ async def extraer_futbol_en_vivo():
           if (home_score + away_score) != 0:
             continue
 
-          # Regla 2 & 3: Remates totales >= 8 O Remates a puerta >= 4
-          condicion_remates = (total_remates >= 8) or (
+          # Regla 2 & 3 (ESTRICTO CON Y / AND): Remates totales >= 8 Y Remates a puerta >= 4
+          condicion_remates_estricta = (total_remates >= 8) and (
               total_remates_puerta >= 4
           )
-          if not condicion_remates:
+          if not condicion_remates_estricta:
             continue
 
-          # Si pasa todos los filtros, es un partido VIP válido
+          # Si cumple rigurosamente todo, se envía al bloque VIP
           partidos_candidatos.append({
               "equipo_local": home_name,
               "equipo_visita": away_name,
@@ -128,8 +129,8 @@ async def extraer_futbol_en_vivo():
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos que cumplen"
-          " estrictamente las reglas VIP.",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos bajo la regla"
+          " estricta (Y).",
           flush=True,
       )
     else:
@@ -141,5 +142,5 @@ async def extraer_futbol_en_vivo():
   return partidos_candidatos
 
 
-async def extras_basket_en_vivo():
+async def extraer_basket_en_vivo():
   return []

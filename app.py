@@ -25,10 +25,10 @@ def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str,
         detalle = "⏳ <i>Partido en mediotiempo con marcador cerrado. ¡Prepárate para el 2do tiempo!</i>"
     elif es_vip:
         titulo = "⚡ <b>¡ALERTA VIP AI OVER 0.5 GOALS!</b> ⚡"
-        detalle = f"📊 <b>Remates:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯 <i>Alta intensidad ofensiva detectada.</i>"
+        detalle = f"📊 <b>Remates:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯 <i>Cumple filtros de alta intensidad (Remates ≥8 o A puerta ≥4).</i>"
     else:
         titulo = "🚨 <b>¡ALERTA RADAR GLOBAL 0-0!</b> 🚨"
-        detalle = f"⏱ <i>Partido activo en rango 46'-78' con marcador 0-0.</i>"
+        detalle = f"⏱ <i>Partido en juego (Minuto 46'-80') con marcador 0-0.</i>"
 
     mensaje = (
         f"{titulo}\n\n"
@@ -48,7 +48,7 @@ def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str,
 
 def bucle_escaneo_unificado():
     global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status
-    print("🚀 Bucle de escaneo general con descanso iniciado...", flush=True)
+    print("🚀 Bucle de escaneo general iniciado...", flush=True)
 
     while True:
         loop = asyncio.new_event_loop()
@@ -63,14 +63,13 @@ def bucle_escaneo_unificado():
             for p in candidatos:
                 global_list.append(p)
 
-                es_vip = (p['tipo'] == "VIP")
+                es_vip = (p.get('tipo') == "VIP")
                 if es_vip:
                     vip_list.append(p)
 
                 # Identificador único por partido
                 partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
                 
-                # Si el partido pasa a descanso o entra en el segundo tiempo, aseguramos la notificación
                 if partido_id not in alertas_disparadas:
                     try:
                         guardar_alerta(partido_id, p['equipo_local'], p['equipo_visita'], p['liga'], str(p['minuto']), p['presion'])

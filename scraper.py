@@ -3,7 +3,7 @@ import requests
 
 
 # ==========================================
-# ⚽ SCRAPER VIP ESTRICTO (MIN 46-80, 0-0, REMATES >=8 Y A PUERTA >=4)
+# ⚽ SCRAPER VIP ESTRICTO (MIN 46-75, 0-0, REMATES >=8 Y A PUERTA >=4)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
@@ -58,8 +58,8 @@ async def extraer_futbol_en_vivo():
           if match_min:
             min_int = int(match_min.group())
 
-          # Regla de Tiempo: Estrictamente desde el minuto 46 hasta el 80
-          if not (46 <= min_int <= 80):
+          # Regla de Tiempo: Estrictamente desde el minuto 46 hasta el 75
+          if not (46 <= min_int <= 75):
             continue
 
           competitors = comp.get("competitors", [])

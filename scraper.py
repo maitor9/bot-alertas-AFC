@@ -2,9 +2,15 @@ import re
 import requests
 
 
+# ==========================================
+# ⚽ SCRAPER VIP ESTRICTO (MIN 46-80, 0-0, REMATES >=8 O A PUERTA >=4)
+# ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API de ESPN (Filtro 46'-80' y Descanso)...", flush=True)
+  print(
+      "⏳ Consultando API de ESPN con filtros estrictos de alta intensidad...",
+      flush=True,
+  )
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -29,6 +35,7 @@ async def extraer_futbol_en_vivo():
           )
           league_lower = league_name.lower()
 
+          # Excluir otros deportes
           if (
               "basketball" in league_lower
               or "baloncesto" in league_lower
@@ -39,24 +46,20 @@ async def extraer_futbol_en_vivo():
 
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
-          status_desc = status.get("type", {}).get("description", "").lower()
-          is_halftime = (
-              "half" in status_desc
-              or "descanso" in status_desc
-              or state == "halftime"
-          )
 
-          if state != "in" and not is_halftime:
+          # Solo partidos en juego ("in")
+          if state != "in":
             continue
 
-          display_clock = status.get("displayClock", "45")
-          min_int = 45
+          display_clock = status.get("displayClock", "0")
+          min_int = 0
           match_min = re.search(r"\d+", str(display_clock))
           if match_min:
             min_int = int(match_min.group())
 
-          if is_halftime:
-            min_int = 45
+          # Regla de Tiempo: Estrictamente desde el minuto 46 hasta el 80
+          if not (46 <= min_int <= 80):
+            continue
 
           competitors = comp.get("competitors", [])
           home_score, away_score = 0, 0
@@ -97,37 +100,36 @@ async def extraer_futbol_en_vivo():
           total_remates_puerta = home_sot + away_sot
           equipo_mas_activo = home_name if home_shots >= away_shots else away_name
 
-          # Goles totales == 0
+          # Regla 1: Total de goles del partido igual a 0
           if (home_score + away_score) != 0:
             continue
 
-          # Reglas de tiempo exactas: Minuto 46 a 80 o Descanso (HT)
-          condicion_tiempo = (46 <= min_int <= 80) or is_halftime
+          # Regla 2 & 3: Remates totales >= 8 O Remates a puerta >= 4
+          condicion_remates = (total_remates >= 8) or (
+              total_remates_puerta >= 4
+          )
+          if not condicion_remates:
+            continue
 
-          if condicion_tiempo:
-            minuto_mostrar = "HT (Descanso)" if is_halftime else f"{min_int}'"
-            # Regla VIP: Remates totales >= 8 O Remates a puerta >= 4
-            es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
-
-            partidos_candidatos.append({
-                "equipo_local": home_name,
-                "equipo_visita": away_name,
-                "minuto": minuto_mostrar,
-                "goles_local": home_score,
-                "goles_visita": away_score,
-                "liga": league_name,
-                "remates": total_remates,
-                "remates_puerta": total_remates_puerta,
-                "presion": equipo_mas_activo,
-                "tipo": "VIP" if es_vip else "GLOBAL",
-                "es_descanso": is_halftime,
-            })
+          # Si pasa todos los filtros, es un partido VIP válido
+          partidos_candidatos.append({
+              "equipo_local": home_name,
+              "equipo_visita": away_name,
+              "minuto": f"{min_int}'",
+              "goles_local": home_score,
+              "goles_visita": away_score,
+              "liga": league_name,
+              "remates": total_remates,
+              "remates_puerta": total_remates_puerta,
+              "presion": equipo_mas_activo,
+              "tipo": "VIP",
+          })
         except Exception:
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos de fútbol"
-          " válidos.",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos que cumplen"
+          " estrictamente las reglas VIP.",
           flush=True,
       )
     else:
@@ -139,5 +141,5 @@ async def extraer_futbol_en_vivo():
   return partidos_candidatos
 
 
-async def extraer_basket_en_vivo():
+async def extras_basket_en_vivo():
   return []

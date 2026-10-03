@@ -2,15 +2,9 @@ import re
 import requests
 
 
-# ==========================================
-# ⚽ SCRAPER DE FÚTBOL PURIFICADO (EXCLUYE BASKETBALL Y OTROS)
-# ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print(
-      "⏳ Consultando API de ESPN (Filtrando estrictamente solo fútbol)...",
-      flush=True,
-  )
+  print("⏳ Consultando API de ESPN (Filtro 46'-80' y Descanso)...", flush=True)
 
   try:
     url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
@@ -22,7 +16,6 @@ async def extraer_futbol_en_vivo():
 
       for event in events:
         try:
-          # Validar primero la liga y el nombre del torneo para descartar baloncesto u otros deportes colados
           competitions = event.get("competitions", [])
           if not competitions:
             continue
@@ -36,7 +29,6 @@ async def extraer_futbol_en_vivo():
           )
           league_lower = league_name.lower()
 
-          # Filtro de seguridad: Si la liga menciona baloncesto o basket, se descarta de inmediato
           if (
               "basketball" in league_lower
               or "baloncesto" in league_lower
@@ -47,7 +39,6 @@ async def extraer_futbol_en_vivo():
 
           status = event.get("status", {})
           state = status.get("type", {}).get("state", "")
-
           status_desc = status.get("type", {}).get("description", "").lower()
           is_halftime = (
               "half" in status_desc
@@ -68,7 +59,6 @@ async def extraer_futbol_en_vivo():
             min_int = 45
 
           competitors = comp.get("competitors", [])
-
           home_score, away_score = 0, 0
           home_name, away_name = "Local", "Visita"
           home_shots, away_shots = 0, 0
@@ -107,16 +97,16 @@ async def extraer_futbol_en_vivo():
           total_remates_puerta = home_sot + away_sot
           equipo_mas_activo = home_name if home_shots >= away_shots else away_name
 
-          # --- VALIDACIÓN ESTRICTA DE 0-0 REAL EN FÚTBOL ---
-          marcador_total = home_score + away_score
-          if marcador_total != 0:
+          # Goles totales == 0
+          if (home_score + away_score) != 0:
             continue
 
-          condicion_segundo_tiempo = 46 <= min_int <= 78
-          condicion_descanso = is_halftime
+          # Reglas de tiempo exactas: Minuto 46 a 80 o Descanso (HT)
+          condicion_tiempo = (46 <= min_int <= 80) or is_halftime
 
-          if condicion_segundo_tiempo or condicion_descanso:
+          if condicion_tiempo:
             minuto_mostrar = "HT (Descanso)" if is_halftime else f"{min_int}'"
+            # Regla VIP: Remates totales >= 8 O Remates a puerta >= 4
             es_vip = (total_remates >= 8) or (total_remates_puerta >= 4)
 
             partidos_candidatos.append({

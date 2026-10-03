@@ -4,14 +4,13 @@ SPORTMONKS_TOKEN = "jdLnSnODSlsqNmvFuMVppxOzhStnsD5MAvMJwQaPPNl82cejqS6bXTjQLnVt
 
 
 # ==========================================
-# ⚽ SCRAPER SPORTMONKS (ESTRICTO CON xG >= 0.80)
+# ⚽ SCRAPER SPORTMONKS (MIN 46-75, 0-0, REMATES Y xG INDIVIDUAL >= 0.80)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando Sportmonks (Filtro con xG, Remates y Tiempo)...", flush=True)
+  print("⏳ Consultando Sportmonks (Filtro Min 46-75 + xG Individual)...", flush=True)
 
   try:
-    # URL de Sportmonks v3 con inclusión de estadísticas, marcadores, participantes y liga
     url = f"https://api.sportmonks.com/v3/football/livescores/inplay?api_token={SPORTMONKS_TOKEN}&include=participants;scores;statistics;league"
     response = requests.get(url, timeout=12)
 
@@ -28,8 +27,8 @@ async def extraer_futbol_en_vivo():
           time_data = match.get("time", {})
           min_int = time_data.get("minute", 0)
 
-          # REGLA DE TIEMPO: Minuto 46 al 80
-          if not (46 <= min_int <= 80):
+          # REGLA DE TIEMPO: Estrictamente entre el minuto 46 y el 75
+          if not (46 <= min_int <= 75):
             continue
 
           participants = match.get("participants", [])
@@ -60,41 +59,45 @@ async def extraer_futbol_en_vivo():
           league_name = league_info.get("name", "Liga en Vivo")
 
           statistics = match.get("statistics", [])
-          total_remates = 0
-          total_remates_puerta = 0
-          total_xg = 0.0
+          home_remates, away_remates = 0, 0
+          home_puerta, away_puerta = 0, 0
+          home_xg, away_xg = 0.0, 0.0
 
           for stat in statistics:
             stat_type = str(stat.get("type_id", "")).lower()
             s_name = str(stat.get("name", "")).lower()
 
-            h_val_raw = stat.get("home", 0) or 0
-            a_val_raw = stat.get("away", 0) or 0
+            try:
+              h_val = float(stat.get("home", 0) or 0)
+              a_val = float(stat.get("away", 0) or 0)
+            except:
+              h_val, a_val = 0.0, 0.0
 
-            # Identificar remates totales, remates a puerta y xG
+            # Capturar estadísticas separadas por equipo
             if "total shots" in s_name or "shots-total" in stat_type or stat.get("type_id") == 42:
-              total_remates = int(h_val_raw) + int(a_val_raw)
+              home_remates = int(h_val)
+              away_remates = int(a_val)
             elif "shots on target" in s_name or "shots-on-target" in stat_type or stat.get("type_id") == 86:
-              total_remates_puerta = int(h_val_raw) + int(a_val_raw)
-            elif "expected_goals" in s_name or "expected goals" in s_name or "xg" in stat_type or stat.get("type_id") in [343, 594]: 
-              # IDs comunes o nombres para xG en Sportmonks
-              try:
-                total_xg = float(h_val_raw) + float(a_val_raw)
-              except:
-                pass
+              home_puerta = int(h_val)
+              away_puerta = int(a_val)
+            elif "expected_goals" in s_name or "expected goals" in s_name or "xg" in stat_type or stat.get("type_id") in [343, 594]:
+              home_xg = h_val
+              away_xg = a_val
 
-          equipo_mas_activo = home_name
+          total_remates = home_remates + away_remates
+          total_remates_puerta = home_puerta + away_puerta
+          total_xg = home_xg + away_xg
 
-          # REGLAS ESTRICTAS: Remates >= 8 Y A puerta >= 4 Y xG >= 0.80
+          # REGLA 2: Remates totales del partido >= 8 Y Remates a puerta >= 4
           condicion_remates = (total_remates >= 8) and (total_remates_puerta >= 4)
-          
-          # Nota: Si por alguna razón la liga del plan gratuito no expone xG (devuelve 0.0), 
-          # puedes relajar temporalmente el xG o dejarlo condicionado. Aquí exigimos xG >= 0.80 si está presente, 
-          # o puedes ajustarlo según veas el comportamiento en los logs.
-          condicion_xg = total_xg >= 0.80
 
-          if not (condicion_remates and condicion_xg):
+          # REGLA 3: Al menos uno de los dos equipos debe tener un xG individual >= 0.80
+          condicion_xg_individual = (home_xg >= 0.80) or (away_xg >= 0.80)
+
+          if not (condicion_remates and condicion_xg_individual):
             continue
+
+          equipo_mas_activo = home_name if home_xg >= away_xg else away_name
 
           partidos_candidatos.append({
               "equipo_local": home_name,
@@ -112,7 +115,7 @@ async def extraer_futbol_en_vivo():
         except Exception:
           continue
 
-      print(f"✅ Extraídos {len(partidos_candidatos)} partidos con filtro xG.", flush=True)
+      print(f"✅ Extraídos {len(partidos_candidatos)} partidos cumpliendo xG individual y rango 46-75.", flush=True)
     else:
       print(f"⚠️ Status code Sportmonks: {response.status_code}", flush=True)
 

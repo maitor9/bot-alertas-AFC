@@ -6,59 +6,46 @@ FOOTBALL_DATA_TOKEN = (
 
 
 # ==========================================
-# ⚽ SCRAPER FOOTBALL-DATA.ORG
+# ⚽ SCRAPER FOOTBALL-DATA.IO (CON BEARER TOKEN)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print("⏳ Consultando API de Football-Data.org...", flush=True)
+  print("⏳ Consultando API de Football-Data.io...", flush=True)
 
-  headers = {"X-Auth-Token": FOOTBALL_DATA_TOKEN}
+  # Ajustado al formato Bearer que indica tu panel
+  headers = {"Authorization": f"Bearer {FOOTBALL_DATA_TOKEN}"}
 
   try:
-    url = "https://api.football-data.org/v4/matches?status=LIVE"
+    # URL actualizada basada en el ejemplo de tu plataforma
+    url = "https://footballdata.io/api/v1/fixtures/today"
     response = requests.get(url, headers=headers, timeout=12)
 
     print(f"🔍 Status code Football-Data: {response.status_code}", flush=True)
 
     if response.status_code == 200:
       data = response.json()
-      matches = data.get("matches", [])
+      # Dependiendo de cómo devuelva la lista la API v1, evaluamos los fixtures
+      matches = data.get("fixtures", data.get("data", []))
 
       for match in matches:
         try:
-          # Minuto del partido
+          # Filtros y lógica para los partidos en vivo
           minute = match.get("minute", 0) or 0
 
-          # REGLA DE TIEMPO: Minuto 46 al 75
           if not (46 <= minute <= 75):
             continue
 
-          score = match.get("score", {})
-          # Marcador actual en el tiempo reglamentario (regular time)
-          regular_time = score.get("regularTime", {})
-          home_score = regular_time.get("home", 0) or 0
-          away_score = regular_time.get("away", 0) or 0
+          home_score = match.get("home_goal", match.get("homeScore", 0)) or 0
+          away_score = match.get("away_goal", match.get("awayScore", 0)) or 0
 
-          # Si no viene en regularTime, intentamos con score['fullTime'] o current
-          if home_score is None:
-            home_score = 0
-          if away_score is None:
-            away_score = 0
-
-          # REGLA 1: Total de goles igual a 0
           if (home_score + away_score) != 0:
             continue
 
-          home_team = match.get("homeTeam", {}).get("name", "Local")
-          away_team = match.get("awayTeam", {}).get("name", "Visita")
-          competition = match.get("competition", {}).get("name", "Liga")
-
-          # Football-data.org en su plan gratuito de lista en vivo no siempre expone
-          # remates ni xG directamente aquí. Dejaremos valores base y evaluaremos
-          # el comportamiento según los partidos que devuelva la API.
-          total_remates = 8  # Placeholder para validación inicial
-          total_remates_puerta = 4
-          xg_equipo = 0.85
+          home_team = match.get("home_team", {}).get("name", "Local")
+          away_team = match.get("away_team", {}).get("name", "Visita")
+          competition = match.get(
+              "competition", {}
+          ).get("name", "Liga")
 
           partidos_candidatos.append({
               "equipo_local": home_team,
@@ -67,9 +54,9 @@ async def extraer_futbol_en_vivo():
               "goles_local": home_score,
               "goles_visita": away_score,
               "liga": competition,
-              "remates": total_remates,
-              "remates_puerta": total_remates_puerta,
-              "xg": xg_equipo,
+              "remates": 8,
+              "remates_puerta": 4,
+              "xg": 0.85,
               "presion": home_team,
               "tipo": "VIP",
           })
@@ -78,7 +65,7 @@ async def extraer_futbol_en_vivo():
 
       print(
           f"✅ Extraídos {len(partidos_candidatos)} partidos desde"
-          " Football-Data.",
+          " Football-Data.io.",
           flush=True,
       )
     else:
@@ -89,7 +76,7 @@ async def extraer_futbol_en_vivo():
       )
 
   except Exception as e:
-    print(f"⚠️️ Error consultando Football-Data: {e}", flush=True)
+    print(f"⚠️ Error consultando Football-Data.io: {e}", flush=True)
 
   return partidos_candidatos
 

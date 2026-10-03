@@ -1,118 +1,109 @@
-import re
 import requests
+
+SPORTMONKS_TOKEN = "jdLnSnODSlsqNmvFuMVppxOzhStnsD5MAvMJwQaPPNl82cejqS6bXTjQLnVt"
 
 
 # ==========================================
-# ⚽ SCRAPER VIP ESTRICTO (MIN 46-75, 0-0, REMATES >=8 Y A PUERTA >=4)
+# ⚽ SCRAPER SPORTMONKS (ESTRICTO: MIN 46-80, 0-0, REMATES >=8 Y A PUERTA >=4)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
-  print(
-      "⏳ Consultando API de ESPN con filtro estricto (Remates >=8 Y A puerta"
-      " >=4)...",
-      flush=True,
-  )
+  print("⏳ Consultando API en vivo de Sportmonks (v3)...", flush=True)
 
   try:
-    url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard"
+    # URL oficial de Sportmonks v3 con inclusión de estadísticas, marcadores, participantes y liga
+    url = f"https://api.sportmonks.com/v3/football/livescores/inplay?api_token={SPORTMONKS_TOKEN}&include=participants;scores;statistics;league"
     response = requests.get(url, timeout=12)
+
+    print(
+        f"🔍 Status code Sportmonks Live: {response.status_code}", flush=True
+    )
 
     if response.status_code == 200:
       data = response.json()
-      events = data.get("events", [])
+      matches = data.get("data", [])
 
-      for event in events:
+      for match in matches:
         try:
-          competitions = event.get("competitions", [])
-          if not competitions:
+          # Verificar que esté en juego (LIVE)
+          status_info = match.get("status", "")
+          if status_info != "LIVE":
             continue
 
-          comp = competitions[0]
-          leagues_info = comp.get("league", {})
-          league_name = (
-              leagues_info.get("name", "Liga en Vivo")
-              if leagues_info
-              else "Liga en Vivo"
-          )
-          league_lower = league_name.lower()
+          # Minuto actual del partido
+          time_data = match.get("time", {})
+          min_int = time_data.get("minute", 0)
 
-          # Excluir otros deportes
-          if (
-              "basketball" in league_lower
-              or "baloncesto" in league_lower
-              or "nba" in league_lower
-              or "ncaa" in league_lower
-          ):
+          # REGLA DE TIEMPO: Estrictamente entre el minuto 46 y el 80
+          if not (46 <= min_int <= 80):
             continue
 
-          status = event.get("status", {})
-          state = status.get("type", {}).get("state", "")
-
-          # Solo partidos en juego ("in")
-          if state != "in":
-            continue
-
-          display_clock = status.get("displayClock", "0")
-          min_int = 0
-          match_min = re.search(r"\d+", str(display_clock))
-          if match_min:
-            min_int = int(match_min.group())
-
-          # Regla de Tiempo: Estrictamente desde el minuto 46 hasta el 75
-          if not (46 <= min_int <= 75):
-            continue
-
-          competitors = comp.get("competitors", [])
-          home_score, away_score = 0, 0
+          # Equipos participantes
+          participants = match.get("participants", [])
           home_name, away_name = "Local", "Visita"
-          home_shots, away_shots = 0, 0
-          home_sot, away_sot = 0, 0
 
-          for team in competitors:
-            is_home = team.get("homeAway") == "home"
-            name = team.get("team", {}).get("displayName", "Equipo")
+          for p in participants:
+            meta = p.get("meta", {})
+            if meta.get("location") == "home":
+              home_name = p.get("name", "Local")
+            elif meta.get("location") == "away":
+              away_name = p.get("name", "Visita")
 
-            raw_score = team.get("score", 0)
-            score = int(raw_score) if str(raw_score).isdigit() else 0
+          # Marcadores actuales (buscamos 0-0)
+          scores = match.get("scores", [])
+          home_score, away_score = 0, 0
+          for score in scores:
+            if score.get("description") == "CURRENT":
+              s_loc = score.get("score", {}).get("participant", "")
+              if s_loc == "home":
+                home_score = score.get("score", {}).get("goals", 0)
+              elif s_loc == "away":
+                away_score = score.get("score", {}).get("goals", 0)
 
-            total_s = 0
-            on_target_s = 0
-            statistics = team.get("statistics", [])
-            for stat in statistics:
-              s_name = stat.get("name", "").lower()
-              s_val = stat.get("value", 0)
-              if "shotstotal" in s_name or s_name == "shots":
-                total_s = int(s_val)
-              elif "shotsontarget" in s_name:
-                on_target_s = int(s_val)
-
-            if is_home:
-              home_name = name
-              home_score = score
-              home_shots = total_s
-              home_sot = on_target_s
-            else:
-              away_name = name
-              away_score = score
-              away_shots = total_s
-              away_sot = on_target_s
-
-          total_remates = home_shots + away_shots
-          total_remates_puerta = home_sot + away_sot
-          equipo_mas_activo = home_name if home_shots >= away_shots else away_name
-
-          # Regla 1: Total de goles del partido igual a 0
+          # REGLA 1: Total de goles igual a 0
           if (home_score + away_score) != 0:
             continue
 
-          # Regla 2 & 3 (ESTRICTO CON Y / AND): Remates totales >= 8 Y Remates a puerta >= 4
+          # Nombre de la liga
+          league_info = match.get("league", {})
+          league_name = league_info.get("name", "Liga en Vivo")
+
+          # Estadísticas en vivo de Sportmonks
+          statistics = match.get("statistics", [])
+          total_remates = 0
+          total_remates_puerta = 0
+
+          for stat in statistics:
+            stat_type = str(stat.get("type_id", "")).lower()
+            s_name = str(stat.get("name", "")).lower()
+
+            h_val = int(stat.get("home", 0) or 0)
+            a_val = int(stat.get("away", 0) or 0)
+
+            # Identificar remates totales y a puerta según Sportmonks v3
+            if (
+                "total shots" in s_name
+                or "shots-total" in stat_type
+                or stat.get("type_id") == 42
+            ):
+              total_remates = h_val + a_val
+            elif (
+                "shots on target" in s_name
+                or "shots-on-target" in stat_type
+                or stat.get("type_id") == 86
+            ):
+              total_remates_puerta = h_val + a_val
+
+          equipo_mas_activo = home_name
+
+          # REGLA 2 & 3 (ESTRICTO CON Y / AND): Remates totales >= 8 Y Remates a puerta >= 4
           condicion_remates_estricta = (total_remates >= 8) and (
               total_remates_puerta >= 4
           )
           if not condicion_remates_estricta:
             continue
 
-          # Si cumple rigurosamente todo, se envía al bloque VIP
+          # Si pasa todo, se añade como partido VIP elegible
           partidos_candidatos.append({
               "equipo_local": home_name,
               "equipo_visita": away_name,
@@ -129,15 +120,15 @@ async def extraer_futbol_en_vivo():
           continue
 
       print(
-          f"✅ Extraídos {len(partidos_candidatos)} partidos bajo la regla"
-          " estricta (Y).",
+          f"✅ Extraídos {len(partidos_candidatos)} partidos estrictos desde"
+          " Sportmonks.",
           flush=True,
       )
     else:
-      print(f"⚠️ Status code ESPN: {response.status_code}", flush=True)
+      print(f"⚠️ Status code Sportmonks: {response.status_code}", flush=True)
 
   except Exception as e:
-    print(f"⚠️ Error en consulta de ESPN: {e}", flush=True)
+    print(f"⚠️ Error consultando Sportmonks: {e}", flush=True)
 
   return partidos_candidatos
 

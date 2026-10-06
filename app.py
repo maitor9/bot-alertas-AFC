@@ -5,6 +5,14 @@ import requests
 from flask import Flask, jsonify, render_template
 from database import inicializar_db, guardar_alerta, obtener_alertas
 from scraper import extraer_futbol_en_vivo
+from nba_analyzer import analizar_partidos_nba
+
+
+@app.route("/api/nba_prematch", methods=["GET"])
+async def api_nba_prematch():
+  # Ejecuta el análisis prepartido y devuelve los reportes en formato JSON
+  resultados = await analizar_partidos_nba()
+  return {"status": "success", "total_analizados": len(resultados), "data": resultados}
 
 app = Flask(__name__)
 

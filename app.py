@@ -7,6 +7,38 @@ from database import inicializar_db, guardar_alerta, obtener_alertas
 from scraper import extraer_futbol_en_vivo
 from nba_analyzer import analizar_partidos_nba
 
+from datetime import datetime
+from nba_analyzer import analizar_y_enviar_nba_telegram
+
+
+def rutina_diaria_nba():
+  # Bandera para asegurar que solo se envíe una vez al día
+  enviado_hoy = False
+  ultimo_dia = None
+
+  while True:
+    ahora = datetime.now()
+    dia_actual = ahora.date()
+
+    # Si cambia el día, reiniciamos la bandera
+    if ultimo_dia != dia_actual:
+      enviado_hoy = False
+      ultimo_dia = dia_actual
+
+    # Ejecutar automáticamente a las 12:00 PM (12 horas) si no se ha enviado hoy
+    if ahora.hour == 12 and not enviado_hoy:
+      print("⏰ Ejecutando reporte diario automático de la NBA...", flush=True)
+      try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(analizar_y_enviar_nba_telegram())
+        loop.close()
+        enviado_hoy = True
+      except Exception as e:
+        print(f"⚠️ Error en rutina diaria NBA: {e}", flush=True)
+
+    time.sleep(300)  # Revisa cada 5 minutos
+
 # 1️⃣ INICIALIZACIÓN DE LA APLICACIÓN (DEBE IR PRIMERO)
 app = Flask(__name__)
 

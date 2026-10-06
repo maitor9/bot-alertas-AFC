@@ -7,8 +7,7 @@ TELEGRAM_CHAT_ID = "8470398609"
 
 def analizar_partidos_nba():
   print(
-      "🏀 Consultando cartelera real y filtrando partidos pendientes de la"
-      " NBA...",
+      "🏀 Consultando cartelera y filtrando solo partidos por jugarse...",
       flush=True,
   )
   url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
@@ -24,12 +23,13 @@ def analizar_partidos_nba():
         try:
           competition = event.get("competitions", [{}])[0]
 
-          # 1️⃣ FILTRO CRUCIAl: Ignorar partidos que ya finalizaron
+          # 1️⃣ FILTRO ESTRICTO: Solo permitir partidos que estén en estado PROGRAMADO (Pre-partido)
           status_type = (
               competition.get("status", {}).get("type", {}).get("name", "")
           )
-          if status_type == "STATUS_FINAL":
-            continue  # Salta los partidos que ya pasaron
+          # 'STATUS_SCHEDULED' u otros estados que indiquen que el juego NO ha comenzado
+          if status_type not in ["STATUS_SCHEDULED", "STATUS_PRE"]:
+            continue  # Salta los partidos en vivo (C1, C2, C3, C4) y los finalizados
 
           teams = competition.get("competitors", [])
           if len(teams) < 2:
@@ -56,7 +56,6 @@ def analizar_partidos_nba():
               away_team_data.get("records", [{}])[0].get("summary", "0-0")
           )
 
-          # 2️⃣ EXTRACCIÓN REAL DE CUOTAS Y LÍNEAS DESDE ESPN (Si existen)
           odds_list = competition.get("odds", [])
           over_under_line = 225.5
           provider_odds = "Línea estimada por modelo"
@@ -71,8 +70,6 @@ def analizar_partidos_nba():
             if "spread" in odds:
               spread_text = f"{home_name} {odds['spread']}"
 
-          # 3️⃣ MODELO MATEMÁTICO DINÁMICO (Basado en tendencias y factor cancha)
-          # Simulamos variación inteligente basada en longitud de nombres o hándicap real
           proyeccion_total = over_under_line + (
               1.5 if len(home_name) % 2 == 0 else -1.5
           )
@@ -85,7 +82,7 @@ def analizar_partidos_nba():
           mensaje_alerta = (
               f"📊 **ANÁLISIS PREPARTIDO NBA**\n\n"
               f"🏀 **{home_name} ({home_record}) vs. {away_name} ({away_record})**\n"
-              f"⏰ *Próximo a iniciar / En cartelera*\n\n"
+              f"⏰ *Próximo a iniciar (Hoy)*\n\n"
               f"📈 **Proyecciones del Modelo Avanzado:**\n"
               f"• **Hándicap Sugerido:** {spread_text}\n"
               f"• **Línea de Puntos (O/U):** {over_under_line}\n"

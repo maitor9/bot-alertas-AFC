@@ -6,7 +6,7 @@ FOOTBALL_DATA_TOKEN = (
 
 
 # ==========================================
-# ⚽ SCRAPER FOOTBALLDATA.IO (CON DIAGNOSTICO)
+# ⚽ SCRAPER FOOTBALLDATA.IO (BOT 1 & BOT 2 AJUSTADO)
 # ==========================================
 async def extraer_futbol_en_vivo():
   partidos_candidatos = []
@@ -31,25 +31,16 @@ async def extraer_futbol_en_vivo():
           away_score = match.get("away_goal", match.get("awayScore", 0)) or 0
 
           home_team = match.get("home_team", {}).get("name", "Local")
-          away_team = match.get("home_team", {}).get("name", "Visita")
           away_team = match.get("away_team", {}).get("name", "Visita")
-
-          # IMPRESIÓN DE DIAGNÓSTICO EN VIVO (Para ver el partido de Grecia-Alemania si aparece)
-          if 46 <= minute <= 75 and (home_score + away_score) == 0:
-            print(
-                f"🔎 Partido en rango 0-0 encontrado: {home_team} vs"
-                f" {away_team} al minuto {minute}. Datos crudos del partido:"
-                f" {match}",
-                flush=True,
-            )
+          competition = match.get(
+              "competition", {}
+          ).get("name", "Liga")
 
           # ==========================================
-          # 🤖 BOT 1: OVER 0.5
+          # 🤖 BOT 1: OVER 0.5 (Min 46-75, 0-0, Remates >=8, Puerta >=3, xG >=0.80)
           # ==========================================
           if 46 <= minute <= 75 and (home_score + away_score) == 0:
             stats = match.get("statistics", {})
-
-            # Buscamos de forma flexible las llaves comunes de APIs deportivas
             home_shots = (
                 stats.get("home", {})
                 .get("shots_total", stats.get("home_shots", 0))
@@ -82,7 +73,8 @@ async def extraer_futbol_en_vivo():
             )
 
             condicion_remates = (home_shots >= 8) or (away_shots >= 8)
-            condicion_puerta = (home_on_target >= 4) or (away_on_target >= 4)
+            # Ajustado a >= 3 basándonos en el análisis real
+            condicion_puerta = (home_on_target >= 3) or (away_on_target >= 3)
             condicion_xg = (home_xg >= 0.80) or (away_xg >= 0.80)
 
             if condicion_remates and condicion_puerta and condicion_xg:
@@ -92,7 +84,7 @@ async def extraer_futbol_en_vivo():
                   "minuto": f"{minute}'",
                   "goles_local": home_score,
                   "goles_visita": away_score,
-                  "liga": match.get("competition", {}).get("name", "Liga"),
+                  "liga": competition,
                   "remates": max(home_shots, away_shots),
                   "remates_puerta": max(home_on_target, away_on_target),
                   "xg": max(home_xg, away_xg),
@@ -102,7 +94,35 @@ async def extraer_futbol_en_vivo():
                   "tipo": "BOT_1_OVER_05",
               })
 
-        except Exception as e:
+          # ==========================================
+          # 🤖 BOT 2: ROJA AL NO FAVORITO (Empate 0-0, 1-1... + Roja al no favorito)
+          # ==========================================
+          if 46 <= minute <= 75 and home_score == away_score:
+            red_cards = match.get("red_cards", {})
+            home_reds = red_cards.get("home", 0)
+            away_reds = red_cards.get("away", 0)
+
+            # Validamos si hubo tarjeta roja y si el afectado es el no favorito
+            roja_no_favorito = match.get("roja_no_favorito_activa", False)
+
+            if (home_reds > 0 or away_reds > 0) and roja_no_favorito:
+              partidos_candidatos.append({
+                  "equipo_local": home_team,
+                  "equipo_visita": away_team,
+                  "minuto": f"{minute}'",
+                  "goles_local": home_score,
+                  "goles_visita": away_score,
+                  "liga": competition,
+                  "remates": 0,
+                  "remates_puerta": 0,
+                  "xg": 0.0,
+                  "presion": (
+                      home_team if away_reds > 0 else away_team
+                  ),  # El favorito que ataca
+                  "tipo": "BOT_2_ROJA_NO_FAVORITO",
+              })
+
+        except Exception:
           continue
 
       print(

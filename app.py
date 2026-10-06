@@ -2,42 +2,11 @@ import asyncio
 import threading
 import time
 import requests
+from datetime import datetime
 from flask import Flask, jsonify, render_template
 from database import inicializar_db, guardar_alerta, obtener_alertas
 from scraper import extraer_futbol_en_vivo
-from nba_analyzer import analizar_partidos_nba
-
-from datetime import datetime
-from nba_analyzer import analizar_y_enviar_nba_telegram
-
-
-def rutina_diaria_nba():
-  # Bandera para asegurar que solo se envíe una vez al día
-  enviado_hoy = False
-  ultimo_dia = None
-
-  while True:
-    ahora = datetime.now()
-    dia_actual = ahora.date()
-
-    # Si cambia el día, reiniciamos la bandera
-    if ultimo_dia != dia_actual:
-      enviado_hoy = False
-      ultimo_dia = dia_actual
-
-    # Ejecutar automáticamente a las 12:00 PM (12 horas) si no se ha enviado hoy
-    if ahora.hour == 12 and not enviado_hoy:
-      print("⏰ Ejecutando reporte diario automático de la NBA...", flush=True)
-      try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(analizar_y_enviar_nba_telegram())
-        loop.close()
-        enviado_hoy = True
-      except Exception as e:
-        print(f"⚠️ Error en rutina diaria NBA: {e}", flush=True)
-
-    time.sleep(300)  # Revisa cada 5 minutos
+from nba_analyzer import analizar_partidos_nba, analizar_y_enviar_nba_telegram
 
 # 1️⃣ INICIALIZACIÓN DE LA APLICACIÓN (DEBE IR PRIMERO)
 app = Flask(__name__)
@@ -56,6 +25,34 @@ alertas_disparadas = set()
 partidos_global_en_vivo = []
 partidos_vip_en_vivo = []
 ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
+
+def rutina_diaria_nba():
+    # Bandera para asegurar que solo se envíe una vez al día
+    enviado_hoy = False
+    ultimo_dia = None
+
+    while True:
+        ahora = datetime.now()
+        dia_actual = ahora.date()
+
+        # Si cambia el día, reiniciamos la bandera
+        if ultimo_dia != dia_actual:
+            enviado_hoy = False
+            ultimo_dia = dia_actual
+
+        # Ejecutar automáticamente a las 12:00 PM (12 horas) si no se ha enviado hoy
+        if ahora.hour == 12 and not enviado_hoy:
+            print("⏰ Ejecutando reporte diario automático de la NBA...", flush=True)
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(analizar_y_enviar_nba_telegram())
+                loop.close()
+                enviado_hoy = True
+            except Exception as e:
+                print(f"⚠️ Error en rutina diaria NBA: {e}", flush=True)
+
+        time.sleep(300)  # Revisa cada 5 minutos
 
 def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str, remates, remates_puerta, es_vip, es_descanso):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
@@ -85,7 +82,7 @@ def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str,
             timeout=5
         )
     except Exception as e:
-        print(f"⚠️️ Error Telegram Global: {e}", flush=True)
+        print(f"⚠️ Error Telegram Global: {e}", flush=True)
 
 def bucle_escaneo_unificado():
     global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status
@@ -189,6 +186,7 @@ inicializar_db()
 
 hilo_unificado = threading.Thread(target=bucle_escaneo_unificado, daemon=True)
 hilo_unificado.start()
+
 # Hilo para el reporte automático diario de la NBA
 hilo_nba_diario = threading.Thread(target=rutina_diaria_nba, daemon=True)
 hilo_nba_diario.start()

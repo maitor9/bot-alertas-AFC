@@ -14,7 +14,8 @@ def analizar_partidos_nba():
   alertas_nba = []
 
   try:
-    response = requests.get(url, timeout=10)
+    # Timeout estricto de 5 segundos para evitar que Gunicorn mate el proceso
+    response = requests.get(url, timeout=5)
     print(f"🔍 Status code ESPN NBA: {response.status_code}", flush=True)
 
     if response.status_code == 200:
@@ -77,12 +78,6 @@ def analizar_partidos_nba():
         except Exception:
           continue
 
-      print(
-          f"✅ Análisis NBA completado. Partidos evaluados:"
-          f" {len(alertas_nba)}",
-          flush=True,
-      )
-
   except Exception as e:
     print(f"⚠️ Error conectando con la API de NBA ESPN: {e}", flush=True)
 
@@ -99,7 +94,7 @@ def analizar_y_enviar_nba_telegram():
   alertas_nba = []
 
   try:
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, timeout=5)
     if response.status_code == 200:
       data = response.json()
       events = data.get("events", [])

@@ -189,6 +189,9 @@ inicializar_db()
 
 hilo_unificado = threading.Thread(target=bucle_escaneo_unificado, daemon=True)
 hilo_unificado.start()
+# Hilo para el reporte automático diario de la NBA
+hilo_nba_diario = threading.Thread(target=rutina_diaria_nba, daemon=True)
+hilo_nba_diario.start()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

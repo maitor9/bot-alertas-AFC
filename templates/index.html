@@ -203,6 +203,15 @@
         .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
         .empty-card { grid-column: 1 / -1; text-align: center; padding: 70px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
 
+        .btn-nba {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
+            color: #000; border: none; padding: 14px 28px; border-radius: 14px;
+            font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px;
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+            display: block; width: 100%; margin-bottom: 25px; letter-spacing: 1px;
+        }
+        .btn-nba:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(249, 115, 22, 0.6); }
+
         @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -280,8 +289,8 @@
         <div class="hero-section">
             <div>
                 <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Alertas de <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Remontadas en Vivo</span></h1>
-                <p class="hero-desc">Detección de favoritos con desventajas de 10+ puntos en el 2º Cuarto o Descanso para aprovechar la regresión a la media.</p>
+                <h1 class="hero-title">Análisis Prepartido & <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Remontadas NBA</span></h1>
+                <p class="hero-desc">Proyecciones matemáticas automáticas con hándicap sugerido, líneas de totales (Over/Under) y monitor de oportunidades en vivo.</p>
             </div>
 
             <div class="radar-card">
@@ -291,13 +300,16 @@
                     <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
                 </div>
                 <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
-                <div class="stats-label">remontadas detectadas</div>
+                <div class="stats-label">pronósticos NBA cargados</div>
             </div>
         </div>
 
         <div class="main-container">
+            <!-- BOTÓN INTERACTIVO NBA PREMATCH -->
+            <button onclick="cargarPrematchNBA()" class="btn-nba">📊 CARGAR PRONÓSTICOS PREPARTIDO NBA (HOY)</button>
+            
             <div class="grid" id="grid-basket-alertas">
-                <div class="empty-card"><h3>🏀 Buscando remontadas en vivo...</h3></div>
+                <div class="empty-card"><h3>🏀 Haz clic en el botón superior para consultar los pronósticos de la NBA</h3></div>
             </div>
         </div>
     </div>
@@ -328,6 +340,37 @@
             } else {
                 document.getElementById('pestana-radar').style.display = 'none';
                 document.getElementById('pestana-alertas').style.display = 'block';
+            }
+        }
+
+        async function cargarPrematchNBA() {
+            const grid = document.getElementById('grid-basket-alertas');
+            grid.innerHTML = '<div class="empty-card"><h3>⏳ Conectando con el motor de ESPN y analizando cartelera NBA...</h3></div>';
+            
+            try {
+                let response = await fetch('/api/nba_prematch');
+                let resultado = await response.json();
+                
+                document.getElementById('basket-counter').innerText = resultado.total_analizados || 0;
+
+                if (resultado.data && resultado.data.length > 0) {
+                    grid.innerHTML = resultado.data.map(item => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 NBA Oficial</span>
+                                <span class="minute-badge" style="color: var(--accent-orange);">📊 Modelo AI</span>
+                            </div>
+                            <div class="teams-title">${item.partido}</div>
+                            <div style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
+                                ${item.mensaje}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de la NBA programados en este momento</h3></div>';
+                }
+            } catch (error) {
+                grid.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
             }
         }
 
@@ -376,34 +419,6 @@
                                 <div class="fulfilled-box">
                                     <span>Presión IA Detectada:</span>
                                     <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                });
-
-            // Cargar Alertas Baloncesto
-            fetch('/api/basket_alertas')
-                .then(res => res.json())
-                .then(data => {
-                    const grid = document.getElementById('grid-basket-alertas');
-                    const counter = document.getElementById('basket-counter');
-                    const total = data ? data.length : 0;
-                    counter.innerText = total;
-
-                    if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🏀 Sin alertas de remontada actualmente</h3></div>';
-                    } else {
-                        grid.innerHTML = data.map(b => `
-                            <div class="match-card">
-                                <div class="match-meta">
-                                    <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${b.liga}</span>
-                                    <span class="minute-badge" style="color: var(--accent-orange);">⏱️ ${b.periodo}</span>
-                                </div>
-                                <div class="teams-title">${b.local} ${b.marcador} ${b.visita}</div>
-                                <div class="fulfilled-box-orange">
-                                    <span>Favorito Abajo: <b>${b.favorito}</b></span>
-                                    <span class="team-pill" style="background: var(--accent-orange); color: #000;">-${b.diferencia} PTS</span>
                                 </div>
                             </div>
                         `).join('');

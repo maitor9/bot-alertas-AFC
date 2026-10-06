@@ -7,14 +7,15 @@ from database import inicializar_db, guardar_alerta, obtener_alertas
 from scraper import extraer_futbol_en_vivo
 from nba_analyzer import analizar_partidos_nba
 
+# 1️⃣ INICIALIZACIÓN DE LA APLICACIÓN (DEBE IR PRIMERO)
+app = Flask(__name__)
 
+# 2️⃣ RUTAS DE LA APLICACIÓN
 @app.route("/api/nba_prematch", methods=["GET"])
 async def api_nba_prematch():
-  # Ejecuta el análisis prepartido y devuelve los reportes en formato JSON
-  resultados = await analizar_partidos_nba()
-  return {"status": "success", "total_analizados": len(resultados), "data": resultados}
-
-app = Flask(__name__)
+    # Ejecuta el análisis prepartido y devuelve los reportes en formato JSON
+    resultados = await analizar_partidos_nba()
+    return {"status": "success", "total_analizados": len(resultados), "data": resultados}
 
 TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
 TELEGRAM_CHAT_ID = "8470398609"
@@ -52,7 +53,7 @@ def enviar_alerta_telegram_global(home_name, away_name, league_name, minuto_str,
             timeout=5
         )
     except Exception as e:
-        print(f"⚠️ Error Telegram Global: {e}", flush=True)
+        print(f"⚠️️ Error Telegram Global: {e}", flush=True)
 
 def bucle_escaneo_unificado():
     global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status

@@ -7,6 +7,7 @@ from flask import Flask, jsonify, render_template
 from football_analyzer import analizar_partidos_futbol_prematch
 from nba_analyzer import analizar_partidos_nba, analizar_y_enviar_nba_telegram
 import requests
+from scraper import extraer_futbol_en_vivo
 
 # 1️⃣ INICIALIZACIÓN DE LA APLICACIÓN (DEBE IR PRIMERO)
 app = Flask(__name__)
@@ -23,7 +24,7 @@ def api_nba_prematch():
   }
 
 
-# 3️⃣ RUTA PREMATCH FÚTBOL (POISSON)
+# 3️⃣ RUTA PREMATCH FÚTBOL (POISSON PRO)
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():
   resultados = analizar_partidos_futbol_prematch()

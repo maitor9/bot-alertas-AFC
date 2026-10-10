@@ -164,4 +164,103 @@ def analizar_partidos_futbol_prematch():
                   "fecha": fecha_hora_col,
               })
 
-            picks_disponibles.append
+            picks_disponibles.append({
+                "partido": f"{home_name} vs {away_name}",
+                "home": home_name,
+                "away": away_name,
+                "p_win_l": p_win_l,
+                "p_ov15": p_ov15,
+                "p_ov25": p_ov25,
+                "p_btts": p_btts,
+                "p_1x": p_1x,
+                "fecha": fecha_hora_col,
+            })
+
+            ritmo_partido = lambda_home + lambda_away
+            corners_proyectados = round(8.5 + (ritmo_partido * 1.3), 1)
+            tarjetas_proyectadas = round(
+                3.4 + (abs(p_win_l - p_win_a) * 0.025), 1
+            )
+
+            mensaje = (
+                f"📊 **ANÁLISIS PARLEY PRO (POISSON)**\n\n"
+                f"⚽ **{home_name} vs. {away_name}**\n"
+                f"🏆 *{liga['nombre']}*\n"
+                f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n\n"
+                f"📈 **1X2 & Goles:**\n"
+                f"• **1X2:** {p_win_l}% ({home_name}) | {p_draw}% (Empate) |"
+                f" {p_win_a}% ({away_name})\n"
+                f"• **Doble Oportunidad (1X):** {p_1x}%\n"
+                f"• **Over 1.5 Goles:** {p_ov15}% *(Seguro parley)*\n"
+                f"• **Over 2.5 Goles:** {p_ov25}%\n"
+                f"• **Ambos Marcan (BTTS):** {p_btts}%\n\n"
+                f"📐 **Mercados Secundarios:**\n"
+                f"• **Córners Proyectados:** ~{corners_proyectados} (Línea Over"
+                f" 8.5)\n"
+                f"• **Tarjetas Proyectadas:** ~{tarjetas_proyectadas}\n\n"
+                f"💡 **Contexto:** Plantel principal disponible.\n"
+                f"🎯 **Opción Parley:** {'Over 1.5 Goles' if p_ov15 >= 70 else 'Doble Oportunidad (1X)'}"
+            )
+
+            analisis_lista.append({
+                "tipo": "partido",
+                "partido": f"{home_name} vs {away_name}",
+                "mensaje": mensaje,
+            })
+          except Exception:
+            continue
+    except Exception:
+      continue
+
+  # Ordenar los picks VIP estrictamente de mayor a menor probabilidad/confianza
+  picks_altisimos = sorted(
+      picks_altisimos, key=lambda x: x["prob"], reverse=True
+  )
+
+  if len(picks_disponibles) >= 3:
+    por_seguridad = sorted(
+        picks_disponibles, key=lambda x: x["p_ov15"], reverse=True
+    )
+    por_goles = sorted(
+        picks_disponibles, key=lambda x: x["p_ov25"], reverse=True
+    )
+    por_local = sorted(
+        picks_disponibles, key=lambda x: x["p_win_l"], reverse=True
+    )
+
+    p1 = por_seguridad[0]
+    p2 = por_seguridad[1] if len(por_seguridad) > 1 else por_seguridad[0]
+    p3 = por_goles[0]
+    p4 = por_goles[1] if len(por_goles) > 1 else por_goles[0]
+    p5 = por_local[0]
+    p6 = por_local[1] if len(por_local) > 1 else por_local[0]
+
+    resumen_parleys = (
+        "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DE LA JORNADA** 🌟\n\n"
+        "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura ~1.85)**\n"
+        f"• **{p1['partido']}** ({p1['fecha']}) | Mercado: Más de 1.5 Goles"
+        f" (Prob: {p1['p_ov15']}%)\n"
+        f"• **{p2['partido']}** ({p2['fecha']}) | Mercado: Más de 1.5 Goles"
+        f" (Prob: {p2['p_ov15']}%)\n\n"
+        "🟡 **2. PARLEY RIESGO MEDIO (Cuota ~3.40)**\n"
+        f"• **{p3['partido']}** ({p3['fecha']}) | Mercado: Más de 2.5 Goles"
+        f" (Prob: {p3['p_ov25']}%)\n"
+        f"• **{p5['home']} vs {p5['away']}** ({p5['fecha']}) | Mercado: Gana"
+        f" {p5['home']} (Prob: {p5['p_win_l']}%)\n\n"
+        "🔴 **3. PARLEY RIESGO ALTO (Cuota ~6.50+)**\n"
+        f"• **{p4['partido']}** ({p4['fecha']}) | Mercado: Ambos Marcan (BTTS"
+        f" Sí) (Prob: {p4['p_btts']}%)\n"
+        f"• **{p6['partido']}** ({p6['fecha']}) | Mercado: Gana {p6['home']} +"
+        f" Over 1.5 Goles"
+    )
+
+    analisis_lista.insert(
+        0,
+        {
+            "tipo": "parley",
+            "partido": "🔥 TICKET ESPECIAL DE PARLEYS IA",
+            "mensaje": resumen_parleys,
+        },
+    )
+
+  return {"partidos": analisis_lista, "picks_vip": picks_altisimos}

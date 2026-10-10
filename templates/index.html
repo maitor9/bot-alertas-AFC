@@ -151,7 +151,7 @@
         .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 
         .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
-        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; }
+        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; flex-wrap: wrap; }
 
         .tab-btn {
             background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
@@ -194,21 +194,24 @@
             padding: 12px 16px; border-radius: 14px; font-size: 13px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .fulfilled-box-orange {
-            background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3);
-            padding: 12px 16px; border-radius: 14px; font-size: 13px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
         .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
         .empty-card { grid-column: 1 / -1; text-align: center; padding: 70px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
 
-        .btn-nba {
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%);
             color: #000; border: none; padding: 14px 28px; border-radius: 14px;
             font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px;
-            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
             display: block; width: 100%; margin-bottom: 25px; letter-spacing: 1px;
+        }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(245, 158, 11, 0.6); }
+
+        .btn-nba {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
+            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+            color: #000; border: none; padding: 14px 28px; border-radius: 14px;
+            font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px;
+            cursor: pointer; transition: all 0.3s ease; display: block; width: 100%; margin-bottom: 25px; letter-spacing: 1px;
         }
         .btn-nba:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(249, 115, 22, 0.6); }
 
@@ -243,8 +246,8 @@
         <div class="hero-section">
             <div>
                 <div class="badge-tag">Motor Algorítmico de IA - Fútbol</div>
-                <h1 class="hero-title">Rastreo de Partidos 0-0 con <span class="highlight-gold">Presión Inminente</span></h1>
-                <p class="hero-desc">Análisis predictivo de patrones de ataque en vivo (ventana min 46'-78') evaluando métricas avanzadas de xG, disparos directos y volumen ofensivo.</p>
+                <h1 class="hero-title">Rastreo de Partidos 0-0 y <span class="highlight-gold">Poisson Prepartido</span></h1>
+                <p class="hero-desc">Análisis predictivo de patrones en vivo y modelado estadístico avanzado de Expected Goals (xG) para la jornada.</p>
             </div>
 
             <div class="radar-card">
@@ -268,6 +271,9 @@
                 <button class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
                     ⚡ Alertas VIP AI <span class="tab-badge" id="count-alertas">0</span>
                 </button>
+                <button class="tab-btn" onclick="cambiarPestana(event, 'prematch-fut')">
+                    ⚽ Pronósticos Poisson <span class="tab-badge" id="count-fut-pre">AI</span>
+                </button>
             </div>
 
             <div id="pestana-radar">
@@ -281,6 +287,13 @@
                     <div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>
                 </div>
             </div>
+
+            <div id="pestana-prematch-fut" style="display: none;">
+                <button onclick="cargarPrematchFutbol()" class="btn-action">📊 CARGAR PRONÓSTICOS PREPARTIDO (POISSON)</button>
+                <div id="grid-football-prematch" class="grid">
+                    <div class="empty-card"><h3>⚽ Haz clic en el botón superior para calcular las probabilidades de goles</h3></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -289,8 +302,8 @@
         <div class="hero-section">
             <div>
                 <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Análisis Prepartido & <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Remontadas NBA</span></h1>
-                <p class="hero-desc">Proyecciones matemáticas automáticas con hándicap sugerido, líneas de totales (Over/Under) y monitor de oportunidades en vivo.</p>
+                <h1 class="hero-title">Análisis Prepartido & <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Proyecciones NBA</span></h1>
+                <p class="hero-desc">Proyecciones matemáticas automáticas con hándicap analítico y líneas de totales (Over/Under) basadas en eficiencia.</p>
             </div>
 
             <div class="radar-card">
@@ -305,7 +318,6 @@
         </div>
 
         <div class="main-container">
-            <!-- BOTÓN INTERACTIVO NBA PREMATCH -->
             <button onclick="cargarPrematchNBA()" class="btn-nba">📊 CARGAR PRONÓSTICOS PREPARTIDO NBA (HOY)</button>
             
             <div class="grid" id="grid-basket-alertas">
@@ -334,12 +346,45 @@
             if (evt && evt.currentTarget) {
                 evt.currentTarget.classList.add('active');
             }
+            document.getElementById('pestana-radar').style.display = 'none';
+            document.getElementById('pestana-alertas').style.display = 'none';
+            document.getElementById('pestana-prematch-fut').style.display = 'none';
+
             if (pestana === 'radar') {
                 document.getElementById('pestana-radar').style.display = 'block';
-                document.getElementById('pestana-alertas').style.display = 'none';
-            } else {
-                document.getElementById('pestana-radar').style.display = 'none';
+            } else if (pestana === 'alertas') {
                 document.getElementById('pestana-alertas').style.display = 'block';
+            } else if (pestana === 'prematch-fut') {
+                document.getElementById('pestana-prematch-fut').style.display = 'block';
+            }
+        }
+
+        async function cargarPrematchFutbol() {
+            const grid = document.getElementById('grid-football-prematch');
+            grid.innerHTML = '<div class="empty-card"><h3>⏳ Analizando partidos con modelo de Poisson...</h3></div>';
+            
+            try {
+                let response = await fetch('/api/football_prematch');
+                let resultado = await response.json();
+                
+                if (resultado.data && resultado.data.length > 0) {
+                    grid.innerHTML = resultado.data.map(item => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 Fútbol Oficial</span>
+                                <span class="minute-badge">📊 Poisson AI</span>
+                            </div>
+                            <div class="teams-title">${item.partido}</div>
+                            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
+                                ${item.mensaje}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de fútbol programados para analizar en este momento</h3></div>';
+                }
+            } catch (error) {
+                grid.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
             }
         }
 
@@ -375,7 +420,6 @@
         }
 
         function cargarDatos() {
-            // Cargar Fútbol 0-0
             fetch('/api/partidos_00')
                 .then(res => res.json())
                 .then(data => {
@@ -396,7 +440,6 @@
                     }
                 });
 
-            // Cargar Alertas Fútbol
             fetch('/api/alertas')
                 .then(res => res.json())
                 .then(data => {

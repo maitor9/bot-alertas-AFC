@@ -316,8 +316,8 @@
         <div class="hero-section">
             <div>
                 <div class="badge-tag-nba">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Análisis Prepartido & <span class="highlight-orange">Proyecciones NBA</span></h1>
-                <p class="hero-desc">Proyecciones matemáticas automáticas con estimador de victorias y líneas de totales (Over/Under) basadas en eficiencia.</p>
+                <h1 class="hero-title">Análisis Prepartido & <span class="highlight-orange">Proyecciones Globales</span></h1>
+                <p class="hero-desc">Proyecciones matemáticas por CDF Normal de Poisson para NBA, Euroliga y Liga ACB.</p>
             </div>
 
             <div class="radar-card">
@@ -327,12 +327,18 @@
                     <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
                 </div>
                 <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
-                <div class="stats-label">partidos NBA analizados</div>
+                <div class="stats-label">partidos analizados hoy</div>
             </div>
         </div>
 
         <div class="main-container">
             <div class="tabs-nav">
+                <button id="tabRadarBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'radar-bas')">
+                    📡 Radar Live <span class="tab-badge" id="count-radar-bas" style="background: rgba(249,115,22,0.3);">0</span>
+                </button>
+                <button id="tabAlertasBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'alertas-bas')">
+                    ⚡ Alertas VIP <span class="tab-badge" id="count-alertas-bas" style="background: rgba(249,115,22,0.3);">0</span>
+                </button>
                 <button id="tabPrematchBas" class="tab-btn active-nba" onclick="cambiarPestanaBasket(event, 'prematch-bas')">
                     🏀 Partidos & Parleys <span class="tab-badge">PRO</span>
                 </button>
@@ -341,15 +347,27 @@
                 </button>
             </div>
 
+            <div id="pestana-radar-bas" style="display: none;">
+                <div class="grid">
+                    <div class="empty-card"><h3>📡 Rastreador en vivo de Baloncesto activo.</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-alertas-bas" style="display: none;">
+                <div class="grid">
+                    <div class="empty-card"><h3>⚡ Sin alertas en vivo confirmadas el día de hoy.</h3></div>
+                </div>
+            </div>
+
             <div id="pestana-prematch-bas">
                 <div id="grid-basket-prematch" class="grid">
-                    <div class="empty-card"><h3>⏳ Conectando con el motor ESPN y generando proyecciones NBA...</h3></div>
+                    <div class="empty-card"><h3>⏳ Conectando con el motor ESPN y analizando NBA, Euroliga y ACB...</h3></div>
                 </div>
             </div>
 
             <div id="pestana-picks-vip-bas" style="display: none;">
                 <div id="grid-picks-vip-bas" class="grid">
-                    <div class="empty-card"><h3>💎 Cargando picks NBA de alta certeza (>=75%)...</h3></div>
+                    <div class="empty-card"><h3>💎 Cargando picks de alta certeza (>=75%) de NBA, Euroliga y ACB...</h3></div>
                 </div>
             </div>
         </div>
@@ -387,11 +405,15 @@
         }
 
         function cambiarPestanaBasket(evt, pestana) {
+            document.getElementById('tabRadarBas').classList.remove('active-nba');
+            document.getElementById('tabAlertasBas').classList.remove('active-nba');
             document.getElementById('tabPrematchBas').classList.remove('active-nba');
             document.getElementById('tabPicksVipBas').classList.remove('active-nba');
             
             if (evt) evt.currentTarget.classList.add('active-nba');
 
+            document.getElementById('pestana-radar-bas').style.display = 'none';
+            document.getElementById('pestana-alertas-bas').style.display = 'none';
             document.getElementById('pestana-prematch-bas').style.display = 'none';
             document.getElementById('pestana-picks-vip-bas').style.display = 'none';
 
@@ -425,7 +447,15 @@
 
                 if (resultado.picks_vip && resultado.picks_vip.length > 0) {
                     document.getElementById('count-picks-vip').innerText = resultado.picks_vip.length;
-                    gridVip.innerHTML = resultado.picks_vip.map(pick => `
+                    gridVip.innerHTML = resultado.picks_vip.map(pick => {
+                        let resultBadge = '';
+                        if (pick.estado_pick === 'acertado') {
+                            resultBadge = `<div style="margin-top: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">✅ ACERTADO (${pick.marcador})</div>`;
+                        } else if (pick.estado_pick === 'fallado') {
+                            resultBadge = `<div style="margin-top: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">❌ NO ACERTADO (${pick.marcador})</div>`;
+                        }
+
+                        return `
                         <div class="match-card">
                             <div class="match-meta">
                                 <span class="league-badge">🏆 ${pick.liga}</span>
@@ -438,8 +468,10 @@
                             <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
                                 🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-gold-bright); font-size: 15px;">${pick.mercado}</span>
                             </div>
+                            ${resultBadge}
                         </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 } else {
                     document.getElementById('count-picks-vip').innerText = '0';
                     gridVip.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la jornada de hoy</h3></div>';
@@ -464,8 +496,8 @@
                     gridBas.innerHTML = resultado.data.map(item => `
                         <div class="match-card nba-card">
                             <div class="match-meta">
-                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${item.tipo === 'parley' ? 'Parley VIP NBA' : 'NBA Oficial'}</span>
-                                <span class="minute-badge" style="color: var(--accent-orange); background: rgba(249, 115, 22, 0.1);">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Modelo AI'}</span>
+                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${item.tipo === 'parley' ? 'Parley VIP Basket' : 'Baloncesto Oficial'}</span>
+                                <span class="minute-badge" style="color: var(--accent-orange); background: rgba(249, 115, 22, 0.1);">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Poisson/Gauss'}</span>
                             </div>
                             <div class="teams-title">${item.partido}</div>
                             <div style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
@@ -474,12 +506,20 @@
                         </div>
                     `).join('');
                 } else {
-                    gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de la NBA programados hoy</h3></div>';
+                    gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de baloncesto programados hoy</h3></div>';
                 }
 
                 if (resultado.picks_vip && resultado.picks_vip.length > 0) {
                     document.getElementById('count-picks-vip-bas').innerText = resultado.picks_vip.length;
-                    gridVipBas.innerHTML = resultado.picks_vip.map(pick => `
+                    gridVipBas.innerHTML = resultado.picks_vip.map(pick => {
+                        let resultBadge = '';
+                        if (pick.estado_pick === 'acertado') {
+                            resultBadge = `<div style="margin-top: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">✅ ACERTADO (${pick.marcador})</div>`;
+                        } else if (pick.estado_pick === 'fallado') {
+                            resultBadge = `<div style="margin-top: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">❌ NO ACERTADO (${pick.marcador})</div>`;
+                        }
+
+                        return `
                         <div class="match-card nba-card">
                             <div class="match-meta">
                                 <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${pick.liga}</span>
@@ -492,16 +532,17 @@
                             <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
                                 🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-orange); font-size: 15px;">${pick.mercado}</span>
                             </div>
+                            ${resultBadge}
                         </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 } else {
                     document.getElementById('count-picks-vip-bas').innerText = '0';
-                    gridVipBas.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la NBA hoy</h3></div>';
+                    gridVipBas.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en baloncesto hoy</h3></div>';
                 }
-
             } catch (error) {
-                gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el motor de ESPN NBA</h3></div>';
-                gridVipBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP NBA</h3></div>';
+                gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el motor de ESPN Baloncesto</h3></div>';
+                gridVipBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP de Baloncesto</h3></div>';
             }
         }
 
@@ -557,7 +598,6 @@
 
         window.onload = function() {
             cargarDatos();
-            // Ambos se ejecutan en segundo plano automáticamente al entrar a la web
             cargarPrematchFutbolGlobal();
             cargarPrematchNBA(); 
         };

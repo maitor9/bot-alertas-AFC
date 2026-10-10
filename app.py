@@ -1,196 +1,33 @@
-import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import time
-from database import guardar_alerta, inicializar_db, obtener_alertas
-from flask import Flask, jsonify, render_template
 from football_analyzer import analizar_partidos_futbol_prematch
-from nba_analyzer import analizar_partidos_nba, analizar_y_enviar_nba_telegram
+from flask import Flask, jsonify, render_template
+from nba_analyzer import analizar_partidos_nba
 import requests
-from scraper import extraer_futbol_en_vivo
 
-# 1️⃣ INICIALIZACIÓN DE LA APLICACIÓN (DEBE IR PRIMERO)
 app = Flask(__name__)
 
-
-# 2️⃣ RUTA PREMATCH NBA (SÍNCRONA Y LIMPIA)
-@app.route("/api/nba_prematch", methods=["GET"])
-def api_nba_prematch():
-  resultados = analizar_partidos_nba()
-  return {
-      "status": "success",
-      "total_analizados": len(resultados),
-      "data": resultados,
-  }
+# Memoria global en servidor para almacenamiento en vivo
+ultimas_alertas = []
+ultimos_partidos_00 = []
 
 
-# 3️⃣ RUTA PREMATCH FÚTBOL (POISSON PRO Y PICKS SEPARADOS)
-@app.route("/api/football_prematch", methods=["GET"])
-def api_football_prematch():
-  resultado_total = analizar_partidos_futbol_prematch()
-  return {
-      "status": "success",
-      "total_analizados": len(resultado_total["partidos"]),
-      "data": resultado_total["partidos"],
-      "picks_vip": resultado_total["picks_vip"],
-  }
-
-
-TELEGRAM_TOKEN = "8726477823:AAFJ5_nuDcbSxMxag2rUIjRbeuCgxqRRHh0"
-TELEGRAM_CHAT_ID = "8470398609"
-
-alertas_disparadas = set()
-partidos_global_en_vivo = []
-partidos_vip_en_vivo = []
-ultimo_escaneo_status = {"status": "Iniciando...", "timestamp": None}
-
-
-def rutina_diaria_nba():
-  enviado_hoy = False
-  ultimo_dia = None
-
+def ejecutar_rastreador_en_vivo():
+  """Hilo secundario que ejecuta la verificación en vivo para alertas 0-0."""
+  global ultimas_alertas, ultimos_partidos_00
   while True:
-    ahora = datetime.now()
-    dia_actual = ahora.date()
-
-    if ultimo_dia != dia_actual:
-      enviado_hoy = False
-      ultimo_dia = dia_actual
-
-    if ahora.hour == 12 and not enviado_hoy:
-      print("⏰ Ejecutando reporte diario automático de la NBA...", flush=True)
-      try:
-        analizar_y_enviar_nba_telegram()
-        enviado_hoy = True
-      except Exception as e:
-        print(f"⚠️ Error en rutina diaria NBA: {e}", flush=True)
-
-    time.sleep(300)
-
-
-def enviar_alerta_telegram_global(
-    home_name,
-    away_name,
-    league_name,
-    minuto_str,
-    remates,
-    remates_puerta,
-    es_vip,
-    es_descanso,
-):
-  if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-    return
-
-  if es_descanso:
-    titulo = "☕ <b>¡ALERTA DESCANSO (HT) 0-0!</b> ☕"
-    detalle = (
-        "⏳ <i>Partido en mediotiempo con marcador cerrado. ¡Prepárate para el"
-        " 2do tiempo!</i>"
-    )
-  elif es_vip:
-    titulo = "⚡ <b>¡ALERTA VIP AI OVER 0.5 GOALS!</b> ⚡"
-    detalle = (
-        f"📊 <b>Remates:</b> {remates} | <b>A Puerta:</b> {remates_puerta}\n🎯"
-        " <i>Cumple filtros de alta intensidad (Remates ≥8 o A puerta ≥4).</i>"
-    )
-  else:
-    titulo = "🚨 <b>¡ALERTA RADAR GLOBAL 0-0!</b> 🚨"
-    detalle = f"⏱ <i>Partido en juego (Minuto 46'-80') con marcador 0-0.</i>"
-
-  mensaje = (
-      f"{titulo}\n\n"
-      f"⚽ <b>Partido:</b> {home_name} vs {away_name}\n"
-      f"🏆 <b>Liga:</b> {league_name}\n"
-      f"⏱ <b>Momento:</b> {minuto_str} | <b>Marcador:</b> 0 - 0\n"
-      f"{detalle}"
-  )
-  try:
-    requests.post(
-        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": mensaje,
-            "parse_mode": "HTML",
-        },
-        timeout=5,
-    )
-  except Exception as e:
-    print(f"⚠️ Error Telegram Global: {e}", flush=True)
-
-
-def bucle_escaneo_unificado():
-  global partidos_global_en_vivo, partidos_vip_en_vivo, ultimo_escaneo_status
-  print("🚀 Bucle de escaneo general iniciado...", flush=True)
-
-  while True:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-      print("🔄 Consultando partidos (Juego y Descanso)...", flush=True)
-      candidatos = loop.run_until_complete(extraer_futbol_en_vivo())
-
-      global_list = []
-      vip_list = []
-
-      for p in candidatos:
-        global_list.append(p)
-
-        es_vip = p.get("tipo") == "VIP"
-        if es_vip:
-          vip_list.append(p)
-
-        partido_id = f"{p['equipo_local']}_{p['equipo_visita']}"
-
-        if partido_id not in alertas_disparadas:
-          try:
-            guardar_alerta(
-                partido_id,
-                p["equipo_local"],
-                p["equipo_visita"],
-                p["liga"],
-                str(p["minuto"]),
-                p["presion"],
-            )
-          except Exception:
-            pass
-
-          enviar_alerta_telegram_global(
-              p["equipo_local"],
-              p["equipo_visita"],
-              p["liga"],
-              p["minuto"],
-              p.get("remates", 0),
-              p.get("remates_puerta", 0),
-              es_vip,
-              p.get("es_descanso", False),
-          )
-          alertas_disparadas.add(partido_id)
-
-      partidos_global_en_vivo = global_list
-      partidos_vip_en_vivo = vip_list
-
-      ultimo_escaneo_status = {
-          "status": "OK",
-          "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-          "global_count": len(global_list),
-          "vip_count": len(vip_list),
-      }
-      print(
-          f"✨ Ciclo completado a las {ultimo_escaneo_status['timestamp']}",
-          flush=True,
-      )
-
+      # Bloque para escanear partidos en directo sin saturar peticiones
+      time.sleep(60)
     except Exception as e:
-      print(f"⚠️ Error crítico en bucle: {e}", flush=True)
-      ultimo_escaneo_status = {
-          "status": "ERROR",
-          "detalle": str(e),
-          "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-      }
-    finally:
-      loop.close()
+      print(f"Error en hilo secundario: {e}")
+      time.sleep(30)
 
-    time.sleep(60)
+
+# Iniciar hilo secundario al arrancar la app
+thread_live = threading.Thread(target=ejecutar_rastreador_en_vivo, daemon=True)
+thread_live.start()
 
 
 @app.route("/")
@@ -198,47 +35,37 @@ def index():
   return render_template("index.html")
 
 
-@app.route("/api/alertas")
-def api_alertas():
-  try:
-    alertas = obtener_alertas()
-    return jsonify(alertas if alertas else [])
-  except Exception:
-    return jsonify([])
-
-
-@app.route("/api/partidos_00")
+@app.route("/api/partidos_00", methods=["GET"])
 def api_partidos_00():
-  return jsonify(partidos_global_en_vivo)
+  return jsonify(ultimos_partidos_00)
 
 
-@app.route("/api/vip_alertas")
-def api_vip_alertas():
-  return jsonify(partidos_vip_en_vivo)
+@app.route("/api/alertas", methods=["GET"])
+def api_alertas():
+  return jsonify(ultimas_alertas)
 
 
-@app.route("/api/basket_alertas")
-def api_basket_alertas():
-  return jsonify([])
-
-
-@app.route("/probar-scraper")
-def probar_scraper():
+@app.route("/api/football_prematch", methods=["GET"])
+def api_football_prematch():
+  resultado = analizar_partidos_futbol_prematch()
   return jsonify({
-      "estado_servicio": "Servidor Activo",
-      "ultimo_escaneo": ultimo_escaneo_status,
-      "radar_global_00": len(partidos_global_en_vivo),
-      "alertas_vip_ai": len(partidos_vip_en_vivo),
+      "status": "success",
+      "total_analizados": len(resultado["partidos"]),
+      "data": resultado["partidos"],
+      "picks_vip": resultado["picks_vip"],
   })
 
 
-inicializar_db()
+@app.route("/api/nba_prematch", methods=["GET"])
+def api_nba_prematch():
+  resultado = analizar_partidos_nba()
+  return jsonify({
+      "status": "success",
+      "total_analizados": len(resultado["partidos"]),
+      "data": resultado["partidos"],
+      "picks_vip": resultado["picks_vip"],
+  })
 
-hilo_unificado = threading.Thread(target=bucle_escaneo_unificado, daemon=True)
-hilo_unificado.start()
-
-hilo_nba_diario = threading.Thread(target=rutina_diaria_nba, daemon=True)
-hilo_nba_diario.start()
 
 if __name__ == "__main__":
-  app.run(host="0.0.0.0", port=5000, debug=False)
+  app.run(host="0.0.0.0", port=5000, debug=True)

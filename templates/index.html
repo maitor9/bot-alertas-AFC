@@ -256,4 +256,259 @@
                     <div class="radar-circle-center"></div>
                     <div class="radar-sweep"></div>
                     <div class="blip blip1"></div>
-                    <div class="blip blip2
+                    <div class="blip blip2"></div>
+                </div>
+                <div class="stats-counter" id="alertas-counter">0</div>
+                <div class="stats-label">alertas confirmadas hoy</div>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button id="tabRadar" class="tab-btn active" onclick="cambiarPestana(event, 'radar')">
+                    📡 Radar 0-0 <span class="tab-badge" id="count-radar">0</span>
+                </button>
+                <button id="tabAlertas" class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
+                    ⚡ Alertas VIP <span class="tab-badge" id="count-alertas">0</span>
+                </button>
+                <button id="tabPrematch" class="tab-btn" onclick="cambiarPestana(event, 'prematch-fut')">
+                    ⚽ Partidos & Parleys <span class="tab-badge">PRO</span>
+                </button>
+                <button id="tabPicksVip" class="tab-btn" onclick="cambiarPestana(event, 'picks-vip')">
+                    💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip">0</span>
+                </button>
+            </div>
+
+            <div id="pestana-radar">
+                <div id="grid-radar" class="grid">
+                    <div class="empty-card"><h3>🔎 Buscando partidos 0-0 en ventana 46'-78'...</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-alertas" style="display: none;">
+                <div id="grid-alertas" class="grid">
+                    <div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-prematch-fut" style="display: none;">
+                <div id="grid-football-prematch" class="grid">
+                    <div class="empty-card"><h3>⏳ Cargando análisis de la jornada y parleys pro...</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-picks-vip" style="display: none;">
+                <div id="grid-picks-vip" class="grid">
+                    <div class="empty-card"><h3>💎 Cargando listado ordenado de alta certeza (>=75%)...</h3></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN BALONCESTO -->
+    <div id="seccion-basket" style="display: none;">
+        <div class="hero-section">
+            <div>
+                <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
+                <h1 class="hero-title">Análisis Prepartido & <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Proyecciones NBA</span></h1>
+                <p class="hero-desc">Proyecciones matemáticas automáticas con hándicap analítico y líneas de totales (Over/Under) basadas en eficiencia.</p>
+            </div>
+
+            <div class="radar-card">
+                <div class="radar-box" style="border-color: var(--accent-orange);">
+                    <div class="radar-circle-inner"></div>
+                    <div class="radar-circle-center"></div>
+                    <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
+                </div>
+                <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
+                <div class="stats-label">pronósticos NBA cargados</div>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <button onclick="cargarPrematchNBA()" class="btn-nba">📊 CARGAR PRONÓSTICOS PREPARTIDO NBA (HOY)</button>
+            
+            <div class="grid" id="grid-basket-alertas">
+                <div class="empty-card"><h3>🏀 Haz clic en el botón superior para consultar los pronósticos de la NBA</h3></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function mostrarFutbol() {
+            document.getElementById('seccion-futbol').style.display = 'block';
+            document.getElementById('seccion-basket').style.display = 'none';
+            document.getElementById('btnFutbol').className = 'sport-btn active-fut';
+            document.getElementById('btnBasket').className = 'sport-btn';
+        }
+
+        function mostrarBasket() {
+            document.getElementById('seccion-futbol').style.display = 'none';
+            document.getElementById('seccion-basket').style.display = 'block';
+            document.getElementById('btnFutbol').className = 'sport-btn';
+            document.getElementById('btnBasket').className = 'sport-btn active-bas';
+        }
+
+        function cambiarPestana(evt, pestana) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+            document.getElementById('pestana-radar').style.display = 'none';
+            document.getElementById('pestana-alertas').style.display = 'none';
+            document.getElementById('pestana-prematch-fut').style.display = 'none';
+            document.getElementById('pestana-picks-vip').style.display = 'none';
+
+            if (pestana === 'radar') {
+                document.getElementById('pestana-radar').style.display = 'block';
+            } else if (pestana === 'alertas') {
+                document.getElementById('pestana-alertas').style.display = 'block';
+            } else if (pestana === 'prematch-fut') {
+                document.getElementById('pestana-prematch-fut').style.display = 'block';
+            } else if (pestana === 'picks-vip') {
+                document.getElementById('pestana-picks-vip').style.display = 'block';
+            }
+        }
+
+        async function cargarPrematchFutbolGlobal() {
+            const gridFut = document.getElementById('grid-football-prematch');
+            const gridVip = document.getElementById('grid-picks-vip');
+            
+            try {
+                let response = await fetch('/api/football_prematch');
+                let resultado = await response.json();
+                
+                if (resultado.data && resultado.data.length > 0) {
+                    gridFut.innerHTML = resultado.data.map(item => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 ${item.tipo === 'parley' ? 'Parley VIP AI' : 'Fútbol Oficial'}</span>
+                                <span class="minute-badge">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Poisson Pro'}</span>
+                            </div>
+                            <div class="teams-title">${item.partido}</div>
+                            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
+                                ${item.mensaje}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de fútbol programados para analizar hoy</h3></div>';
+                }
+
+                if (resultado.picks_vip && resultado.picks_vip.length > 0) {
+                    document.getElementById('count-picks-vip').innerText = resultado.picks_vip.length;
+                    gridVip.innerHTML = resultado.picks_vip.map(pick => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 ${pick.liga}</span>
+                                <span class="minute-badge" style="color: #10b981;">✅ ${pick.prob}% Confianza</span>
+                            </div>
+                            <div class="teams-title">${pick.partido}</div>
+                            <div style="text-align: center; font-size: 12px; color: var(--accent-gold-bright); margin-bottom: 8px;">
+                                ⏰ ${pick.fecha} (Hora Colombia)
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
+                                🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-gold-bright); font-size: 15px;">${pick.mercado}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('count-picks-vip').innerText = '0';
+                    gridVip.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la jornada de hoy</h3></div>';
+                }
+
+            } catch (error) {
+                gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
+                gridVip.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP</h3></div>';
+            }
+        }
+
+        async function cargarPrematchNBA() {
+            const grid = document.getElementById('grid-basket-alertas');
+            grid.innerHTML = '<div class="empty-card"><h3>⏳ Conectando con el motor de ESPN y analizando cartelera NBA...</h3></div>';
+            
+            try {
+                let response = await fetch('/api/nba_prematch');
+                let resultado = await response.json();
+                
+                document.getElementById('basket-counter').innerText = resultado.total_analizados || 0;
+
+                if (resultado.data && resultado.data.length > 0) {
+                    grid.innerHTML = resultado.data.map(item => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 NBA Oficial</span>
+                                <span class="minute-badge" style="color: var(--accent-orange);">📊 Modelo AI</span>
+                            </div>
+                            <div class="teams-title">${item.partido}</div>
+                            <div style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
+                                ${item.mensaje}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de la NBA programados en este momento</h3></div>';
+                }
+            } catch (error) {
+                grid.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
+            }
+        }
+
+        function cargarDatos() {
+            fetch('/api/partidos_00')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-radar');
+                    document.getElementById('count-radar').innerText = data ? data.length : 0;
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3></div>';
+                    } else {
+                        grid.innerHTML = data.map(p => `
+                            <div class="match-card">
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${p.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
+                                </div>
+                                <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
+                            </div>
+                        `).join('');
+                    }
+                });
+
+            fetch('/api/alertas')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid-alertas');
+                    const counter = document.getElementById('alertas-counter');
+                    const total = data ? data.length : 0;
+                    document.getElementById('count-alertas').innerText = total;
+                    counter.innerText = total;
+
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>';
+                    } else {
+                        grid.innerHTML = data.map(a => `
+                            <div class="match-card">
+                                <div class="match-meta">
+                                    <span class="league-badge">🏆 ${a.liga || 'General'}</span>
+                                    <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
+                                </div>
+                                <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
+                                <div class="fulfilled-box">
+                                    <span>Presión IA Detectada:</span>
+                                    <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+
+        window.onload = function() {
+            cargarDatos();
+            cargarPrematchFutbolGlobal();
+        };
+        setInterval(cargarDatos, 3000);
+    </script>
+</body>
+</html>

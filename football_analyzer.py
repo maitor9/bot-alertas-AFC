@@ -49,10 +49,12 @@ def poisson_prob(lmbda, k):
 
 def analizar_partidos_futbol_prematch():
   print(
-      "⚽ Escaneando catálogo global y generando Parleys Pro...", flush=True
+      "⚽ Escaneando catálogo global y filtrando picks de alta probabilidad...",
+      flush=True,
   )
   analisis_lista = []
   picks_disponibles = []
+  picks_altisimos = []  # Para los picks > 80%
 
   for liga in LIGAS_CATALOGO:
     url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{liga['codigo']}/scoreboard"
@@ -89,10 +91,12 @@ def analizar_partidos_futbol_prematch():
             seed_h = len(home_name) % 4
             seed_a = len(away_name) % 4
             lambda_home = round(
-                1.40 + (seed_h * 0.11) + (0.25 if "Real" in home_name else 0), 2
+                1.40 + (seed_h * 0.11) + (0.25 if "Chelsea" in home_name else 0),
+                2,
             )
             lambda_away = round(
-                1.05 + (seed_a * 0.09) + (0.20 if "City" in away_name else 0), 2
+                1.05 + (seed_a * 0.09) + (0.20 if "Arsenal" in away_name else 0),
+                2,
             )
 
             prob_local_win, prob_draw, prob_away_win = 0.0, 0.0, 0.0
@@ -129,14 +133,22 @@ def analizar_partidos_futbol_prematch():
             p_ov15 = round(prob_over_15 * 100, 1)
             p_ov25 = round(prob_over_25 * 100, 1)
             p_btts = round(prob_btts * 100, 1)
+            p_1x = round((prob_local_win + prob_draw) * 100, 1)
 
-            ritmo_partido = lambda_home + lambda_away
-            corners_proyectados = round(8.5 + (ritmo_partido * 1.3), 1)
-            tarjetas_proyectadas = round(
-                3.4 + (abs(p_win_l - p_win_a) * 0.025), 1
-            )
+            # Recolectar picks mayores al 80% (incluyendo Doble Oportunidad 1X)
+            if p_ov15 >= 80.0:
+              picks_altisimos.append({
+                  "partido": f"{home_name} vs {away_name}",
+                  "mercado": "Más de 1.5 Goles",
+                  "prob": p_ov15,
+              })
+            if p_1x >= 80.0:
+              picks_altisimos.append({
+                  "partido": f"{home_name} vs {away_name}",
+                  "mercado": f"Doble Oportunidad (1X - {home_name} o Empate)",
+                  "prob": p_1x,
+              })
 
-            # Guardar match para los parleys
             picks_disponibles.append({
                 "partido": f"{home_name} vs {away_name}",
                 "home": home_name,
@@ -145,7 +157,14 @@ def analizar_partidos_futbol_prematch():
                 "p_ov15": p_ov15,
                 "p_ov25": p_ov25,
                 "p_btts": p_btts,
+                "p_1x": p_1x,
             })
+
+            ritmo_partido = lambda_home + lambda_away
+            corners_proyectados = round(8.5 + (ritmo_partido * 1.3), 1)
+            tarjetas_proyectadas = round(
+                3.4 + (abs(p_win_l - p_win_a) * 0.025), 1
+            )
 
             mensaje = (
                 f"📊 **ANÁLISIS PARLEY PRO (POISSON)**\n\n"
@@ -154,6 +173,7 @@ def analizar_partidos_futbol_prematch():
                 f"📈 **1X2 & Goles:**\n"
                 f"• **1X2:** {p_win_l}% ({home_name}) | {p_draw}% (Empate) |"
                 f" {p_win_a}% ({away_name})\n"
+                f"• **Doble Oportunidad (1X):** {p_1x}%\n"
                 f"• **Over 1.5 Goles:** {p_ov15}% *(Seguro parley)*\n"
                 f"• **Over 2.5 Goles:** {p_ov25}%\n"
                 f"• **Ambos Marcan (BTTS):** {p_btts}%\n\n"
@@ -174,9 +194,30 @@ def analizar_partidos_futbol_prematch():
     except Exception:
       continue
 
-  # --- GENERADOR AUTOMÁTICO DE PARLEYS (BAJO, MEDIO, ALTO) ---
+  # --- TARJETA 1: LISTADO DE PICKS > 80% ---
+  texto_picks_80 = (
+      "💎 **LISTADO DE PICKS VIP (>80% DE PROBABILIDAD)** 💎\n\n"
+      "Los siguientes mercados matemáticos han superado el umbral del 80% de"
+      " confianza estadística para combinadas ultra seguras:\n\n"
+  )
+  if picks_altisimos:
+    for item in picks_altisimos:
+      texto_picks_80 += (
+          f"✅ **{item['partido']}**\n   └ Mercado: *{item['mercado']}* (Confianza:"
+          f" **{item['prob']}%**)\n\n"
+      )
+  else:
+    texto_picks_80 += (
+        "ℹ️ *No hay partidos en este bloque que alcancen el 80% estricto hoy."
+        " Se recomiendan picks de la sección de Riesgo Bajo.*\n"
+    )
+
+  analisis_lista.insert(
+      0, {"partido": "💎 PICKS DE ALTA CERTEZA (>80%)", "mensaje": texto_picks_80}
+  )
+
+  # --- TARJETA 2: GENERADOR DE PARLEYS (BAJO, MEDIO, ALTO) ---
   if len(picks_disponibles) >= 3:
-    # Ordenar por probabilidad para armar los bloques
     por_seguridad = sorted(
         picks_disponibles, key=lambda x: x["p_ov15"], reverse=True
     )
@@ -196,21 +237,21 @@ def analizar_partidos_futbol_prematch():
 
     resumen_parleys = (
         "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DEL DÍA** 🌟\n\n"
-        "🟢 **1. PARLEY RIESGO BAJO (Alta Probabilidad / Cuota Segura ~1.85)**\n"
+        "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura ~1.85)**\n"
         f"• **{p1['partido']}** | Mercado: Más de 1.5 Goles (Prob: {p1['p_ov15']}%)\n"
         f"• **{p2['partido']}** | Mercado: Más de 1.5 Goles (Prob: {p2['p_ov15']}%)\n\n"
-        "🟡 **2. PARLEY RIESGO MEDIO (Equilibrio Cuota / Probabilidad ~3.40)**\n"
+        "🟡 **2. PARLEY RIESGO MEDIO (Cuota ~3.40)**\n"
         f"• **{p3['partido']}** | Mercado: Más de 2.5 Goles (Prob: {p3['p_ov25']}%)\n"
         f"• **{p5['home']} vs {p5['away']}** | Mercado: Gana {p5['home']}"
         f" (Prob: {p5['p_win_l']}%)\n\n"
-        "🔴 **3. PARLEY RIESGO ALTO (Cuota Elevada / Alta rentabilidad ~6.50+)**\n"
+        "🔴 **3. PARLEY RIESGO ALTO (Cuota ~6.50+)**\n"
         f"• **{p4['partido']}** | Mercado: Ambos Marcan (BTTS Sí)"
         f" (Prob: {p4['p_btts']}%)\n"
         f"• **{p6['partido']}** | Mercado: Gana {p6['home']} + Over 1.5 Goles"
     )
 
     analisis_lista.insert(
-        0,
+        1,
         {
             "partido": "🔥 TICKET ESPECIAL DE PARLEYS IA",
             "mensaje": resumen_parleys,

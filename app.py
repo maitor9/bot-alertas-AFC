@@ -24,14 +24,15 @@ def api_nba_prematch():
   }
 
 
-# 3️⃣ RUTA PREMATCH FÚTBOL (POISSON PRO)
+# 3️⃣ RUTA PREMATCH FÚTBOL (POISSON PRO Y PICKS SEPARADOS)
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():
-  resultados = analizar_partidos_futbol_prematch()
+  resultado_total = analizar_partidos_futbol_prematch()
   return {
       "status": "success",
-      "total_analizados": len(resultados),
-      "data": resultados,
+      "total_analizados": len(resultado_total["partidos"]),
+      "data": resultado_total["partidos"],
+      "picks_vip": resultado_total["picks_vip"],
   }
 
 

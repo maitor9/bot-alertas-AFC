@@ -49,12 +49,13 @@ def poisson_prob(lmbda, k):
 
 def analizar_partidos_futbol_prematch():
   print(
-      "⚽ Escaneando catálogo global y filtrando picks con umbral >=75%...",
+      "⚽ Escaneando catálogo global y separando datos para Parleys y Picks"
+      " VIP...",
       flush=True,
   )
   analisis_lista = []
   picks_disponibles = []
-  picks_altisimos = []  # Para los picks > 75%
+  picks_altisimos = []
 
   for liga in LIGAS_CATALOGO:
     url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{liga['codigo']}/scoreboard"
@@ -135,16 +136,18 @@ def analizar_partidos_futbol_prematch():
             p_btts = round(prob_btts * 100, 1)
             p_1x = round((prob_local_win + prob_draw) * 100, 1)
 
-            # Recolectar picks mayores o iguales al 75% (Incluyendo Over 1.5 y Doble Oportunidad 1X)
+            # Guardar en la lista de alta certeza (>=75%)
             if p_ov15 >= 75.0:
               picks_altisimos.append({
                   "partido": f"{home_name} vs {away_name}",
+                  "liga": liga["nombre"],
                   "mercado": "Más de 1.5 Goles",
                   "prob": p_ov15,
               })
             if p_1x >= 75.0:
               picks_altisimos.append({
                   "partido": f"{home_name} vs {away_name}",
+                  "liga": liga["nombre"],
                   "mercado": f"Doble Oportunidad (1X - {home_name} o Empate)",
                   "prob": p_1x,
               })
@@ -186,6 +189,7 @@ def analizar_partidos_futbol_prematch():
             )
 
             analisis_lista.append({
+                "tipo": "partido",
                 "partido": f"{home_name} vs {away_name}",
                 "mensaje": mensaje,
             })
@@ -194,34 +198,7 @@ def analizar_partidos_futbol_prematch():
     except Exception:
       continue
 
-  # --- TARJETA 1: LISTADO DE PICKS > 75% ---
-  texto_picks_75 = (
-      "💎 **LISTADO DE PICKS VIP (CONFIANZA >= 75%)** 💎\n\n"
-      "Los siguientes mercados matemáticos superan el umbral del 75% de"
-      " probabilidad estadística, ideales para dar volumen y seguridad a tus"
-      " combinadas:\n\n"
-  )
-  if picks_altisimos:
-    for item in picks_altisimos:
-      texto_picks_75 += (
-          f"✅ **{item['partido']}**\n   └ Mercado: *{item['mercado']}* (Confianza:"
-          f" **{item['prob']}%**)\n\n"
-      )
-  else:
-    texto_picks_75 += (
-        "ℹ️ *No hay partidos que alcancen el 75% en este ciclo. Revisa las"
-        " opciones de Riesgo Bajo.*\n"
-    )
-
-  analisis_lista.insert(
-      0,
-      {
-          "partido": "💎 PICKS DE ALTA CERTEZA (>=75%)",
-          "mensaje": texto_picks_75,
-      },
-  )
-
-  # --- TARJETA 2: GENERADOR DE PARLEYS (BAJO, MEDIO, ALTO) ---
+  # --- GENERADOR DE PARLEYS (BAJO, MEDIO, ALTO) ---
   if len(picks_disponibles) >= 3:
     por_seguridad = sorted(
         picks_disponibles, key=lambda x: x["p_ov15"], reverse=True
@@ -256,11 +233,12 @@ def analizar_partidos_futbol_prematch():
     )
 
     analisis_lista.insert(
-        1,
+        0,
         {
+            "tipo": "parley",
             "partido": "🔥 TICKET ESPECIAL DE PARLEYS IA",
             "mensaje": resumen_parleys,
         },
     )
 
-  return analisis_lista
+  return {"partidos": analisis_lista, "picks_vip": picks_altisimos}

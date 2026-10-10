@@ -155,10 +155,10 @@
 
         .tab-btn {
             background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 14px 28px; border-radius: 16px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; 
+            color: var(--text-secondary); padding: 14px 22px; border-radius: 16px;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; 
             cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; gap: 10px;
         }
         .tab-btn.active {
             background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); 
@@ -266,13 +266,16 @@
         <div class="main-container">
             <div class="tabs-nav">
                 <button class="tab-btn active" onclick="cambiarPestana(event, 'radar')">
-                    📡 Radar Global 0-0 <span class="tab-badge" id="count-radar">0</span>
+                    📡 Radar 0-0 <span class="tab-badge" id="count-radar">0</span>
                 </button>
                 <button class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
-                    ⚡ Alertas VIP AI <span class="tab-badge" id="count-alertas">0</span>
+                    ⚡ Alertas VIP <span class="tab-badge" id="count-alertas">0</span>
                 </button>
                 <button class="tab-btn" onclick="cambiarPestana(event, 'prematch-fut')">
-                    ⚽ Pronósticos Poisson <span class="tab-badge" id="count-fut-pre">AI</span>
+                    ⚽ Partidos & Parleys <span class="tab-badge">PRO</span>
+                </button>
+                <button class="tab-btn" onclick="cambiarPestana(event, 'picks-vip')">
+                    💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip">0</span>
                 </button>
             </div>
 
@@ -289,9 +292,16 @@
             </div>
 
             <div id="pestana-prematch-fut" style="display: none;">
-                <button onclick="cargarPrematchFutbol()" class="btn-action">📊 CARGAR PRONÓSTICOS PREPARTIDO (POISSON)</button>
+                <button onclick="cargarPrematchFutbol()" class="btn-action">📊 CARGAR ANÁLISIS GLOBAL Y PARLEYS PRO</button>
                 <div id="grid-football-prematch" class="grid">
-                    <div class="empty-card"><h3>⚽ Haz clic en el botón superior para calcular las probabilidades de goles</h3></div>
+                    <div class="empty-card"><h3>⚽ Haz clic en el botón superior para calcular los partidos y parleys de la fecha</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-picks-vip" style="display: none;">
+                <button onclick="cargarPrematchFutbol()" class="btn-action">💎 ACTUALIZAR LISTADO DE PICKS (>=75%)</button>
+                <div id="grid-picks-vip" class="grid">
+                    <div class="empty-card"><h3>💎 Haz clic en el botón superior para generar el listado de alta certeza</h3></div>
                 </div>
             </div>
         </div>
@@ -349,6 +359,7 @@
             document.getElementById('pestana-radar').style.display = 'none';
             document.getElementById('pestana-alertas').style.display = 'none';
             document.getElementById('pestana-prematch-fut').style.display = 'none';
+            document.getElementById('pestana-picks-vip').style.display = 'none';
 
             if (pestana === 'radar') {
                 document.getElementById('pestana-radar').style.display = 'block';
@@ -356,23 +367,29 @@
                 document.getElementById('pestana-alertas').style.display = 'block';
             } else if (pestana === 'prematch-fut') {
                 document.getElementById('pestana-prematch-fut').style.display = 'block';
+            } else if (pestana === 'picks-vip') {
+                document.getElementById('pestana-picks-vip').style.display = 'block';
             }
         }
 
         async function cargarPrematchFutbol() {
-            const grid = document.getElementById('grid-football-prematch');
-            grid.innerHTML = '<div class="empty-card"><h3>⏳ Analizando partidos con modelo de Poisson...</h3></div>';
+            const gridFut = document.getElementById('grid-football-prematch');
+            const gridVip = document.getElementById('grid-picks-vip');
+            
+            gridFut.innerHTML = '<div class="empty-card"><h3>⏳ Analizando cartelera global y generando parleys...</h3></div>';
+            gridVip.innerHTML = '<div class="empty-card"><h3>💎 Filtrando picks de alta certeza (>=75%)...</h3></div>';
             
             try {
                 let response = await fetch('/api/football_prematch');
                 let resultado = await response.json();
                 
+                // Cargar partidos y parleys en su pestaña
                 if (resultado.data && resultado.data.length > 0) {
-                    grid.innerHTML = resultado.data.map(item => `
+                    gridFut.innerHTML = resultado.data.map(item => `
                         <div class="match-card">
                             <div class="match-meta">
-                                <span class="league-badge">🏆 Fútbol Oficial</span>
-                                <span class="minute-badge">📊 Poisson AI</span>
+                                <span class="league-badge">🏆 ${item.tipo === 'parley' ? 'Parley VIP AI' : 'Fútbol Oficial'}</span>
+                                <span class="minute-badge">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Poisson Pro'}</span>
                             </div>
                             <div class="teams-title">${item.partido}</div>
                             <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
@@ -381,10 +398,32 @@
                         </div>
                     `).join('');
                 } else {
-                    grid.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de fútbol programados para analizar en este momento</h3></div>';
+                    gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de fútbol programados para analizar en este momento</h3></div>';
                 }
+
+                // Cargar listado VIP >=75% en su pestaña dedicada
+                if (resultado.picks_vip && resultado.picks_vip.length > 0) {
+                    document.getElementById('count-picks-vip').innerText = resultado.picks_vip.length;
+                    gridVip.innerHTML = resultado.picks_vip.map(pick => `
+                        <div class="match-card">
+                            <div class="match-meta">
+                                <span class="league-badge">🏆 ${pick.liga}</span>
+                                <span class="minute-badge" style="color: #10b981;">✅ ${pick.prob}% Confianza</span>
+                            </div>
+                            <div class="teams-title">${pick.partido}</div>
+                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 14px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
+                                🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-gold-bright); font-size: 16px;">${pick.mercado}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('count-picks-vip').innerText = '0';
+                    gridVip.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% estricto en este horario</h3></div>';
+                }
+
             } catch (error) {
-                grid.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
+                gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
+                gridVip.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP</h3></div>';
             }
         }
 

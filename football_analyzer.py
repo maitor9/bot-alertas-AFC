@@ -49,7 +49,7 @@ def poisson_prob(lmbda, k):
 
 
 def analizar_partidos_futbol_prematch():
-  print("⚽ Escaneando el catálogo completo de ligas globales...", flush=True)
+  print("⚽ Escaneando el catálogo completo y ordenando picks VIP...", flush=True)
   analisis_lista = []
   picks_disponibles = []
   picks_altisimos = []
@@ -192,6 +192,11 @@ def analizar_partidos_futbol_prematch():
             continue
     except Exception:
       continue
+
+  # Ordenar los picks VIP de mayor a menor probabilidad/confianza
+  picks_altisimos = sorted(
+      picks_altisimos, key=lambda x: x["prob"], reverse=True
+  )
 
   if len(picks_disponibles) >= 3:
     por_seguridad = sorted(

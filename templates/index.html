@@ -15,6 +15,7 @@
             --accent-gold-glow: rgba(245, 158, 11, 0.4);
             --accent-cyan: #06b6d4;
             --accent-orange: #f97316;
+            --accent-orange-bright: #fdba74;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -102,12 +103,21 @@
             margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
             padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
         }
+        
+        .badge-tag-nba {
+            color: var(--accent-orange); font-family: 'Orbitron', sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: 14px; display: inline-block; background: rgba(249, 115, 22, 0.1);
+            padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(249, 115, 22, 0.3);
+        }
 
         .hero-title { 
             font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
             line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
         }
         .highlight-gold { color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow); }
+        .highlight-orange { color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4); }
+        
         .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; max-width: 540px; line-height: 1.6; }
 
         .radar-card {
@@ -165,6 +175,13 @@
             color: #000; border-color: var(--accent-gold-bright);
             box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
         }
+        
+        .tab-btn.active-nba {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); 
+            color: #000; border-color: var(--accent-orange-bright);
+            box-shadow: 0 6px 25px rgba(249, 115, 22, 0.4);
+        }
+
         .tab-badge { background: rgba(0,0,0,0.3); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
@@ -179,9 +196,16 @@
             background: linear-gradient(90deg, transparent, var(--accent-gold-bright), transparent);
             opacity: 0.7;
         }
+        .match-card.nba-card::before {
+            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+        }
         .match-card:hover {
             border-color: var(--accent-gold-bright); transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+        .match-card.nba-card:hover {
+            border-color: var(--accent-orange);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(249, 115, 22, 0.15);
         }
 
         .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
@@ -196,15 +220,6 @@
         }
         .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
         .empty-card { grid-column: 1 / -1; text-align: center; padding: 70px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
-
-        .btn-nba {
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
-            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
-            color: #000; border: none; padding: 14px 28px; border-radius: 14px;
-            font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px;
-            cursor: pointer; transition: all 0.3s ease; display: block; width: 100%; margin-bottom: 25px; letter-spacing: 1px;
-        }
-        .btn-nba:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(249, 115, 22, 0.6); }
 
         @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
     </style>
@@ -256,16 +271,16 @@
 
         <div class="main-container">
             <div class="tabs-nav">
-                <button id="tabRadar" class="tab-btn active" onclick="cambiarPestana(event, 'radar')">
+                <button id="tabRadar" class="tab-btn active" onclick="cambiarPestanaFutbol(event, 'radar')">
                     📡 Radar 0-0 <span class="tab-badge" id="count-radar">0</span>
                 </button>
-                <button id="tabAlertas" class="tab-btn" onclick="cambiarPestana(event, 'alertas')">
+                <button id="tabAlertas" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'alertas')">
                     ⚡ Alertas VIP <span class="tab-badge" id="count-alertas">0</span>
                 </button>
-                <button id="tabPrematch" class="tab-btn" onclick="cambiarPestana(event, 'prematch-fut')">
+                <button id="tabPrematch" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'prematch-fut')">
                     ⚽ Partidos & Parleys <span class="tab-badge">PRO</span>
                 </button>
-                <button id="tabPicksVip" class="tab-btn" onclick="cambiarPestana(event, 'picks-vip')">
+                <button id="tabPicksVip" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'picks-vip')">
                     💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip">0</span>
                 </button>
             </div>
@@ -300,9 +315,9 @@
     <div id="seccion-basket" style="display: none;">
         <div class="hero-section">
             <div>
-                <div class="badge-tag" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Análisis Prepartido & <span style="color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4);">Proyecciones NBA</span></h1>
-                <p class="hero-desc">Proyecciones matemáticas automáticas con hándicap analítico y líneas de totales (Over/Under) basadas en eficiencia.</p>
+                <div class="badge-tag-nba">Motor Algorítmico de IA - Basket</div>
+                <h1 class="hero-title">Análisis Prepartido & <span class="highlight-orange">Proyecciones NBA</span></h1>
+                <p class="hero-desc">Proyecciones matemáticas automáticas con estimador de victorias y líneas de totales (Over/Under) basadas en eficiencia.</p>
             </div>
 
             <div class="radar-card">
@@ -312,15 +327,30 @@
                     <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
                 </div>
                 <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
-                <div class="stats-label">pronósticos NBA cargados</div>
+                <div class="stats-label">partidos NBA analizados</div>
             </div>
         </div>
 
         <div class="main-container">
-            <button onclick="cargarPrematchNBA()" class="btn-nba">📊 CARGAR PRONÓSTICOS PREPARTIDO NBA (HOY)</button>
-            
-            <div class="grid" id="grid-basket-alertas">
-                <div class="empty-card"><h3>🏀 Haz clic en el botón superior para consultar los pronósticos de la NBA</h3></div>
+            <div class="tabs-nav">
+                <button id="tabPrematchBas" class="tab-btn active-nba" onclick="cambiarPestanaBasket(event, 'prematch-bas')">
+                    🏀 Partidos & Parleys <span class="tab-badge">PRO</span>
+                </button>
+                <button id="tabPicksVipBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'picks-vip-bas')">
+                    💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip-bas" style="background: rgba(249,115,22,0.3);">0</span>
+                </button>
+            </div>
+
+            <div id="pestana-prematch-bas">
+                <div id="grid-basket-prematch" class="grid">
+                    <div class="empty-card"><h3>⏳ Conectando con el motor ESPN y generando proyecciones NBA...</h3></div>
+                </div>
+            </div>
+
+            <div id="pestana-picks-vip-bas" style="display: none;">
+                <div id="grid-picks-vip-bas" class="grid">
+                    <div class="empty-card"><h3>💎 Cargando picks NBA de alta certeza (>=75%)...</h3></div>
+                </div>
             </div>
         </div>
     </div>
@@ -340,25 +370,32 @@
             document.getElementById('btnBasket').className = 'sport-btn active-bas';
         }
 
-        function cambiarPestana(evt, pestana) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            if (evt && evt.currentTarget) {
-                evt.currentTarget.classList.add('active');
-            }
+        function cambiarPestanaFutbol(evt, pestana) {
+            document.getElementById('tabRadar').classList.remove('active');
+            document.getElementById('tabAlertas').classList.remove('active');
+            document.getElementById('tabPrematch').classList.remove('active');
+            document.getElementById('tabPicksVip').classList.remove('active');
+            
+            if (evt) evt.currentTarget.classList.add('active');
+
             document.getElementById('pestana-radar').style.display = 'none';
             document.getElementById('pestana-alertas').style.display = 'none';
             document.getElementById('pestana-prematch-fut').style.display = 'none';
             document.getElementById('pestana-picks-vip').style.display = 'none';
 
-            if (pestana === 'radar') {
-                document.getElementById('pestana-radar').style.display = 'block';
-            } else if (pestana === 'alertas') {
-                document.getElementById('pestana-alertas').style.display = 'block';
-            } else if (pestana === 'prematch-fut') {
-                document.getElementById('pestana-prematch-fut').style.display = 'block';
-            } else if (pestana === 'picks-vip') {
-                document.getElementById('pestana-picks-vip').style.display = 'block';
-            }
+            document.getElementById('pestana-' + pestana).style.display = 'block';
+        }
+
+        function cambiarPestanaBasket(evt, pestana) {
+            document.getElementById('tabPrematchBas').classList.remove('active-nba');
+            document.getElementById('tabPicksVipBas').classList.remove('active-nba');
+            
+            if (evt) evt.currentTarget.classList.add('active-nba');
+
+            document.getElementById('pestana-prematch-bas').style.display = 'none';
+            document.getElementById('pestana-picks-vip-bas').style.display = 'none';
+
+            document.getElementById('pestana-' + pestana).style.display = 'block';
         }
 
         async function cargarPrematchFutbolGlobal() {
@@ -407,7 +444,6 @@
                     document.getElementById('count-picks-vip').innerText = '0';
                     gridVip.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la jornada de hoy</h3></div>';
                 }
-
             } catch (error) {
                 gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
                 gridVip.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP</h3></div>';
@@ -415,8 +451,8 @@
         }
 
         async function cargarPrematchNBA() {
-            const grid = document.getElementById('grid-basket-alertas');
-            grid.innerHTML = '<div class="empty-card"><h3>⏳ Conectando con el motor de ESPN y analizando cartelera NBA...</h3></div>';
+            const gridBas = document.getElementById('grid-basket-prematch');
+            const gridVipBas = document.getElementById('grid-picks-vip-bas');
             
             try {
                 let response = await fetch('/api/nba_prematch');
@@ -425,11 +461,11 @@
                 document.getElementById('basket-counter').innerText = resultado.total_analizados || 0;
 
                 if (resultado.data && resultado.data.length > 0) {
-                    grid.innerHTML = resultado.data.map(item => `
-                        <div class="match-card">
+                    gridBas.innerHTML = resultado.data.map(item => `
+                        <div class="match-card nba-card">
                             <div class="match-meta">
-                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 NBA Oficial</span>
-                                <span class="minute-badge" style="color: var(--accent-orange);">📊 Modelo AI</span>
+                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${item.tipo === 'parley' ? 'Parley VIP NBA' : 'NBA Oficial'}</span>
+                                <span class="minute-badge" style="color: var(--accent-orange); background: rgba(249, 115, 22, 0.1);">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Modelo AI'}</span>
                             </div>
                             <div class="teams-title">${item.partido}</div>
                             <div style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
@@ -438,10 +474,34 @@
                         </div>
                     `).join('');
                 } else {
-                    grid.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de la NBA programados en este momento</h3></div>';
+                    gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de la NBA programados hoy</h3></div>';
                 }
+
+                if (resultado.picks_vip && resultado.picks_vip.length > 0) {
+                    document.getElementById('count-picks-vip-bas').innerText = resultado.picks_vip.length;
+                    gridVipBas.innerHTML = resultado.picks_vip.map(pick => `
+                        <div class="match-card nba-card">
+                            <div class="match-meta">
+                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${pick.liga}</span>
+                                <span class="minute-badge" style="color: #10b981;">✅ ${pick.prob}% Confianza</span>
+                            </div>
+                            <div class="teams-title">${pick.partido}</div>
+                            <div style="text-align: center; font-size: 12px; color: var(--accent-orange); margin-bottom: 8px;">
+                                ⏰ ${pick.fecha} (Hora Colombia)
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
+                                🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-orange); font-size: 15px;">${pick.mercado}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('count-picks-vip-bas').innerText = '0';
+                    gridVipBas.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la NBA hoy</h3></div>';
+                }
+
             } catch (error) {
-                grid.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
+                gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el motor de ESPN NBA</h3></div>';
+                gridVipBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP NBA</h3></div>';
             }
         }
 
@@ -497,7 +557,9 @@
 
         window.onload = function() {
             cargarDatos();
-            cargarPrematchFutbolGlobal(); // Carga automática al entrar sin necesidad de clics
+            // Ambos se ejecutan en segundo plano automáticamente al entrar a la web
+            cargarPrematchFutbolGlobal();
+            cargarPrematchNBA(); 
         };
         setInterval(cargarDatos, 3000);
     </script>

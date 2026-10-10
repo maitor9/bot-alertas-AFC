@@ -49,12 +49,12 @@ def poisson_prob(lmbda, k):
 
 def analizar_partidos_futbol_prematch():
   print(
-      "⚽ Escaneando catálogo global y filtrando picks de alta probabilidad...",
+      "⚽ Escaneando catálogo global y filtrando picks con umbral >=75%...",
       flush=True,
   )
   analisis_lista = []
   picks_disponibles = []
-  picks_altisimos = []  # Para los picks > 80%
+  picks_altisimos = []  # Para los picks > 75%
 
   for liga in LIGAS_CATALOGO:
     url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{liga['codigo']}/scoreboard"
@@ -135,14 +135,14 @@ def analizar_partidos_futbol_prematch():
             p_btts = round(prob_btts * 100, 1)
             p_1x = round((prob_local_win + prob_draw) * 100, 1)
 
-            # Recolectar picks mayores al 80% (incluyendo Doble Oportunidad 1X)
-            if p_ov15 >= 80.0:
+            # Recolectar picks mayores o iguales al 75% (Incluyendo Over 1.5 y Doble Oportunidad 1X)
+            if p_ov15 >= 75.0:
               picks_altisimos.append({
                   "partido": f"{home_name} vs {away_name}",
                   "mercado": "Más de 1.5 Goles",
                   "prob": p_ov15,
               })
-            if p_1x >= 80.0:
+            if p_1x >= 75.0:
               picks_altisimos.append({
                   "partido": f"{home_name} vs {away_name}",
                   "mercado": f"Doble Oportunidad (1X - {home_name} o Empate)",
@@ -194,26 +194,31 @@ def analizar_partidos_futbol_prematch():
     except Exception:
       continue
 
-  # --- TARJETA 1: LISTADO DE PICKS > 80% ---
-  texto_picks_80 = (
-      "💎 **LISTADO DE PICKS VIP (>80% DE PROBABILIDAD)** 💎\n\n"
-      "Los siguientes mercados matemáticos han superado el umbral del 80% de"
-      " confianza estadística para combinadas ultra seguras:\n\n"
+  # --- TARJETA 1: LISTADO DE PICKS > 75% ---
+  texto_picks_75 = (
+      "💎 **LISTADO DE PICKS VIP (CONFIANZA >= 75%)** 💎\n\n"
+      "Los siguientes mercados matemáticos superan el umbral del 75% de"
+      " probabilidad estadística, ideales para dar volumen y seguridad a tus"
+      " combinadas:\n\n"
   )
   if picks_altisimos:
     for item in picks_altisimos:
-      texto_picks_80 += (
+      texto_picks_75 += (
           f"✅ **{item['partido']}**\n   └ Mercado: *{item['mercado']}* (Confianza:"
           f" **{item['prob']}%**)\n\n"
       )
   else:
-    texto_picks_80 += (
-        "ℹ️ *No hay partidos en este bloque que alcancen el 80% estricto hoy."
-        " Se recomiendan picks de la sección de Riesgo Bajo.*\n"
+    texto_picks_75 += (
+        "ℹ️ *No hay partidos que alcancen el 75% en este ciclo. Revisa las"
+        " opciones de Riesgo Bajo.*\n"
     )
 
   analisis_lista.insert(
-      0, {"partido": "💎 PICKS DE ALTA CERTEZA (>80%)", "mensaje": texto_picks_80}
+      0,
+      {
+          "partido": "💎 PICKS DE ALTA CERTEZA (>=75%)",
+          "mensaje": texto_picks_75,
+      },
   )
 
   # --- TARJETA 2: GENERADOR DE PARLEYS (BAJO, MEDIO, ALTO) ---

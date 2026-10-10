@@ -67,7 +67,6 @@ def analizar_partidos_futbol_prematch():
                         competition = event.get("competitions", [{}])[0]
                         status_type = competition.get("status", {}).get("type", {}).get("name", "")
                         
-                        # Aceptar programados, en vivo y finalizados de la jornada
                         valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"]
                         if status_type not in valid_statuses:
                             continue
@@ -136,7 +135,6 @@ def analizar_partidos_futbol_prematch():
                         p_btts = round(prob_btts * 100, 1)
                         p_1x = round((prob_local_win + prob_draw) * 100, 1)
                         
-                        # Lógica de verificación automática
                         estado_ov15 = "pendiente"
                         if is_final:
                             estado_ov15 = "acertado" if total_goals >= 2 else "fallado"
@@ -229,4 +227,21 @@ def analizar_partidos_futbol_prematch():
 
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DE LA JORNADA** 🌟\n\n"
-            "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura ~1.
+            "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura)**\n"
+            f"• **{p1['partido']}** | Mercado: Más de 1.5 Goles (Prob: {p1['p_ov15']}%)\n"
+            f"• **{p2['partido']}** | Mercado: Más de 1.5 Goles (Prob: {p2['p_ov15']}%)\n\n"
+            "🟡 **2. PARLEY RIESGO MEDIO (Cuota Promedio)**\n"
+            f"• **{p3['partido']}** | Mercado: Más de 2.5 Goles (Prob: {p3['p_ov25']}%)\n"
+            f"• **{p5['home']} vs {p5['away']}** | Mercado: Gana {p5['home']} (Prob: {p5['p_win_l']}%)\n\n"
+            "🔴 **3. PARLEY RIESGO ALTO (Cuota Alta)**\n"
+            f"• **{p4['partido']}** | Mercado: Ambos Marcan (BTTS Sí) (Prob: {p4['p_btts']}%)\n"
+            f"• **{p6['partido']}** | Mercado: Gana {p6['home']} + Over 1.5 Goles"
+        )
+
+        analisis_lista.insert(0, {
+            "tipo": "parley",
+            "partido": "🔥 TICKET ESPECIAL DE PARLEYS IA",
+            "mensaje": resumen_parleys,
+        })
+
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}

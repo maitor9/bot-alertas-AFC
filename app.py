@@ -6,6 +6,7 @@ from nba_analyzer import analizar_partidos_nba
 from baseball_analyzer import analizar_partidos_baseball
 from nfl_analyzer import analizar_partidos_nfl
 from nhl_analyzer import analizar_partidos_nhl
+from ufc_analyzer import analizar_cartelera_ufc
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
@@ -60,6 +61,11 @@ def api_nfl_prematch():
 @app.route("/api/nhl_prematch", methods=["GET"])
 def api_nhl_prematch():
     resultado = analizar_partidos_nhl()
+    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
+
+@app.route("/api/ufc_prematch", methods=["GET"])
+def api_ufc_prematch():
+    resultado = analizar_cartelera_ufc()
     return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
 
 if __name__ == "__main__":

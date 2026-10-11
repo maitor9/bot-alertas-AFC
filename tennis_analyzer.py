@@ -19,14 +19,16 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_tennis():
-    print("🎾 Escaneando cartelera de Tenis (ATP/WTA)...", flush=True)
+    print("🎾 Escaneando cartelera de Tenis (ATP/WTA - Ventana 72h)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
 
+    # Ampliamos a 3 días para cubrir el desfase horario de torneos en Asia/Europa
     hoy_str = datetime.now().strftime("%Y%m%d")
     manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
-    fechas_escaneo = [hoy_str, manana_str]
+    pasado_str = (datetime.now() + timedelta(days=2)).strftime("%Y%m%d")
+    fechas_escaneo = [hoy_str, manana_str, pasado_str]
     eventos_procesados = set()
 
     for liga in LIGAS_TENNIS:
@@ -47,7 +49,8 @@ def analizar_partidos_tennis():
                             competition = event.get("competitions", [{}])[0]
                             status_type = competition.get("status", {}).get("type", {}).get("name", "")
                             
-                            valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_FINAL", "STATUS_FULL_TIME"]
+                            # Incluimos los estados de tenis, a veces afectados por lluvia (DELAYED)
+                            valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_FINAL", "STATUS_FULL_TIME", "STATUS_DELAYED"]
                             if status_type not in valid_statuses: continue
                             is_final = status_type in ["STATUS_FINAL", "STATUS_FULL_TIME"]
                             fecha_hora_col = convertir_hora_colombia(event.get("date", ""))

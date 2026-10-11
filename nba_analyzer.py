@@ -4,9 +4,13 @@ import requests
 
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
+    {"codigo": "esp.1", "nombre": "Liga Endesa (España)", "base_total": 164.5, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.0},
+    {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.0},
+    {"codigo": "ita.1", "nombre": "Lega Basket Serie A (Italia)", "base_total": 162.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 2.8},
+    {"codigo": "ger.1", "nombre": "BBL (Alemania)", "base_total": 166.0, "sd_margin": 11.5, "sd_total": 12.5, "home_adv": 2.5},
+    {"codigo": "fra.1", "nombre": "LNB Pro A (Francia)", "base_total": 158.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 2.8},
     {"codigo": "wnba", "nombre": "WNBA", "base_total": 165.5, "sd_margin": 10.5, "sd_total": 12.0, "home_adv": 2.5},
-    {"codigo": "mens-college-basketball", "nombre": "NCAA Masculino", "base_total": 145.5, "sd_margin": 11.5, "sd_total": 11.0, "home_adv": 3.5},
-    {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.0}
+    {"codigo": "mens-college-basketball", "nombre": "NCAA Masculino", "base_total": 145.5, "sd_margin": 11.5, "sd_total": 11.0, "home_adv": 3.5}
 ]
 
 def normal_cdf(x, mu, sigma):
@@ -33,7 +37,7 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera avanzada de Baloncesto (Filtros Pro y VIP > 75%)...", flush=True)
+    print("🏀 Escaneando cartelera global de Baloncesto (NBA, Europa, NCAA)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
@@ -85,7 +89,6 @@ def analizar_partidos_nba():
                                 home_score, away_score = 0, 0
                             total_points = home_score + away_score
 
-                            # Cálculos sabermétricos avanzados
                             diff_pct = win_pct_h - win_pct_a 
                             mu_diff = (diff_pct * 15.0) + liga["home_adv"]
                             
@@ -93,13 +96,11 @@ def analizar_partidos_nba():
                             p_win_h = round(prob_home_win, 1)
                             p_win_a = round(100.0 - p_win_h, 1)
 
-                            # Hándicap / Spread profesional
                             valor_handicap = round(abs(mu_diff) * 2.0) / 2.0
                             if valor_handicap == 0: valor_handicap = 1.0
                             spread_sugerido = f"{home_name} -{valor_handicap}" if mu_diff > 0 else f"{away_name} -{valor_handicap}"
                             p_spread = round(min(92.0, 55.0 + (abs(mu_diff) * 3.5)), 1)
 
-                            # Totales (Over/Under)
                             ajuste_ofensivo = ((win_pct_h - 0.5) + (win_pct_a - 0.5)) * 20.0
                             mu_total = round(liga["base_total"] + ajuste_ofensivo, 1)
                             linea_over = round(mu_total - 6.5, 1)
@@ -110,7 +111,6 @@ def analizar_partidos_nba():
 
                             oportunidades_pro = []
 
-                            # --- FILTROS Y EVALUACIONES DE ESTADO (>= 65% para análisis general) ---
                             if p_win_h >= 65.0:
                                 est = "acertado" if (home_score > away_score and is_final) else ("fallado" if is_final else "pendiente")
                                 oportunidades_pro.append(f"• **Moneyline (Gana {home_name}):** {p_win_h}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
@@ -130,8 +130,7 @@ def analizar_partidos_nba():
                                 est = "acertado" if (total_points < linea_under and is_final) else ("fallado" if is_final else "pendiente")
                                 oportunidades_pro.append(f"• **Línea de Puntos (Under {linea_under}):** {p_under}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
-
-                            # --- EXTRACCIÓN VIP MULTI-MERCADO (>= 75%) ---
+                            # Picks VIP Descendentes (>= 75%)
                             if p_win_h >= 75.0:
                                 picks_altisimos.append({
                                     "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Moneyline: Gana {home_name}", 
@@ -168,7 +167,6 @@ def analizar_partidos_nba():
                                     "marcador": f"{total_points} Pts" if is_final else "Pendiente"
                                 })
 
-
                             estado_over = "acertado" if (total_points > linea_over and is_final) else ("fallado" if is_final else "pendiente")
 
                             picks_disponibles.append({
@@ -197,7 +195,6 @@ def analizar_partidos_nba():
                 continue
 
     analisis_lista = sorted(analisis_lista, key=lambda x: x.get("is_final", False))
-    # ORDENAMIENTO ESTRICTAMENTE DESCENDENTE PARA LOS PICKS VIP (Mayor probabilidad primero)
     picks_altisimos = sorted(picks_altisimos, key=lambda x: x["prob"], reverse=True)
 
     if len(picks_disponibles) >= 3:
@@ -215,10 +212,4 @@ def analizar_partidos_nba():
             "🌟 **SELECCIÓN VIP BASKET IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
             f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%){badge_p1}\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%){badge_p2}\n\n"
-            "🟡 **2. PARLEY MEDIO**\n"
-            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
-        )
-        analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL BASKET", "mensaje": resumen_parleys})
-
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}
+            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p

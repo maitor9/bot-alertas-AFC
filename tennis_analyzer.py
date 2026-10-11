@@ -19,16 +19,19 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_tennis():
-    print("🎾 Escaneando cartelera de Tenis (Torneos Activos ATP/WTA)...", flush=True)
+    print("🎾 Escaneando cartelera de Tenis (Rango dinámico de 5 días)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
+    # RANGO DE FECHAS (Desde ayer hasta +4 días) para forzar a la API a devolver el bracket completo
+    ayer = datetime.now() - timedelta(days=1)
+    futuro = datetime.now() + timedelta(days=4)
+    rango_fechas = f"{ayer.strftime('%Y%m%d')}-{futuro.strftime('%Y%m%d')}"
+
     for liga in LIGAS_TENNIS:
-        # ⚠️ SOLUCIÓN APLICADA: En tenis NO enviamos el parámetro ?dates= 
-        # Pedimos el Scoreboard maestro para que traiga todo el cuadro del torneo activo (Ej. Shanghai/Wuhan)
-        url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{liga['codigo']}/scoreboard"
+        url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{liga['codigo']}/scoreboard?dates={rango_fechas}"
         try:
             response = requests.get(url, timeout=4.0)
             if response.status_code == 200:

@@ -8,6 +8,7 @@ from nfl_analyzer import analizar_partidos_nfl
 from nhl_analyzer import analizar_partidos_nhl
 from ufc_analyzer import analizar_cartelera_ufc
 from flask import Flask, jsonify, render_template
+from racing_analyzer import analizar_carreras
 
 app = Flask(__name__)
 
@@ -66,6 +67,11 @@ def api_nhl_prematch():
 @app.route("/api/ufc_prematch", methods=["GET"])
 def api_ufc_prematch():
     resultado = analizar_cartelera_ufc()
+    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
+
+@app.route("/api/racing_prematch", methods=["GET"])
+def api_racing_prematch():
+    resultado = analizar_carreras()
     return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
 
 if __name__ == "__main__":

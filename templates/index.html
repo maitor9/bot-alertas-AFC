@@ -294,6 +294,7 @@
                             <div>
                                 <span style="font-size:11px; color:var(--accent-mega); font-weight:bold; text-transform:uppercase;">${item.deporte}</span>
                                 <div style="font-weight:bold; font-size:15px;">${item.partido}</div>
+                                <div style="font-size:12px; color:var(--text-secondary); margin-bottom: 3px;">⏰ ${item.fecha}</div>
                                 <div style="font-size:13px; color:var(--text-secondary);">🎯 ${item.mercado}</div>
                             </div>
                             <div style="text-align:right;">
@@ -306,7 +307,7 @@
                     document.getElementById('grid-mega-ticket').innerHTML = `
                         <div class="match-card" style="border-color: var(--accent-mega); background: rgba(236, 72, 153, 0.05);">
                             <h2 style="text-align:center; color: var(--accent-mega); font-family:'Orbitron';">🎟️ TICKET MAESTRO COMBINADO</h2>
-                            <p style="text-align:center; font-size:12px; color:var(--text-secondary);">Top 2 Selecciones con mayor probabilidad por deporte</p>
+                            <p style="text-align:center; font-size:12px; color:var(--text-secondary);">Top selecciones con mayor probabilidad por deporte</p>
                             <div style="margin-top:20px;">
                                 ${itemsHtml}
                             </div>

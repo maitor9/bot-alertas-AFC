@@ -13,7 +13,8 @@
             --accent-gold: #f59e0b;
             --accent-orange: #f97316;
             --accent-blue: #3b82f6;
-            --accent-lime: #84cc16;
+            --accent-nfl: #10b981;
+            --accent-nhl: #38bdf8;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -45,17 +46,18 @@
             letter-spacing: 1px; color: #fff;
         }
         
-        .sport-selector { display: flex; gap: 10px; flex-wrap: wrap; }
+        .sport-selector { display: flex; gap: 8px; flex-wrap: wrap; }
         .sport-btn {
             background: rgba(10, 14, 23, 0.8); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 10px 18px; border-radius: 12px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px;
+            color: var(--text-secondary); padding: 8px 14px; border-radius: 12px;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 11px;
             cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px;
         }
         .sport-btn.active-fut { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000 !important; border-color: var(--accent-gold); box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4); }
         .sport-btn.active-bas { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000 !important; border-color: var(--accent-orange); box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4); }
         .sport-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff !important; border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59, 130, 246, 0.4); }
-        .sport-btn.active-ten { background: linear-gradient(135deg, var(--accent-lime) 0%, #4d7c0f 100%); color: #000 !important; border-color: var(--accent-lime); box-shadow: 0 4px 18px rgba(132, 204, 22, 0.4); }
+        .sport-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000 !important; border-color: var(--accent-nfl); box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4); }
+        .sport-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000 !important; border-color: var(--accent-nhl); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.4); }
 
         .hero-section { max-width: 1240px; margin: 40px auto; padding: 0 24px; text-align: center; }
         .hero-title { font-family: 'Orbitron', sans-serif; font-size: 35px; font-weight: 900; line-height: 1.2; margin: 0 0 15px 0; }
@@ -69,10 +71,11 @@
             font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; 
             cursor: pointer; transition: all 0.3s ease;
         }
-        .tab-btn.active { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000; border-color: var(--accent-gold); }
-        .tab-btn.active-nba { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000; border-color: var(--accent-orange); }
+        .tab-btn.active-fut { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000; border-color: var(--accent-gold); }
+        .tab-btn.active-bas { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000; border-color: var(--accent-orange); }
         .tab-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff; border-color: var(--accent-blue); }
-        .tab-btn.active-ten { background: linear-gradient(135deg, var(--accent-lime) 0%, #4d7c0f 100%); color: #000; border-color: var(--accent-lime); }
+        .tab-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000; border-color: var(--accent-nfl); }
+        .tab-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000; border-color: var(--accent-nhl); }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
 
@@ -83,7 +86,6 @@
         }
         .match-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
 
-        .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
         .teams-title { font-size: 18px; font-weight: 700; text-align: center; margin: 15px 0; line-height: 1.3; }
         .empty-card { grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
     </style>
@@ -96,76 +98,96 @@
             <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarSeccion('futbol')">⚽ FÚTBOL</button>
             <button id="btnBasket" class="sport-btn" onclick="mostrarSeccion('basket')">🏀 BASKET</button>
             <button id="btnBaseball" class="sport-btn" onclick="mostrarSeccion('baseball')">⚾ BÉISBOL</button>
-            <button id="btnTennis" class="sport-btn" onclick="mostrarSeccion('tennis')">🎾 TENIS</button>
+            <button id="btnNfl" class="sport-btn" onclick="mostrarSeccion('nfl')">🏈 NFL</button>
+            <button id="btnNhl" class="sport-btn" onclick="mostrarSeccion('nhl')">🏒 NHL</button>
         </div>
     </div>
 
-    <!-- SECCIÓN FÚTBOL -->
+    <!-- FÚTBOL -->
     <div id="seccion-futbol" style="display: block;">
         <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-gold);">Rastreo y Proyecciones de Fútbol</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button class="tab-btn active" onclick="cambiarPestana('futbol', 'prematch-fut', event, 'active')">⚽ Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('futbol', 'picks-vip', event, 'active')">💎 Picks VIP</button>
+                <button class="tab-btn active-fut" onclick="cambiarPestana('futbol', 'prematch', event, 'active-fut')">⚽ Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('futbol', 'vip', event, 'active-fut')">💎 Picks VIP</button>
             </div>
-            <div id="futbol-prematch-fut"><div id="grid-football-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando fútbol...</h3></div></div></div>
-            <div id="futbol-picks-vip" style="display: none;"><div id="grid-picks-vip" class="grid"><div class="empty-card"><h3>💎 Cargando VIP fútbol...</h3></div></div></div>
+            <div id="futbol-prematch"><div id="grid-football-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando fútbol...</h3></div></div></div>
+            <div id="futbol-vip" style="display: none;"><div id="grid-picks-vip-futbol" class="grid"><div class="empty-card"><h3>💎 Cargando VIP fútbol...</h3></div></div></div>
         </div>
     </div>
 
-    <!-- SECCIÓN BASKET -->
+    <!-- BASKET -->
     <div id="seccion-basket" style="display: none;">
         <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-orange);">Proyecciones NBA y Europa</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button class="tab-btn active-nba" onclick="cambiarPestana('basket', 'prematch-bas', event, 'active-nba')">🏀 Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('basket', 'picks-vip-bas', event, 'active-nba')">💎 Picks VIP</button>
+                <button class="tab-btn active-bas" onclick="cambiarPestana('basket', 'prematch', event, 'active-bas')">🏀 Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('basket', 'vip', event, 'active-bas')">💎 Picks VIP</button>
             </div>
-            <div id="basket-prematch-bas"><div id="grid-basket-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando basket...</h3></div></div></div>
-            <div id="basket-picks-vip-bas" style="display: none;"><div id="grid-picks-vip-bas" class="grid"><div class="empty-card"><h3>💎 Cargando VIP basket...</h3></div></div></div>
+            <div id="basket-prematch"><div id="grid-basket-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando basket...</h3></div></div></div>
+            <div id="basket-vip" style="display: none;"><div id="grid-picks-vip-basket" class="grid"><div class="empty-card"><h3>💎 Cargando VIP basket...</h3></div></div></div>
         </div>
     </div>
 
-    <!-- SECCIÓN BÉISBOL -->
+    <!-- BÉISBOL -->
     <div id="seccion-baseball" style="display: none;">
         <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-blue);">Sabermetría MLB</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button class="tab-btn active-mlb" onclick="cambiarPestana('baseball', 'prematch-mlb', event, 'active-mlb')">⚾ Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('baseball', 'picks-vip-mlb', event, 'active-mlb')">💎 Picks VIP</button>
+                <button class="tab-btn active-mlb" onclick="cambiarPestana('baseball', 'prematch', event, 'active-mlb')">⚾ Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('baseball', 'vip', event, 'active-mlb')">💎 Picks VIP</button>
             </div>
-            <div id="baseball-prematch-mlb"><div id="grid-baseball-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando béisbol...</h3></div></div></div>
-            <div id="baseball-picks-vip-mlb" style="display: none;"><div id="grid-picks-vip-mlb" class="grid"><div class="empty-card"><h3>💎 Cargando VIP béisbol...</h3></div></div></div>
+            <div id="baseball-prematch"><div id="grid-baseball-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando béisbol...</h3></div></div></div>
+            <div id="baseball-vip" style="display: none;"><div id="grid-picks-vip-baseball" class="grid"><div class="empty-card"><h3>💎 Cargando VIP béisbol...</h3></div></div></div>
         </div>
     </div>
 
-    <!-- SECCIÓN TENIS -->
-    <div id="seccion-tennis" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-lime);">Analítica ATP/WTA</h1></div>
+    <!-- NFL -->
+    <div id="seccion-nfl" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-nfl);">Analítica NFL</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button class="tab-btn active-ten" onclick="cambiarPestana('tennis', 'prematch-ten', event, 'active-ten')">🎾 Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('tennis', 'picks-vip-ten', event, 'active-ten')">💎 Picks VIP</button>
+                <button class="tab-btn active-nfl" onclick="cambiarPestana('nfl', 'prematch', event, 'active-nfl')">🏈 Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('nfl', 'vip', event, 'active-nfl')">💎 Picks VIP</button>
             </div>
-            <div id="tennis-prematch-ten"><div id="grid-tennis-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando tenis...</h3></div></div></div>
-            <div id="tennis-picks-vip-ten" style="display: none;"><div id="grid-picks-vip-ten" class="grid"><div class="empty-card"><h3>💎 Cargando VIP tenis...</h3></div></div></div>
+            <div id="nfl-prematch"><div id="grid-nfl-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando NFL...</h3></div></div></div>
+            <div id="nfl-vip" style="display: none;"><div id="grid-picks-vip-nfl" class="grid"><div class="empty-card"><h3>💎 Cargando VIP NFL...</h3></div></div></div>
+        </div>
+    </div>
+
+    <!-- NHL -->
+    <div id="seccion-nhl" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-nhl);">Analítica NHL Hockey</h1></div>
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active-nhl" onclick="cambiarPestana('nhl', 'prematch', event, 'active-nhl')">🏒 Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('nhl', 'vip', event, 'active-nhl')">💎 Picks VIP</button>
+            </div>
+            <div id="nhl-prematch"><div id="grid-nhl-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando NHL...</h3></div></div></div>
+            <div id="nhl-vip" style="display: none;"><div id="grid-picks-vip-nhl" class="grid"><div class="empty-card"><h3>💎 Cargando VIP NHL...</h3></div></div></div>
         </div>
     </div>
 
     <script>
         function mostrarSeccion(deporte) {
-            ['futbol', 'basket', 'baseball', 'tennis'].forEach(d => {
+            ['futbol', 'basket', 'baseball', 'nfl', 'nhl'].forEach(d => {
                 document.getElementById('seccion-' + d).style.display = (d === deporte) ? 'block' : 'none';
+                document.getElementById('btn' + d.charAt(0).toUpperCase() + d.slice(1)).className = 'sport-btn';
             });
-            document.getElementById('btnFutbol').className = 'sport-btn' + (deporte === 'futbol' ? ' active-fut' : '');
-            document.getElementById('btnBasket').className = 'sport-btn' + (deporte === 'basket' ? ' active-bas' : '');
-            document.getElementById('btnBaseball').className = 'sport-btn' + (deporte === 'baseball' ? ' active-mlb' : '');
-            document.getElementById('btnTennis').className = 'sport-btn' + (deporte === 'tennis' ? ' active-ten' : '');
+            let cl = '';
+            if(deporte==='futbol') cl='active-fut';
+            if(deporte==='basket') cl='active-bas';
+            if(deporte==='baseball') cl='active-mlb';
+            if(deporte==='nfl') cl='active-nfl';
+            if(deporte==='nhl') cl='active-nhl';
+            document.getElementById('btn' + deporte.charAt(0).toUpperCase() + deporte.slice(1)).classList.add(cl);
         }
 
         function cambiarPestana(deporte, pestana, evt, claseActiva) {
             const tabs = document.querySelectorAll(`#seccion-${deporte} .tab-btn`);
-            tabs.forEach(t => t.classList.remove(claseActiva));
+            tabs.forEach(t => {
+                t.className = 'tab-btn'; // Limpia todas las clases
+            });
             evt.currentTarget.classList.add(claseActiva);
 
             const divs = document.querySelectorAll(`#seccion-${deporte} > .main-container > div[id^="${deporte}-"]`);
@@ -205,7 +227,7 @@
                         </div>`;
                     }).join('');
                 } else {
-                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP (>=75%) en este deporte hoy</h3></div>';
+                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP (>=75%) hoy</h3></div>';
                 }
             } catch (error) {
                 document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ Error de conexión</h3></div>';
@@ -213,10 +235,11 @@
         }
 
         window.onload = function() {
-            cargarData('/api/football_prematch', 'grid-football-prematch', 'grid-picks-vip', 'var(--accent-gold)');
-            cargarData('/api/nba_prematch', 'grid-basket-prematch', 'grid-picks-vip-bas', 'var(--accent-orange)');
-            cargarData('/api/baseball_prematch', 'grid-baseball-prematch', 'grid-picks-vip-mlb', 'var(--accent-blue)');
-            cargarData('/api/tennis_prematch', 'grid-tennis-prematch', 'grid-picks-vip-ten', 'var(--accent-lime)');
+            cargarData('/api/football_prematch', 'grid-football-prematch', 'grid-picks-vip-futbol', 'var(--accent-gold)');
+            cargarData('/api/nba_prematch', 'grid-basket-prematch', 'grid-picks-vip-basket', 'var(--accent-orange)');
+            cargarData('/api/baseball_prematch', 'grid-baseball-prematch', 'grid-picks-vip-baseball', 'var(--accent-blue)');
+            cargarData('/api/nfl_prematch', 'grid-nfl-prematch', 'grid-picks-vip-nfl', 'var(--accent-nfl)');
+            cargarData('/api/nhl_prematch', 'grid-nhl-prematch', 'grid-picks-vip-nhl', 'var(--accent-nhl)');
         };
     </script>
 </body>

@@ -17,6 +17,7 @@
             --accent-nhl: #38bdf8;
             --accent-ufc: #ef4444;
             --accent-motor: #a855f7;
+            --accent-mega: #ec4899;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -62,6 +63,7 @@
         .sport-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000 !important; border-color: var(--accent-nhl); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.4); }
         .sport-btn.active-ufc { background: linear-gradient(135deg, var(--accent-ufc) 0%, #7f1d1d 100%); color: #fff !important; border-color: var(--accent-ufc); box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4); }
         .sport-btn.active-motor { background: linear-gradient(135deg, var(--accent-motor) 0%, #581c87 100%); color: #fff !important; border-color: var(--accent-motor); box-shadow: 0 4px 18px rgba(168, 85, 247, 0.4); }
+        .sport-btn.active-mega { background: linear-gradient(135deg, var(--accent-mega) 0%, #be185d 100%); color: #fff !important; border-color: var(--accent-mega); box-shadow: 0 4px 18px rgba(236, 72, 153, 0.4); }
 
         .hero-section { max-width: 1240px; margin: 40px auto; padding: 0 24px; text-align: center; }
         .hero-title { font-family: 'Orbitron', sans-serif; font-size: 35px; font-weight: 900; line-height: 1.2; margin: 0 0 15px 0; }
@@ -108,6 +110,7 @@
             <button id="btnNhl" class="sport-btn" onclick="mostrarSeccion('nhl')">🏒 NHL</button>
             <button id="btnUfc" class="sport-btn" onclick="mostrarSeccion('ufc')">🥊 UFC</button>
             <button id="btnMotor" class="sport-btn" onclick="mostrarSeccion('motor')">🏎️ MOTOR</button>
+            <button id="btnMega" class="sport-btn" onclick="mostrarSeccion('mega')">🔥 MEGA PARLEY</button>
         </div>
     </div>
 
@@ -202,9 +205,19 @@
         </div>
     </div>
 
+    <!-- MEGA PARLEY -->
+    <div id="seccion-mega" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-mega);">🔥 MEGA TICKET MULTIDEPORTE</h1></div>
+        <div class="main-container">
+            <div id="grid-mega-ticket" class="grid" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
+                <div class="empty-card"><h3>⏳ Generando Ticket Multideporte...</h3></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function mostrarSeccion(deporte) {
-            ['futbol', 'basket', 'baseball', 'nfl', 'nhl', 'ufc', 'motor'].forEach(d => {
+            ['futbol', 'basket', 'baseball', 'nfl', 'nhl', 'ufc', 'motor', 'mega'].forEach(d => {
                 document.getElementById('seccion-' + d).style.display = (d === deporte) ? 'block' : 'none';
                 document.getElementById('btn' + d.charAt(0).toUpperCase() + d.slice(1)).className = 'sport-btn';
             });
@@ -216,7 +229,10 @@
             if(deporte==='nhl') cl='active-nhl';
             if(deporte==='ufc') cl='active-ufc';
             if(deporte==='motor') cl='active-motor';
+            if(deporte==='mega') cl='active-mega';
             document.getElementById('btn' + deporte.charAt(0).toUpperCase() + deporte.slice(1)).classList.add(cl);
+            
+            if(deporte === 'mega') cargarMegaParley();
         }
 
         function cambiarPestana(deporte, pestana, evt, claseActiva) {
@@ -265,6 +281,42 @@
                 }
             } catch (error) {
                 document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ Error de conexión</h3></div>';
+            }
+        }
+
+        async function cargarMegaParley() {
+            try {
+                let response = await fetch('/api/mega_parley');
+                let resultado = await response.json();
+                if(resultado.mega_ticket && resultado.mega_ticket.length > 0) {
+                    let itemsHtml = resultado.mega_ticket.map(item => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 0; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                            <div>
+                                <span style="font-size:11px; color:var(--accent-mega); font-weight:bold; text-transform:uppercase;">${item.deporte}</span>
+                                <div style="font-weight:bold; font-size:15px;">${item.partido}</div>
+                                <div style="font-size:13px; color:var(--text-secondary);">🎯 ${item.mercado}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="color:#10b981; font-weight:bold; font-size:14px;">${item.prob}%</div>
+                                <div>${item.status}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('grid-mega-ticket').innerHTML = `
+                        <div class="match-card" style="border-color: var(--accent-mega); background: rgba(236, 72, 153, 0.05);">
+                            <h2 style="text-align:center; color: var(--accent-mega); font-family:'Orbitron';">🎟️ TICKET MAESTRO COMBINADO</h2>
+                            <p style="text-align:center; font-size:12px; color:var(--text-secondary);">Top 2 Selecciones con mayor probabilidad por deporte</p>
+                            <div style="margin-top:20px;">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('grid-mega-ticket').innerHTML = '<div class="empty-card"><h3>ℹ️ No hay datos suficientes hoy para armar el Mega Ticket</h3></div>';
+                }
+            } catch(e) {
+                document.getElementById('grid-mega-ticket').innerHTML = '<div class="empty-card"><h3>⚠️ Error cargando Mega Parley</h3></div>';
             }
         }
 

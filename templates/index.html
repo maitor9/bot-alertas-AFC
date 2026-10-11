@@ -11,11 +11,9 @@
             --card-bg: rgba(10, 14, 23, 0.85);
             --card-border: rgba(245, 158, 11, 0.18);
             --accent-gold: #f59e0b;
-            --accent-gold-bright: #fbbf24;
-            --accent-gold-glow: rgba(245, 158, 11, 0.4);
-            --accent-cyan: #06b6d4;
             --accent-orange: #f97316;
-            --accent-orange-bright: #fdba74;
+            --accent-blue: #3b82f6;
+            --accent-lime: #84cc16;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -27,10 +25,9 @@
             background-color: var(--bg-color);
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
-                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
                 linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            background-size: 100% 100%, 40px 40px, 40px 40px;
             color: var(--text-primary);
             margin: 0; padding: 0; min-height: 100vh;
         }
@@ -47,562 +44,180 @@
             font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
             letter-spacing: 1px; color: #fff;
         }
-        .brand-icon {
-            width: 42px; height: 42px;
-            background: radial-gradient(circle, var(--accent-gold) 0%, rgba(245,158,11,0.15) 100%);
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--accent-gold); box-shadow: 0 0 20px var(--accent-gold-glow);
-            font-size: 20px;
-        }
-
-        .sport-selector { display: flex; gap: 12px; }
+        
+        .sport-selector { display: flex; gap: 10px; flex-wrap: wrap; }
         .sport-btn {
             background: rgba(10, 14, 23, 0.8); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 10px 22px; border-radius: 12px;
+            color: var(--text-secondary); padding: 10px 18px; border-radius: 12px;
             font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px;
             cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px;
         }
-        .sport-btn.active-fut {
-            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%);
-            color: #000 !important; border-color: var(--accent-gold-bright);
-            box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
-        }
-        .sport-btn.active-bas {
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%);
-            color: #000 !important; border-color: var(--accent-orange);
-            box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4);
-        }
+        .sport-btn.active-fut { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000 !important; border-color: var(--accent-gold); box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4); }
+        .sport-btn.active-bas { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000 !important; border-color: var(--accent-orange); box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4); }
+        .sport-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff !important; border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59, 130, 246, 0.4); }
+        .sport-btn.active-ten { background: linear-gradient(135deg, var(--accent-lime) 0%, #4d7c0f 100%); color: #000 !important; border-color: var(--accent-lime); box-shadow: 0 4px 18px rgba(132, 204, 22, 0.4); }
 
-        .status-pill {
-            background: rgba(245, 158, 11, 0.08); border: 1px solid var(--accent-gold);
-            color: var(--accent-gold-bright); padding: 7px 18px; border-radius: 30px;
-            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
-            display: flex; align-items: center; gap: 10px; letter-spacing: 1px;
-            box-shadow: 0 0 15px var(--accent-gold-glow);
-        }
-
-        .pulse {
-            width: 8px; height: 8px; background: var(--accent-gold-bright); border-radius: 50%;
-            box-shadow: 0 0 12px var(--accent-gold-bright); animation: pulse-anim 1.8s infinite;
-        }
-
-        @keyframes pulse-anim {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-
-        .hero-section {
-            max-width: 1240px; margin: 40px auto; padding: 0 24px;
-            display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 40px; align-items: center;
-        }
-
-        .badge-tag {
-            color: var(--accent-gold-bright); font-family: 'Orbitron', sans-serif;
-            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-            margin-bottom: 14px; display: inline-block; background: rgba(245, 158, 11, 0.1);
-            padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);
-        }
+        .hero-section { max-width: 1240px; margin: 40px auto; padding: 0 24px; text-align: center; }
+        .hero-title { font-family: 'Orbitron', sans-serif; font-size: 35px; font-weight: 900; line-height: 1.2; margin: 0 0 15px 0; }
         
-        .badge-tag-nba {
-            color: var(--accent-orange); font-family: 'Orbitron', sans-serif;
-            font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-            margin-bottom: 14px; display: inline-block; background: rgba(249, 115, 22, 0.1);
-            padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(249, 115, 22, 0.3);
-        }
-
-        .hero-title { 
-            font-family: 'Orbitron', sans-serif; font-size: 40px; font-weight: 900; 
-            line-height: 1.2; margin: 0 0 18px 0; letter-spacing: -0.5px; 
-        }
-        .highlight-gold { color: var(--accent-gold-bright); text-shadow: 0 0 25px var(--accent-gold-glow); }
-        .highlight-orange { color: var(--accent-orange); text-shadow: 0 0 25px rgba(249, 115, 22, 0.4); }
-        
-        .hero-desc { color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; max-width: 540px; line-height: 1.6; }
-
-        .radar-card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 28px; padding: 35px; text-align: center; position: relative;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.7), inset 0 0 40px rgba(245, 158, 11, 0.04);
-            backdrop-filter: blur(16px); overflow: hidden;
-        }
-
-        .radar-box {
-            width: 210px; height: 210px; margin: 0 auto 24px auto; border-radius: 50%;
-            border: 1px solid rgba(245, 158, 11, 0.4); position: relative;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 75%);
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.15); overflow: hidden;
-        }
-        .radar-box::before { content: ''; position: absolute; width: 100%; height: 1px; background: rgba(245, 158, 11, 0.25); }
-        .radar-box::after { content: ''; position: absolute; height: 100%; width: 1px; background: rgba(245, 158, 11, 0.25); }
-
-        .radar-circle-inner { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 1px solid rgba(245, 158, 11, 0.25); }
-        .radar-circle-center { position: absolute; width: 55px; height: 55px; border-radius: 50%; border: 1px solid rgba(245, 158, 11, 0.3); }
-
-        .radar-sweep {
-            position: absolute; width: 105px; height: 105px; top: 0; right: 0;
-            background: conic-gradient(from 0deg at 0% 100%, rgba(245, 158, 11, 0.5) 0deg, transparent 90deg);
-            border-radius: 100% 0 0 0; transform-origin: 0% 100%;
-            animation: sweep 3s linear infinite;
-        }
-        @keyframes sweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .blip { position: absolute; width: 7px; height: 7px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--accent-cyan); animation: blip-flash 2s infinite alternate; }
-        .blip1 { top: 35%; left: 65%; animation-delay: 0.4s; }
-        .blip2 { top: 68%; left: 28%; animation-delay: 1.1s; }
-        @keyframes blip-flash { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.4); } }
-
-        .stats-counter { 
-            font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; 
-            color: var(--accent-gold-bright); text-shadow: 0 0 20px var(--accent-gold-glow);
-            margin-bottom: 2px; 
-        }
-        .stats-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
-
         .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
-        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; flex-wrap: wrap; }
+        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; flex-wrap: wrap; justify-content: center; }
 
         .tab-btn {
             background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 14px 22px; border-radius: 16px;
+            color: var(--text-secondary); padding: 12px 20px; border-radius: 16px;
             font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; 
-            cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.5px;
-            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; transition: all 0.3s ease;
         }
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); 
-            color: #000; border-color: var(--accent-gold-bright);
-            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
-        }
-        
-        .tab-btn.active-nba {
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); 
-            color: #000; border-color: var(--accent-orange-bright);
-            box-shadow: 0 6px 25px rgba(249, 115, 22, 0.4);
-        }
+        .tab-btn.active { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000; border-color: var(--accent-gold); }
+        .tab-btn.active-nba { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000; border-color: var(--accent-orange); }
+        .tab-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff; border-color: var(--accent-blue); }
+        .tab-btn.active-ten { background: linear-gradient(135deg, var(--accent-lime) 0%, #4d7c0f 100%); color: #000; border-color: var(--accent-lime); }
 
-        .tab-badge { background: rgba(0,0,0,0.3); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
 
         .match-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 20px; padding: 24px; transition: all 0.3s ease;
             backdrop-filter: blur(12px); position: relative; overflow: hidden;
         }
-        .match-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-gold-bright), transparent);
-            opacity: 0.7;
-        }
-        .match-card.nba-card::before {
-            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
-        }
-        .match-card:hover {
-            border-color: var(--accent-gold-bright); transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(245, 158, 11, 0.15);
-        }
-        .match-card.nba-card:hover {
-            border-color: var(--accent-orange);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(249, 115, 22, 0.15);
-        }
+        .match-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
 
         .match-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
-        .league-badge { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; color: var(--accent-gold-bright); }
-        .minute-badge { color: var(--accent-cyan); font-weight: 800; background: rgba(6, 182, 212, 0.1); padding: 4px 10px; border-radius: 8px; font-family: 'Orbitron', sans-serif; }
-        .teams-title { font-size: 19px; font-weight: 700; text-align: center; margin: 18px 0; line-height: 1.3; }
-
-        .fulfilled-box {
-            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
-            padding: 12px 16px; border-radius: 14px; font-size: 13px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .team-pill { background: var(--accent-gold-bright); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-family: 'Orbitron', sans-serif; }
-        .empty-card { grid-column: 1 / -1; text-align: center; padding: 70px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
-
-        @media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; } }
+        .teams-title { font-size: 18px; font-weight: 700; text-align: center; margin: 15px 0; line-height: 1.3; }
+        .empty-card { grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div class="brand">
-            <div class="brand-icon">🧠</div>
-            <span>AFC ANALYTICS AI</span>
-        </div>
-        
+        <div class="brand"><span>AFC ANALYTICS</span></div>
         <div class="sport-selector">
-            <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarFutbol()">
-                ⚽ FÚTBOL
-            </button>
-            <button id="btnBasket" class="sport-btn" onclick="mostrarBasket()">
-                🏀 BALONCESTO
-            </button>
-        </div>
-
-        <div class="status-pill">
-            <div class="pulse"></div>
-            SYSTEM ONLINE
+            <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarSeccion('futbol')">⚽ FÚTBOL</button>
+            <button id="btnBasket" class="sport-btn" onclick="mostrarSeccion('basket')">🏀 BASKET</button>
+            <button id="btnBaseball" class="sport-btn" onclick="mostrarSeccion('baseball')">⚾ BÉISBOL</button>
+            <button id="btnTennis" class="sport-btn" onclick="mostrarSeccion('tennis')">🎾 TENIS</button>
         </div>
     </div>
 
     <!-- SECCIÓN FÚTBOL -->
     <div id="seccion-futbol" style="display: block;">
-        <div class="hero-section">
-            <div>
-                <div class="badge-tag">Motor Algorítmico de IA - Fútbol</div>
-                <h1 class="hero-title">Rastreo de Partidos 0-0 y <span class="highlight-gold">Poisson Prepartido</span></h1>
-                <p class="hero-desc">Análisis predictivo de patrones en vivo y modelado estadístico avanzado de Expected Goals (xG) para la jornada.</p>
-            </div>
-
-            <div class="radar-card">
-                <div class="radar-box">
-                    <div class="radar-circle-inner"></div>
-                    <div class="radar-circle-center"></div>
-                    <div class="radar-sweep"></div>
-                    <div class="blip blip1"></div>
-                    <div class="blip blip2"></div>
-                </div>
-                <div class="stats-counter" id="alertas-counter">0</div>
-                <div class="stats-label">alertas confirmadas hoy</div>
-            </div>
-        </div>
-
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-gold);">Rastreo y Proyecciones de Fútbol</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button id="tabRadar" class="tab-btn active" onclick="cambiarPestanaFutbol(event, 'radar')">
-                    📡 Radar 0-0 <span class="tab-badge" id="count-radar">0</span>
-                </button>
-                <button id="tabAlertas" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'alertas')">
-                    ⚡ Alertas VIP <span class="tab-badge" id="count-alertas">0</span>
-                </button>
-                <button id="tabPrematch" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'prematch-fut')">
-                    ⚽ Partidos & Parleys <span class="tab-badge">PRO</span>
-                </button>
-                <button id="tabPicksVip" class="tab-btn" onclick="cambiarPestanaFutbol(event, 'picks-vip')">
-                    💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip">0</span>
-                </button>
+                <button class="tab-btn active" onclick="cambiarPestana('futbol', 'prematch-fut', event, 'active')">⚽ Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('futbol', 'picks-vip', event, 'active')">💎 Picks VIP</button>
             </div>
-
-            <div id="pestana-radar">
-                <div id="grid-radar" class="grid">
-                    <div class="empty-card"><h3>🔎 Buscando partidos 0-0 en ventana 46'-78'...</h3></div>
-                </div>
-            </div>
-
-            <div id="pestana-alertas" style="display: none;">
-                <div id="grid-alertas" class="grid">
-                    <div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>
-                </div>
-            </div>
-
-            <div id="pestana-prematch-fut" style="display: none;">
-                <div id="grid-football-prematch" class="grid">
-                    <div class="empty-card"><h3>⏳ Cargando análisis de la jornada y parleys pro...</h3></div>
-                </div>
-            </div>
-
-            <div id="pestana-picks-vip" style="display: none;">
-                <div id="grid-picks-vip" class="grid">
-                    <div class="empty-card"><h3>💎 Cargando listado ordenado de alta certeza (>=75%)...</h3></div>
-                </div>
-            </div>
+            <div id="futbol-prematch-fut"><div id="grid-football-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando fútbol...</h3></div></div></div>
+            <div id="futbol-picks-vip" style="display: none;"><div id="grid-picks-vip" class="grid"><div class="empty-card"><h3>💎 Cargando VIP fútbol...</h3></div></div></div>
         </div>
     </div>
 
-    <!-- SECCIÓN BALONCESTO -->
+    <!-- SECCIÓN BASKET -->
     <div id="seccion-basket" style="display: none;">
-        <div class="hero-section">
-            <div>
-                <div class="badge-tag-nba">Motor Algorítmico de IA - Basket</div>
-                <h1 class="hero-title">Análisis Prepartido & <span class="highlight-orange">Proyecciones Globales</span></h1>
-                <p class="hero-desc">Proyecciones matemáticas por CDF Normal de Poisson para NBA, Euroliga y Liga ACB.</p>
-            </div>
-
-            <div class="radar-card">
-                <div class="radar-box" style="border-color: var(--accent-orange);">
-                    <div class="radar-circle-inner"></div>
-                    <div class="radar-circle-center"></div>
-                    <div class="radar-sweep" style="background: conic-gradient(from 0deg at 0% 100%, rgba(249, 115, 22, 0.5) 0deg, transparent 90deg);"></div>
-                </div>
-                <div class="stats-counter" id="basket-counter" style="color: var(--accent-orange);">0</div>
-                <div class="stats-label">partidos analizados hoy</div>
-            </div>
-        </div>
-
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-orange);">Proyecciones NBA y Europa</h1></div>
         <div class="main-container">
             <div class="tabs-nav">
-                <button id="tabRadarBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'radar-bas')">
-                    📡 Radar Live <span class="tab-badge" id="count-radar-bas" style="background: rgba(249,115,22,0.3);">0</span>
-                </button>
-                <button id="tabAlertasBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'alertas-bas')">
-                    ⚡ Alertas VIP <span class="tab-badge" id="count-alertas-bas" style="background: rgba(249,115,22,0.3);">0</span>
-                </button>
-                <button id="tabPrematchBas" class="tab-btn active-nba" onclick="cambiarPestanaBasket(event, 'prematch-bas')">
-                    🏀 Partidos & Parleys <span class="tab-badge">PRO</span>
-                </button>
-                <button id="tabPicksVipBas" class="tab-btn" onclick="cambiarPestanaBasket(event, 'picks-vip-bas')">
-                    💎 Picks VIP (>=75%) <span class="tab-badge" id="count-picks-vip-bas" style="background: rgba(249,115,22,0.3);">0</span>
-                </button>
+                <button class="tab-btn active-nba" onclick="cambiarPestana('basket', 'prematch-bas', event, 'active-nba')">🏀 Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('basket', 'picks-vip-bas', event, 'active-nba')">💎 Picks VIP</button>
             </div>
+            <div id="basket-prematch-bas"><div id="grid-basket-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando basket...</h3></div></div></div>
+            <div id="basket-picks-vip-bas" style="display: none;"><div id="grid-picks-vip-bas" class="grid"><div class="empty-card"><h3>💎 Cargando VIP basket...</h3></div></div></div>
+        </div>
+    </div>
 
-            <div id="pestana-radar-bas" style="display: none;">
-                <div class="grid">
-                    <div class="empty-card"><h3>📡 Rastreador en vivo de Baloncesto activo.</h3></div>
-                </div>
+    <!-- SECCIÓN BÉISBOL -->
+    <div id="seccion-baseball" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-blue);">Sabermetría MLB</h1></div>
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active-mlb" onclick="cambiarPestana('baseball', 'prematch-mlb', event, 'active-mlb')">⚾ Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('baseball', 'picks-vip-mlb', event, 'active-mlb')">💎 Picks VIP</button>
             </div>
+            <div id="baseball-prematch-mlb"><div id="grid-baseball-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando béisbol...</h3></div></div></div>
+            <div id="baseball-picks-vip-mlb" style="display: none;"><div id="grid-picks-vip-mlb" class="grid"><div class="empty-card"><h3>💎 Cargando VIP béisbol...</h3></div></div></div>
+        </div>
+    </div>
 
-            <div id="pestana-alertas-bas" style="display: none;">
-                <div class="grid">
-                    <div class="empty-card"><h3>⚡ Sin alertas en vivo confirmadas el día de hoy.</h3></div>
-                </div>
+    <!-- SECCIÓN TENIS -->
+    <div id="seccion-tennis" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-lime);">Analítica ATP/WTA</h1></div>
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active-ten" onclick="cambiarPestana('tennis', 'prematch-ten', event, 'active-ten')">🎾 Partidos PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('tennis', 'picks-vip-ten', event, 'active-ten')">💎 Picks VIP</button>
             </div>
-
-            <div id="pestana-prematch-bas">
-                <div id="grid-basket-prematch" class="grid">
-                    <div class="empty-card"><h3>⏳ Conectando con el motor ESPN y analizando NBA, Euroliga y ACB...</h3></div>
-                </div>
-            </div>
-
-            <div id="pestana-picks-vip-bas" style="display: none;">
-                <div id="grid-picks-vip-bas" class="grid">
-                    <div class="empty-card"><h3>💎 Cargando picks de alta certeza (>=75%) de NBA, Euroliga y ACB...</h3></div>
-                </div>
-            </div>
+            <div id="tennis-prematch-ten"><div id="grid-tennis-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando tenis...</h3></div></div></div>
+            <div id="tennis-picks-vip-ten" style="display: none;"><div id="grid-picks-vip-ten" class="grid"><div class="empty-card"><h3>💎 Cargando VIP tenis...</h3></div></div></div>
         </div>
     </div>
 
     <script>
-        function mostrarFutbol() {
-            document.getElementById('seccion-futbol').style.display = 'block';
-            document.getElementById('seccion-basket').style.display = 'none';
-            document.getElementById('btnFutbol').className = 'sport-btn active-fut';
-            document.getElementById('btnBasket').className = 'sport-btn';
+        function mostrarSeccion(deporte) {
+            ['futbol', 'basket', 'baseball', 'tennis'].forEach(d => {
+                document.getElementById('seccion-' + d).style.display = (d === deporte) ? 'block' : 'none';
+            });
+            document.getElementById('btnFutbol').className = 'sport-btn' + (deporte === 'futbol' ? ' active-fut' : '');
+            document.getElementById('btnBasket').className = 'sport-btn' + (deporte === 'basket' ? ' active-bas' : '');
+            document.getElementById('btnBaseball').className = 'sport-btn' + (deporte === 'baseball' ? ' active-mlb' : '');
+            document.getElementById('btnTennis').className = 'sport-btn' + (deporte === 'tennis' ? ' active-ten' : '');
         }
 
-        function mostrarBasket() {
-            document.getElementById('seccion-futbol').style.display = 'none';
-            document.getElementById('seccion-basket').style.display = 'block';
-            document.getElementById('btnFutbol').className = 'sport-btn';
-            document.getElementById('btnBasket').className = 'sport-btn active-bas';
+        function cambiarPestana(deporte, pestana, evt, claseActiva) {
+            const tabs = document.querySelectorAll(`#seccion-${deporte} .tab-btn`);
+            tabs.forEach(t => t.classList.remove(claseActiva));
+            evt.currentTarget.classList.add(claseActiva);
+
+            const divs = document.querySelectorAll(`#seccion-${deporte} > .main-container > div[id^="${deporte}-"]`);
+            divs.forEach(d => d.style.display = 'none');
+            document.getElementById(`${deporte}-${pestana}`).style.display = 'block';
         }
 
-        function cambiarPestanaFutbol(evt, pestana) {
-            document.getElementById('tabRadar').classList.remove('active');
-            document.getElementById('tabAlertas').classList.remove('active');
-            document.getElementById('tabPrematch').classList.remove('active');
-            document.getElementById('tabPicksVip').classList.remove('active');
-            
-            if (evt) evt.currentTarget.classList.add('active');
-
-            document.getElementById('pestana-radar').style.display = 'none';
-            document.getElementById('pestana-alertas').style.display = 'none';
-            document.getElementById('pestana-prematch-fut').style.display = 'none';
-            document.getElementById('pestana-picks-vip').style.display = 'none';
-
-            document.getElementById('pestana-' + pestana).style.display = 'block';
-        }
-
-        function cambiarPestanaBasket(evt, pestana) {
-            document.getElementById('tabRadarBas').classList.remove('active-nba');
-            document.getElementById('tabAlertasBas').classList.remove('active-nba');
-            document.getElementById('tabPrematchBas').classList.remove('active-nba');
-            document.getElementById('tabPicksVipBas').classList.remove('active-nba');
-            
-            if (evt) evt.currentTarget.classList.add('active-nba');
-
-            document.getElementById('pestana-radar-bas').style.display = 'none';
-            document.getElementById('pestana-alertas-bas').style.display = 'none';
-            document.getElementById('pestana-prematch-bas').style.display = 'none';
-            document.getElementById('pestana-picks-vip-bas').style.display = 'none';
-
-            document.getElementById('pestana-' + pestana).style.display = 'block';
-        }
-
-        async function cargarPrematchFutbolGlobal() {
-            const gridFut = document.getElementById('grid-football-prematch');
-            const gridVip = document.getElementById('grid-picks-vip');
-            
+        async function cargarData(apiRoute, gridPro, gridVip, colorVar) {
             try {
-                let response = await fetch('/api/football_prematch');
+                let response = await fetch(apiRoute);
                 let resultado = await response.json();
                 
                 if (resultado.data && resultado.data.length > 0) {
-                    gridFut.innerHTML = resultado.data.map(item => `
-                        <div class="match-card">
-                            <div class="match-meta">
-                                <span class="league-badge">🏆 ${item.tipo === 'parley' ? 'Parley VIP AI' : 'Fútbol Oficial'}</span>
-                                <span class="minute-badge">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Poisson Pro'}</span>
-                            </div>
+                    document.getElementById(gridPro).innerHTML = resultado.data.map(item => `
+                        <div class="match-card" style="border-color: rgba(255,255,255,0.1);">
                             <div class="teams-title">${item.partido}</div>
-                            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
+                            <div style="background: rgba(255,255,255,0.03); border: 1px solid ${colorVar}; padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line;">
                                 ${item.mensaje}
                             </div>
-                        </div>
-                    `).join('');
+                        </div>`).join('');
                 } else {
-                    gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de fútbol programados para analizar hoy</h3></div>';
+                    document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ No hay eventos programados hoy</h3></div>';
                 }
 
                 if (resultado.picks_vip && resultado.picks_vip.length > 0) {
-                    document.getElementById('count-picks-vip').innerText = resultado.picks_vip.length;
-                    gridVip.innerHTML = resultado.picks_vip.map(pick => {
-                        let resultBadge = '';
-                        if (pick.estado_pick === 'acertado') {
-                            resultBadge = `<div style="margin-top: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">✅ ACERTADO (${pick.marcador})</div>`;
-                        } else if (pick.estado_pick === 'fallado') {
-                            resultBadge = `<div style="margin-top: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">❌ NO ACERTADO (${pick.marcador})</div>`;
-                        }
-
+                    document.getElementById(gridVip).innerHTML = resultado.picks_vip.map(pick => {
+                        let badge = pick.estado_pick === 'acertado' ? `<div style="color:#10b981; font-weight:bold;">✅ ACERTADO (${pick.marcador})</div>` : (pick.estado_pick === 'fallado' ? `<div style="color:#ef4444; font-weight:bold;">❌ NO ACERTADO (${pick.marcador})</div>` : "");
                         return `
-                        <div class="match-card">
-                            <div class="match-meta">
-                                <span class="league-badge">🏆 ${pick.liga}</span>
-                                <span class="minute-badge" style="color: #10b981;">✅ ${pick.prob}% Confianza</span>
-                            </div>
+                        <div class="match-card" style="border-color: ${colorVar};">
+                            <div style="color: ${colorVar}; font-weight:bold; text-align:center;">🏆 ${pick.liga} | ✅ ${pick.prob}%</div>
                             <div class="teams-title">${pick.partido}</div>
-                            <div style="text-align: center; font-size: 12px; color: var(--accent-gold-bright); margin-bottom: 8px;">
-                                ⏰ ${pick.fecha} (Hora Colombia)
+                            <div style="text-align: center; color: var(--text-secondary);">⏰ ${pick.fecha}</div>
+                            <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-top:10px; border-radius: 8px; text-align: center;">
+                                🎯 <b>Sugerencia:</b> ${pick.mercado}
                             </div>
-                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
-                                🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-gold-bright); font-size: 15px;">${pick.mercado}</span>
-                            </div>
-                            ${resultBadge}
-                        </div>
-                        `;
+                            ${badge ? '<div style="text-align:center; margin-top:10px;">'+badge+'</div>' : ''}
+                        </div>`;
                     }).join('');
                 } else {
-                    document.getElementById('count-picks-vip').innerText = '0';
-                    gridVip.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en la jornada de hoy</h3></div>';
+                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP (>=75%) en este deporte hoy</h3></div>';
                 }
             } catch (error) {
-                gridFut.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el servidor de análisis</h3></div>';
-                gridVip.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP</h3></div>';
+                document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ Error de conexión</h3></div>';
             }
-        }
-
-        async function cargarPrematchNBA() {
-            const gridBas = document.getElementById('grid-basket-prematch');
-            const gridVipBas = document.getElementById('grid-picks-vip-bas');
-            
-            try {
-                let response = await fetch('/api/nba_prematch');
-                let resultado = await response.json();
-                
-                document.getElementById('basket-counter').innerText = resultado.total_analizados || 0;
-
-                if (resultado.data && resultado.data.length > 0) {
-                    gridBas.innerHTML = resultado.data.map(item => `
-                        <div class="match-card nba-card">
-                            <div class="match-meta">
-                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${item.tipo === 'parley' ? 'Parley VIP Basket' : 'Baloncesto Oficial'}</span>
-                                <span class="minute-badge" style="color: var(--accent-orange); background: rgba(249, 115, 22, 0.1);">${item.tipo === 'parley' ? '🔥 Especial' : '📊 Poisson/Gauss'}</span>
-                            </div>
-                            <div class="teams-title">${item.partido}</div>
-                            <div style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--text-primary);">
-                                ${item.mensaje}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ No hay partidos de baloncesto programados hoy</h3></div>';
-                }
-
-                if (resultado.picks_vip && resultado.picks_vip.length > 0) {
-                    document.getElementById('count-picks-vip-bas').innerText = resultado.picks_vip.length;
-                    gridVipBas.innerHTML = resultado.picks_vip.map(pick => {
-                        let resultBadge = '';
-                        if (pick.estado_pick === 'acertado') {
-                            resultBadge = `<div style="margin-top: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">✅ ACERTADO (${pick.marcador})</div>`;
-                        } else if (pick.estado_pick === 'fallado') {
-                            resultBadge = `<div style="margin-top: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 14px;">❌ NO ACERTADO (${pick.marcador})</div>`;
-                        }
-
-                        return `
-                        <div class="match-card nba-card">
-                            <div class="match-meta">
-                                <span class="league-badge" style="color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.2);">🏆 ${pick.liga}</span>
-                                <span class="minute-badge" style="color: #10b981;">✅ ${pick.prob}% Confianza</span>
-                            </div>
-                            <div class="teams-title">${pick.partido}</div>
-                            <div style="text-align: center; font-size: 12px; color: var(--accent-orange); margin-bottom: 8px;">
-                                ⏰ ${pick.fecha} (Hora Colombia)
-                            </div>
-                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; text-align: center; color: var(--text-primary);">
-                                🎯 <b>Mercado Sugerido:</b><br><span style="color: var(--accent-orange); font-size: 15px;">${pick.mercado}</span>
-                            </div>
-                            ${resultBadge}
-                        </div>
-                        `;
-                    }).join('');
-                } else {
-                    document.getElementById('count-picks-vip-bas').innerText = '0';
-                    gridVipBas.innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks que alcancen el 75% en baloncesto hoy</h3></div>';
-                }
-            } catch (error) {
-                gridBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al conectar con el motor de ESPN Baloncesto</h3></div>';
-                gridVipBas.innerHTML = '<div class="empty-card"><h3>⚠️ Error al cargar los picks VIP de Baloncesto</h3></div>';
-            }
-        }
-
-        function cargarDatos() {
-            fetch('/api/partidos_00')
-                .then(res => res.json())
-                .then(data => {
-                    const grid = document.getElementById('grid-radar');
-                    document.getElementById('count-radar').innerText = data ? data.length : 0;
-                    if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>🔎 No hay partidos 0-0 en ventana 46\'-78\' actualmente</h3></div>';
-                    } else {
-                        grid.innerHTML = data.map(p => `
-                            <div class="match-card">
-                                <div class="match-meta">
-                                    <span class="league-badge">🏆 ${p.liga || 'General'}</span>
-                                    <span class="minute-badge">⏱️ Min ${p.minuto}'</span>
-                                </div>
-                                <div class="teams-title">${p.equipo_local} 0 - 0 ${p.equipo_visita}</div>
-                            </div>
-                        `).join('');
-                    }
-                });
-
-            fetch('/api/alertas')
-                .then(res => res.json())
-                .then(data => {
-                    const grid = document.getElementById('grid-alertas');
-                    const counter = document.getElementById('alertas-counter');
-                    const total = data ? data.length : 0;
-                    document.getElementById('count-alertas').innerText = total;
-                    counter.innerText = total;
-
-                    if (!data || data.length === 0) {
-                        grid.innerHTML = '<div class="empty-card"><h3>⚡ Sin alertas VIP confirmadas hoy</h3></div>';
-                    } else {
-                        grid.innerHTML = data.map(a => `
-                            <div class="match-card">
-                                <div class="match-meta">
-                                    <span class="league-badge">🏆 ${a.liga || 'General'}</span>
-                                    <span class="minute-badge">⏱️ Min ${a.minuto}'</span>
-                                </div>
-                                <div class="teams-title">${a.equipo_local} vs ${a.equipo_visita}</div>
-                                <div class="fulfilled-box">
-                                    <span>Presión IA Detectada:</span>
-                                    <span class="team-pill">${a.equipo_cumple || 'Confirmado'}</span>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                });
         }
 
         window.onload = function() {
-            cargarDatos();
-            // Carga ambas ligas simultáneamente de forma automática y silenciosa
-            cargarPrematchFutbolGlobal();
-            cargarPrematchNBA(); 
+            cargarData('/api/football_prematch', 'grid-football-prematch', 'grid-picks-vip', 'var(--accent-gold)');
+            cargarData('/api/nba_prematch', 'grid-basket-prematch', 'grid-picks-vip-bas', 'var(--accent-orange)');
+            cargarData('/api/baseball_prematch', 'grid-baseball-prematch', 'grid-picks-vip-mlb', 'var(--accent-blue)');
+            cargarData('/api/tennis_prematch', 'grid-tennis-prematch', 'grid-picks-vip-ten', 'var(--accent-lime)');
         };
-        setInterval(cargarDatos, 3000);
     </script>
 </body>
 </html>

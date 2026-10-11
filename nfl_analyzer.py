@@ -30,14 +30,14 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_nfl():
-    print("🏈 Escaneando cartelera de NFL...", flush=True)
+    print("🏈 Escaneando cartelera de NFL (Hoy hasta +4 días)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
-    # NFL se juega principalmente jueves, domingo y lunes. Escaneamos una ventana de 5 días.
-    base_date = datetime.now() - timedelta(days=1)
+    # NFL desde Hoy hasta 4 días en el futuro (cubre la jornada semanal completa)
+    base_date = datetime.now()
     fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(5)]
 
     for liga in LIGAS_NFL:
@@ -121,7 +121,10 @@ def analizar_partidos_nfl():
                                 })
 
                             picks_disponibles.append({
-                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, "fecha": fecha_hora_col, "is_final": is_final
+                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, 
+                                "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, 
+                                "fecha": fecha_hora_col, "is_final": is_final,
+                                "estado_over": estado_over, "estado_win_h": estado_win_h, "estado_win_a": estado_win_a
                             })
 
                             favorito = home_name if p_win_h > 50 else away_name
@@ -135,11 +138,11 @@ def analizar_partidos_nfl():
                                 f"🏆 *{liga['nombre']}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                                 f"{marcador_str}\n"
-                                f"📈 **Moneyline & Spread (Hándicap):**\n"
+                                f"📈 **Moneyline & Spread:**\n"
                                 f"• **Probabilidad {home_name}:** {p_win_h}%\n"
                                 f"• **Probabilidad {away_name}:** {p_win_a}%\n"
                                 f"• **Spread Sugerido:** {handicap_str}\n\n"
-                                f"🔥 **Mercado de Puntos Totales:**\n"
+                                f"🔥 **Mercado de Puntos:**\n"
                                 f"• **Media Proyectada:** {mu_total} Pts\n"
                                 f"• **Over {linea_sugerida} Pts:** {p_over_alt}% *(Probabilidad CDF)*\n\n"
                                 f"💡 **Sugerencia de Pick:** {opcion_parley}"
@@ -159,14 +162,21 @@ def analizar_partidos_nfl():
         por_ganador = sorted(picks_disponibles, key=lambda x: max(x["p_win_h"], x["p_win_a"]), reverse=True)
         p1, p2, p3 = por_seguridad[0], por_seguridad[1], por_ganador[0]
 
+        badge_p1 = " ✅" if p1["estado_over"] == "acertado" else (" ❌" if p1["estado_over"] == "fallado" else " ⏳")
+        badge_p2 = " ✅" if p2["estado_over"] == "acertado" else (" ❌" if p2["estado_over"] == "fallado" else " ⏳")
+        
+        ganador_p3 = p3["home"] if p3["p_win_h"] > p3["p_win_a"] else p3["away"]
+        est_p3 = p3["estado_win_h"] if p3["p_win_h"] > p3["p_win_a"] else p3["estado_win_a"]
+        badge_p3 = " ✅" if est_p3 == "acertado" else (" ❌" if est_p3 == "fallado" else " ⏳")
+
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP NFL: GRIDIRON IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
-            f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%)\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%)\n\n"
+            f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%){badge_p1}\n"
+            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%){badge_p2}\n\n"
             "🟡 **2. PARLEY MEDIO**\n"
-            f"• **{p3['partido']}** | Gana {p3['home'] if p3['p_win_h'] > p3['p_win_a'] else p3['away']} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%)\n"
+            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL NFL", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

@@ -31,22 +31,23 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
-def es_partido_caliente(home_name, away_name, liga_nombre):
-    # Palabras clave comunes de clásicos o alta tensión
+def es_partido_caliente(home_name, away_name):
+    # Lista ampliada de derbis y clásicos mundiales de alta tensión
     rivales_historicos = [
         ("real madrid", "barcelona"), ("inter", "milan"), ("lazio", "roma"),
         ("boca", "river"), ("celta", "deportivo"), ("liverpool", "everton"),
         ("arsenal", "tottenham"), ("manchester", "city"), ("united", "liverpool"),
-        ("porto", "benfica"), ("ajax", "feyenoord"), ("psg", "marseille")
+        ("porto", "benfica"), ("ajax", "feyenoord"), ("psg", "marseille"),
+        ("atletico", "real madrid"), ("juventus", "inter"), ("napoli", "juventus"),
+        ("barcelona", "espanyol"), ("sevilla", "betis"), ("celtic", "rangers")
     ]
     h_low = home_name.lower()
     a_low = away_name.lower()
     
     for t1, t2 in rivales_historicos:
         if (t1 in h_low and t2 in a_low) or (t2 in h_low and t1 in a_low):
-            return True, "🔥 ¡GRAN DERBI / CLÁSICO HISTÓRICO!"
+            return True, "🔥⚡ [PARTIDO DE ALTO VOLTAJE] - CLÁSICO / DERBI"
             
-    # Si es partido de tabla alta (por nombres grandes o fases finales)
     return False, "⚽ Partido Estándar de Liga"
 
 def analizar_partidos_futbol_prematch():
@@ -99,7 +100,7 @@ def analizar_partidos_futbol_prematch():
                             win_pct_a = extraer_win_pct(away)
 
                             # Detector de alta tensión / derbi
-                            es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name, liga_nombre)
+                            es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name)
 
                             # Poisson base
                             lambda_h = 1.35 + (win_pct_h * 1.25) + 0.25 
@@ -123,11 +124,10 @@ def analizar_partidos_futbol_prematch():
                             p_1x = round(min(96.0, p_win_h + p_draw + 10.0), 1)
                             p_x2 = round(min(96.0, p_win_a + p_draw + 5.0), 1)
 
-                            # Factores de Tensión para Tarjetas y Penaltis
-                            # Si es partido caliente, la probabilidad de tarjetas altas y penalti se dispara
-                            factor_tension = 1.25 if es_caliente else 1.0
-                            p_tarjetas_over = round(min(90.0, 55.0 * factor_tension + (total_lambda * 4.0)), 1)
-                            p_penalti = round(min(75.0, 32.0 * factor_tension + (abs(win_pct_h - win_pct_a) * 15.0)), 1)
+                            # Factor multiplicador de fricción para partidos calientes
+                            factor_tension = 1.30 if es_caliente else 1.0
+                            p_tarjetas_over = round(min(92.0, 58.0 * factor_tension + (total_lambda * 4.0)), 1)
+                            p_penalti = round(min(80.0, 35.0 * factor_tension + (abs(win_pct_h - win_pct_a) * 15.0)), 1)
 
                             try:
                                 home_score = int(home.get("score", "0"))
@@ -140,7 +140,7 @@ def analizar_partidos_futbol_prematch():
                             oportunidades_alta_confianza = []
                             
                             if es_caliente:
-                                oportunidades_alta_confianza.append(f"• **⚠️ ALERTA PARTIDO CALIENTE:** Alto riesgo de fricción y roces.")
+                                oportunidades_alta_confianza.append(f"• **🔥⚡ ALERTA MÁXIMA DE RIVALIDAD:** Alto riesgo de fricción, roces y tarjetas.")
 
                             if p_1x >= 65.0:
                                 est = "acertado" if (home_score >= away_score and is_final) else ("fallado" if is_final else "pendiente")
@@ -163,10 +163,10 @@ def analizar_partidos_futbol_prematch():
                                 oportunidades_alta_confianza.append(f"• **Over 2.5 Goles:** {p_over_25}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
                             if p_tarjetas_over >= 65.0:
-                                oportunidades_alta_confianza.append(f"• **Tarjetas (Over 3.5 o 4.5):** {p_tarjetas_over}% ⏳ *(Alta fricción)*")
+                                oportunidades_alta_confianza.append(f"• **Tarjetas (Over 4.5):** {p_tarjetas_over}% ⏳ *(Coeficiente de Fricción Alto)*")
 
                             if p_penalti >= 65.0:
-                                oportunidades_alta_confianza.append(f"• **Penalti en el Partido (Sí):** {p_penalti}% ⏳ *(Duelo de área)*")
+                                oportunidades_alta_confianza.append(f"• **Penalti en el Partido (Sí):** {p_penalti}% ⏳ *(Presión en el área)*")
 
                             estado_over_15 = "acertado" if (total_goals > 1.5 and is_final) else ("fallado" if is_final else "pendiente")
                             

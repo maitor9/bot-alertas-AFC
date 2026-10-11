@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import math
 import requests
 
-# Agregamos las ligas adicionales con sus promedios de puntos (mu) y desviaciones estándar (sigma) correspondientes
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
     {"codigo": "wnba", "nombre": "WNBA", "base_total": 165.5, "sd_margin": 10.5, "sd_total": 12.0, "home_adv": 2.5},
@@ -34,15 +33,16 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera de Baloncesto (NBA, WNBA, NCAA, Euroliga)...", flush=True)
+    print("🏀 Escaneando cartelera de Baloncesto (Hoy y Mañana)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
-    # Buscamos eventos desde ayer hasta los próximos 2 días
-    base_date = datetime.now() - timedelta(days=1)
-    fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(3)]
+    # Escanear HOY y MAÑANA exclusivamente
+    hoy_str = datetime.now().strftime("%Y%m%d")
+    manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+    fechas = [hoy_str, manana_str]
 
     for liga in LIGAS_BASKET:
         for fecha in fechas:
@@ -125,7 +125,8 @@ def analizar_partidos_nba():
                                 })
 
                             picks_disponibles.append({
-                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, "fecha": fecha_hora_col, "is_final": is_final
+                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, "fecha": fecha_hora_col, "is_final": is_final,
+                                "estado_over": estado_over, "estado_win_h": estado_win_h, "estado_win_a": estado_win_a
                             })
 
                             favorito = home_name if p_win_h > 50 else away_name
@@ -163,14 +164,22 @@ def analizar_partidos_nba():
         por_ganador = sorted(picks_disponibles, key=lambda x: max(x["p_win_h"], x["p_win_a"]), reverse=True)
         p1, p2, p3 = por_seguridad[0], por_seguridad[1], por_ganador[0]
 
+        # Verificación visual con checks (✅ / ❌ / ⏳)
+        badge_p1 = " ✅" if p1["estado_over"] == "acertado" else (" ❌" if p1["estado_over"] == "fallado" else " ⏳")
+        badge_p2 = " ✅" if p2["estado_over"] == "acertado" else (" ❌" if p2["estado_over"] == "fallado" else " ⏳")
+        
+        ganador_p3 = p3["home"] if p3["p_win_h"] > p3["p_win_a"] else p3["away"]
+        est_p3 = p3["estado_win_h"] if p3["p_win_h"] > p3["p_win_a"] else p3["estado_win_a"]
+        badge_p3 = " ✅" if est_p3 == "acertado" else (" ❌" if est_p3 == "fallado" else " ⏳")
+
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP BASKET IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
-            f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%)\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%)\n\n"
+            f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%){badge_p1}\n"
+            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%){badge_p2}\n\n"
             "🟡 **2. PARLEY MEDIO**\n"
-            f"• **{p3['partido']}** | Gana {p3['home'] if p3['p_win_h'] > p3['p_win_a'] else p3['away']} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%)\n"
+            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL BASKET", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

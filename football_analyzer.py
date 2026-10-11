@@ -78,7 +78,7 @@ def obtener_todas_las_ligas_futbol():
     ]
 
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera con Filtro Antisesgos de Doble Oportunidad...", flush=True)
+    print("⚽ Escaneando cartelera con Filtro Exigente para Doble Oportunidad (>=75%)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip = []
@@ -138,26 +138,23 @@ def analizar_partidos_futbol_prematch():
                             prob_0_h, prob_1_h = poisson(0, lambda_h), poisson(1, lambda_h)
                             prob_0_a, prob_1_a = poisson(0, lambda_a), poisson(1, lambda_a)
                             
-                            # Modelo de distribución de probabilidades equilibradas
                             p_win_h = round((1 - poisson(0, lambda_h)) * 48.0, 1)
                             p_win_a = round((1 - poisson(0, lambda_a)) * 48.0, 1)
                             p_draw = round(max(20.0, 100.0 - p_win_h - p_win_a), 1)
                             
-                            # Ajuste para que sumen 100% de manera realista
                             total_p = p_win_h + p_win_a + p_draw
                             p_win_h = round((p_win_h / total_p) * 100, 1)
                             p_win_a = round((p_win_a / total_p) * 100, 1)
                             p_draw = round(100.0 - p_win_h - p_win_a, 1)
 
-                            # Doble Oportunidad real acotada
-                            p_1x = round(min(78.0, p_win_h + p_draw), 1)
-                            p_x2 = round(min(78.0, p_win_a + p_draw), 1)
+                            p_1x = round(min(92.0, p_win_h + p_draw), 1)
+                            p_x2 = round(min(92.0, p_win_a + p_draw), 1)
 
                             p_btts = round((1 - prob_0_h) * (1 - prob_0_a) * 100, 1)
                             p_over_05_ht = round((1 - poisson(0, total_lambda * 0.45)) * 100, 1)
                             p_over_15 = round((1 - (prob_0_h * prob_0_a)) * 100, 1)
                             p_over_25 = round((1 - poisson(0, total_lambda) - poisson(1, total_lambda)) * 100, 1)
-                            p_over_25 = max(15.0, min(80.0, p_over_25))
+                            p_over_25 = max(15.0, min(88.0, p_over_25))
 
                             p_home_ov_15 = round((1 - poisson(0, lambda_h) - poisson(1, lambda_h)) * 100, 1)
 
@@ -174,12 +171,15 @@ def analizar_partidos_futbol_prematch():
                             candidatos_partido = []
 
                             def evaluar_mercado(nombre_mercado, prob_val, estado_cumplido):
-                                if prob_val >= 65.0:
+                                # FILTRO CLAVE: Exigir >= 75% para Doble Oportunidad para evitar spam de 66%
+                                umbral = 75.0 if "Doble Oportunidad" in nombre_mercado else 65.0
+                                
+                                if prob_val >= umbral:
                                     est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
                                     cuota_str = calcular_cuotas(prob_val)
                                     badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
                                     oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                                    # Excluimos la Doble Oportunidad de los picks VIP para evitar cuotas menores a 1.25
+                                    
                                     if "Doble Oportunidad" not in nombre_mercado:
                                         candidatos_partido.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
@@ -212,7 +212,7 @@ def analizar_partidos_futbol_prematch():
                             })
 
                             marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score}\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
-                            str_oportunidades = "\n".join(oportunidades_alta_confianza) if oportunidades_alta_confianza else "• Ningún mercado supera el 65% de confianza."
+                            str_oportunidades = "\n".join(oportunidades_alta_confianza) if oportunidades_alta_confianza else "• Ningún mercado supera el umbral de confianza."
 
                             mensaje = (
                                 f"⚽ **ANÁLISIS SABERMÉTRICO PROFESIONAL**\n"
@@ -221,7 +221,7 @@ def analizar_partidos_futbol_prematch():
                                 f"🏆 *{liga_nombre}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                                 f"{marcador_str}\n"
-                                f"🎯 **Oportunidades Estadísticas (> 65% Confianza):**\n"
+                                f"🎯 **Oportunidades Estadísticas de Valor:**\n"
                                 f"{str_oportunidades}"
                             )
 
@@ -240,7 +240,7 @@ def analizar_partidos_futbol_prematch():
         badge_p2 = " ✅" if p2_vip["estado_pick"] == "acertado" else (" ❌" if p2_vip["estado_pick"] == "fallado" else " ⏳")
 
         resumen_parleys = (
-            "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DE LA JORNADA** 🌟\n\n"
+            "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DE LAJORNADA** 🌟\n\n"
             "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura)**\n"
             f"• **{p1_vip['partido']}** | {p1_vip['mercado']} (Prob: {p1_vip['prob']}%){badge_p1}\n"
             f"• **{p2_vip['partido']}** | {p2_vip['mercado']} (Prob: {p2_vip['prob']}%){badge_p2}\n"

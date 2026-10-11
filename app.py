@@ -76,22 +76,26 @@ def api_motor_prematch():
 
 @app.route("/api/mega_parley", methods=["GET"])
 def api_mega_parley():
-    # Extrae los mejores de cada deporte
+    # Extrae los 2 mejores picks VIP de TODOS los deportes
     f = analizar_partidos_futbol_prematch().get("picks_vip", [])[:2]
     b = analizar_partidos_nba().get("picks_vip", [])[:2]
     mlb = analizar_partidos_baseball().get("picks_vip", [])[:2]
     nfl = analizar_partidos_nfl().get("picks_vip", [])[:2]
     nhl = analizar_partidos_nhl().get("picks_vip", [])[:2]
+    ufc = analizar_cartelera_ufc().get("picks_vip", [])[:2]
+    motor = analizar_cartelera_motor().get("picks_vip", [])[:2]
 
     mega_list = []
-    for p in (f + b + mlb + nfl + nhl):
+    # Agrupamos todos los picks en una sola lista
+    for p in (f + b + mlb + nfl + nhl + ufc + motor):
         status_symbol = " ✅" if p.get("estado_pick") == "acertado" else (" ❌" if p.get("estado_pick") == "fallado" else " ⏳")
         mega_list.append({
             "deporte": p.get("liga", "Deporte"),
             "partido": p["partido"],
             "mercado": p["mercado"],
             "prob": p["prob"],
-            "status": status_symbol
+            "status": status_symbol,
+            "fecha": p.get("fecha", "📅 Fecha no disponible")
         })
 
     return jsonify({"status": "success", "mega_ticket": mega_list})

@@ -33,14 +33,15 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_nhl():
-    print("🏒 Escaneando cartelera de NHL...", flush=True)
+    print("🏒 Escaneando cartelera de NHL (Hoy y Mañana)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
-    base_date = datetime.now() - timedelta(days=1)
-    fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(3)]
+    hoy_str = datetime.now().strftime("%Y%m%d")
+    manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+    fechas = [hoy_str, manana_str]
 
     for liga in LIGAS_NHL:
         for fecha in fechas:
@@ -91,7 +92,6 @@ def analizar_partidos_nhl():
                             p_win_h = round(prob_home_win, 1)
                             p_win_a = round(100.0 - p_win_h, 1)
 
-                            # Puck Line estándar en hockey
                             handicap_str = f"{home_name} -1.5" if mu_diff > 0 else f"{away_name} -1.5"
 
                             ajuste_ofensivo = ((win_pct_h - 0.5) + (win_pct_a - 0.5)) * 2.5
@@ -122,7 +122,10 @@ def analizar_partidos_nhl():
                                 })
 
                             picks_disponibles.append({
-                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, "fecha": fecha_hora_col, "is_final": is_final
+                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, 
+                                "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, 
+                                "fecha": fecha_hora_col, "is_final": is_final,
+                                "estado_over": estado_over, "estado_win_h": estado_win_h, "estado_win_a": estado_win_a
                             })
 
                             favorito = home_name if p_win_h > 50 else away_name
@@ -160,14 +163,21 @@ def analizar_partidos_nhl():
         por_ganador = sorted(picks_disponibles, key=lambda x: max(x["p_win_h"], x["p_win_a"]), reverse=True)
         p1, p2, p3 = por_seguridad[0], por_seguridad[1], por_ganador[0]
 
+        badge_p1 = " ✅" if p1["estado_over"] == "acertado" else (" ❌" if p1["estado_over"] == "fallado" else " ⏳")
+        badge_p2 = " ✅" if p2["estado_over"] == "acertado" else (" ❌" if p2["estado_over"] == "fallado" else " ⏳")
+        
+        ganador_p3 = p3["home"] if p3["p_win_h"] > p3["p_win_a"] else p3["away"]
+        est_p3 = p3["estado_win_h"] if p3["p_win_h"] > p3["p_win_a"] else p3["estado_win_a"]
+        badge_p3 = " ✅" if est_p3 == "acertado" else (" ❌" if est_p3 == "fallado" else " ⏳")
+
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP NHL: ICE PRO IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
-            f"• **{p1['partido']}** | Más de {p1['line']} Goles (Prob: {p1['p_over']}%)\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Goles (Prob: {p2['p_over']}%)\n\n"
+            f"• **{p1['partido']}** | Más de {p1['line']} Goles (Prob: {p1['p_over']}%){badge_p1}\n"
+            f"• **{p2['partido']}** | Más de {p2['line']} Goles (Prob: {p2['p_over']}%){badge_p2}\n\n"
             "🟡 **2. PARLEY MEDIO**\n"
-            f"• **{p3['partido']}** | Gana {p3['home'] if p3['p_win_h'] > p3['p_win_a'] else p3['away']} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%)\n"
+            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL NHL", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

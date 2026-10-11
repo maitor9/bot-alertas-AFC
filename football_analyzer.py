@@ -31,8 +31,26 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
+def es_partido_caliente(home_name, away_name, liga_nombre):
+    # Palabras clave comunes de clásicos o alta tensión
+    rivales_historicos = [
+        ("real madrid", "barcelona"), ("inter", "milan"), ("lazio", "roma"),
+        ("boca", "river"), ("celta", "deportivo"), ("liverpool", "everton"),
+        ("arsenal", "tottenham"), ("manchester", "city"), ("united", "liverpool"),
+        ("porto", "benfica"), ("ajax", "feyenoord"), ("psg", "marseille")
+    ]
+    h_low = home_name.lower()
+    a_low = away_name.lower()
+    
+    for t1, t2 in rivales_historicos:
+        if (t1 in h_low and t2 in a_low) or (t2 in h_low and t1 in a_low):
+            return True, "🔥 ¡GRAN DERBI / CLÁSICO HISTÓRICO!"
+            
+    # Si es partido de tabla alta (por nombres grandes o fases finales)
+    return False, "⚽ Partido Estándar de Liga"
+
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera avanzada de Fútbol (Filtro > 65% probabilidad)...", flush=True)
+    print("⚽ Escaneando cartelera de Fútbol con Detector de Partidos Calientes...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip = []
@@ -80,7 +98,10 @@ def analizar_partidos_futbol_prematch():
                             win_pct_h = extraer_win_pct(home)
                             win_pct_a = extraer_win_pct(away)
 
-                            # Parámetros de Poisson avanzados
+                            # Detector de alta tensión / derbi
+                            es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name, liga_nombre)
+
+                            # Poisson base
                             lambda_h = 1.35 + (win_pct_h * 1.25) + 0.25 
                             lambda_a = 1.10 + (win_pct_a * 1.15)
                             total_lambda = lambda_h + lambda_a
@@ -88,15 +109,10 @@ def analizar_partidos_futbol_prematch():
                             prob_0_h, prob_1_h = poisson(0, lambda_h), poisson(1, lambda_h)
                             prob_0_a, prob_1_a = poisson(0, lambda_a), poisson(1, lambda_a)
                             
-                            # Probabilidades de Goles y Mercados
                             p_btts = round((1 - prob_0_h) * (1 - prob_0_a) * 100, 1)
                             p_over_05_ht = round((1 - poisson(0, total_lambda * 0.45)) * 100, 1)
                             p_over_15 = round((1 - (prob_0_h * prob_0_a) - (prob_0_h * prob_1_a) - (prob_1_h * prob_0_a)) * 100, 1)
                             p_over_25 = round((p_over_15 * 0.70), 1)
-                            p_over_35 = round((p_over_25 * 0.45), 1)
-
-                            p_home_ov_15 = round((1 - poisson(0, lambda_h) - poisson(1, lambda_h)) * 100, 1)
-                            p_away_ov_15 = round((1 - poisson(0, lambda_a) - poisson(1, lambda_a)) * 100, 1)
 
                             p_win_h = round((1 - prob_0_h - prob_1_h + 0.1) * 100, 1)
                             p_win_a = round((1 - prob_0_a - prob_1_a + 0.05) * 100, 1)
@@ -104,13 +120,14 @@ def analizar_partidos_futbol_prematch():
                             p_win_a = min(85.0, max(15.0, p_win_a))
                             p_draw = round(100.0 - p_win_h - p_win_a, 1)
 
-                            # Doble Oportunidad
                             p_1x = round(min(96.0, p_win_h + p_draw + 10.0), 1)
                             p_x2 = round(min(96.0, p_win_a + p_draw + 5.0), 1)
 
-                            # Corners y Tarjetas (Sabermetría estimada por intensidad)
-                            p_corners_75 = round(min(92.0, 60.0 + (total_lambda * 8.0)), 1)
-                            p_cards_under_35 = round(min(88.0, 50.0 + (abs(win_pct_h - win_pct_a) * 30.0)), 1)
+                            # Factores de Tensión para Tarjetas y Penaltis
+                            # Si es partido caliente, la probabilidad de tarjetas altas y penalti se dispara
+                            factor_tension = 1.25 if es_caliente else 1.0
+                            p_tarjetas_over = round(min(90.0, 55.0 * factor_tension + (total_lambda * 4.0)), 1)
+                            p_penalti = round(min(75.0, 32.0 * factor_tension + (abs(win_pct_h - win_pct_a) * 15.0)), 1)
 
                             try:
                                 home_score = int(home.get("score", "0"))
@@ -119,11 +136,12 @@ def analizar_partidos_futbol_prematch():
                                 home_score, away_score = 0, 0
                                 
                             total_goals = home_score + away_score
-                            btts_real = (home_score > 0 and away_score > 0)
 
-                            # Recopilar todos los mercados que superen el 65%
                             oportunidades_alta_confianza = []
                             
+                            if es_caliente:
+                                oportunidades_alta_confianza.append(f"• **⚠️ ALERTA PARTIDO CALIENTE:** Alto riesgo de fricción y roces.")
+
                             if p_1x >= 65.0:
                                 est = "acertado" if (home_score >= away_score and is_final) else ("fallado" if is_final else "pendiente")
                                 oportunidades_alta_confianza.append(f"• **Doble Oportunidad (1X):** {p_1x}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
@@ -144,16 +162,11 @@ def analizar_partidos_futbol_prematch():
                                 est = "acertado" if (total_goals > 2.5 and is_final) else ("fallado" if is_final else "pendiente")
                                 oportunidades_alta_confianza.append(f"• **Over 2.5 Goles:** {p_over_25}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
-                            if p_home_ov_15 >= 65.0:
-                                est = "acertado" if (home_score > 1.5 and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Local Over 1.5 Goles:** {p_home_ov_15}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                            if p_tarjetas_over >= 65.0:
+                                oportunidades_alta_confianza.append(f"• **Tarjetas (Over 3.5 o 4.5):** {p_tarjetas_over}% ⏳ *(Alta fricción)*")
 
-                            if p_btts >= 65.0:
-                                est = "acertado" if (btts_real and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Ambos Marcan (BTTS):** {p_btts}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
-
-                            if p_corners_75 >= 65.0:
-                                oportunidades_alta_confianza.append(f"• **Tiros de Esquina (Over 7.5):** {p_corners_75}% ⏳")
+                            if p_penalti >= 65.0:
+                                oportunidades_alta_confianza.append(f"• **Penalti en el Partido (Sí):** {p_penalti}% ⏳ *(Duelo de área)*")
 
                             estado_over_15 = "acertado" if (total_goals > 1.5 and is_final) else ("fallado" if is_final else "pendiente")
                             
@@ -173,12 +186,11 @@ def analizar_partidos_futbol_prematch():
                                 })
 
                             marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score}\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
-
-                            # Formatear lista de oportunidades > 65%
                             str_oportunidades = "\n".join(oportunidades_alta_confianza) if oportunidades_alta_confianza else "• Ningún mercado supera el 65% de confianza."
 
                             mensaje = (
-                                f"⚽ **ANÁLISIS TÉCNICO PROFUNDO (FÚTBOL)**\n\n"
+                                f"⚽ **ANÁLISIS TÉCNICO PROFUNDO (FÚTBOL)**\n"
+                                f"📌 *{etiqueta_partido}*\n\n"
                                 f"🏟 **{home_name} vs. {away_name}**\n"
                                 f"🏆 *{liga_nombre}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"

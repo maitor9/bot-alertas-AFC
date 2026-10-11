@@ -11,9 +11,9 @@ def poisson(k, lmbda):
 def calcular_cuotas(prob):
     try:
         if prob <= 1.0: prob = 1.0
-        if prob >= 99.0: prob = 99.0
+        if prob >= 95.0: prob = 95.0
         decimal = round(100.0 / (prob * 1.05), 2)
-        return f"{max(1.05, decimal)}"
+        return f"{max(1.15, decimal)}"
     except:
         return "1.90"
 
@@ -78,7 +78,7 @@ def obtener_todas_las_ligas_futbol():
     ]
 
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera GLOBAL con Motor Sabermétrico Riguroso (Sin Sesgos)...", flush=True)
+    print("⚽ Escaneando cartelera con Filtro Antisesgos de Doble Oportunidad...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip = []
@@ -131,32 +131,33 @@ def analizar_partidos_futbol_prematch():
 
                             es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name)
 
-                            lambda_h = max(0.4, ((gf_h + gc_a) / 2.0) * factor_liga * 1.05)
-                            lambda_a = max(0.3, ((gf_a + gc_h) / 2.0) * factor_liga * 0.95)
+                            lambda_h = max(0.4, ((gf_h + gc_a) / 2.0) * factor_liga * 1.02)
+                            lambda_a = max(0.3, ((gf_a + gc_h) / 2.0) * factor_liga * 0.98)
                             total_lambda = lambda_h + lambda_a
 
                             prob_0_h, prob_1_h = poisson(0, lambda_h), poisson(1, lambda_h)
                             prob_0_a, prob_1_a = poisson(0, lambda_a), poisson(1, lambda_a)
                             
-                            # Probabilidades puras derivadas de Poisson (Sin constantes infladas)
-                            p_win_h = round((1 - poisson(0, lambda_h) - poisson(1, lambda_h)) * 55.0, 1)
-                            p_win_a = round((1 - poisson(0, lambda_a) - poisson(1, lambda_a)) * 55.0, 1)
+                            # Modelo de distribución de probabilidades equilibradas
+                            p_win_h = round((1 - poisson(0, lambda_h)) * 48.0, 1)
+                            p_win_a = round((1 - poisson(0, lambda_a)) * 48.0, 1)
+                            p_draw = round(max(20.0, 100.0 - p_win_h - p_win_a), 1)
                             
-                            # Probabilidad de empate basada en la coincidencia de goles bajos esperados
-                            p_draw = round(max(15.0, 100.0 - p_win_h - p_win_a - (math.exp(-total_lambda) * 100)), 1)
-                            p_win_h = round(100.0 - p_win_a - p_draw, 1)
-                            p_win_h = max(10.0, min(80.0, p_win_h))
-                            p_win_a = max(10.0, min(80.0, p_win_a))
+                            # Ajuste para que sumen 100% de manera realista
+                            total_p = p_win_h + p_win_a + p_draw
+                            p_win_h = round((p_win_h / total_p) * 100, 1)
+                            p_win_a = round((p_win_a / total_p) * 100, 1)
+                            p_draw = round(100.0 - p_win_h - p_win_a, 1)
 
-                            # Doble Oportunidad pura matemática (Sin inflar)
-                            p_1x = round(min(95.0, p_win_h + p_draw), 1)
-                            p_x2 = round(min(95.0, p_win_a + p_draw), 1)
+                            # Doble Oportunidad real acotada
+                            p_1x = round(min(78.0, p_win_h + p_draw), 1)
+                            p_x2 = round(min(78.0, p_win_a + p_draw), 1)
 
                             p_btts = round((1 - prob_0_h) * (1 - prob_0_a) * 100, 1)
                             p_over_05_ht = round((1 - poisson(0, total_lambda * 0.45)) * 100, 1)
-                            p_over_15 = round((1 - (prob_0_h * prob_0_a) - (prob_0_h * prob_1_a) - (prob_1_h * prob_0_a)) * 100, 1)
+                            p_over_15 = round((1 - (prob_0_h * prob_0_a)) * 100, 1)
                             p_over_25 = round((1 - poisson(0, total_lambda) - poisson(1, total_lambda)) * 100, 1)
-                            p_over_25 = max(10.0, min(88.0, p_over_25))
+                            p_over_25 = max(15.0, min(80.0, p_over_25))
 
                             p_home_ov_15 = round((1 - poisson(0, lambda_h) - poisson(1, lambda_h)) * 100, 1)
 
@@ -178,7 +179,9 @@ def analizar_partidos_futbol_prematch():
                                     cuota_str = calcular_cuotas(prob_val)
                                     badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
                                     oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                                    candidatos_partido.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
+                                    # Excluimos la Doble Oportunidad de los picks VIP para evitar cuotas menores a 1.25
+                                    if "Doble Oportunidad" not in nombre_mercado:
+                                        candidatos_partido.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
                             if es_caliente:
                                 oportunidades_alta_confianza.append(f"• **🔥⚡ ALERTA DE ALTA TENSIÓN:** Máxima exigencia táctica.")
@@ -193,7 +196,7 @@ def analizar_partidos_futbol_prematch():
 
                             if candidatos_partido:
                                 mejor_mercado = max(candidatos_partido, key=lambda x: x["prob"])
-                                if mejor_mercado["prob"] >= 75.0:
+                                if mejor_mercado["prob"] >= 72.0:
                                     picks_vip.append({
                                         "partido": f"{home_name} vs {away_name}", "liga": liga_nombre, 
                                         "mercado": f"{mejor_mercado['mercado']} (Cuota: {calcular_cuotas(mejor_mercado['prob'])})", 

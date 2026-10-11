@@ -15,15 +15,14 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_cartelera_motor():
-    print("🏎️ Escaneando cartelera de Deportes de Motor (F1/NASCAR)...", flush=True)
+    print("🏎️ Escaneando cartelera de Deportes de Motor...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
-    # Ventana amplia (10 días) para atrapar los fines de semana de clasificación y carrera principal
-    base_date = datetime.now() - timedelta(days=2)
-    fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(10)]
+    base_date = datetime.now()
+    fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(6)]
 
     for liga in LIGAS_MOTOR:
         for fecha in fechas:
@@ -52,7 +51,6 @@ def analizar_cartelera_motor():
                             competitors = competition.get("competitors", [])
                             if not competitors: continue
 
-                            # Filtramos a los 3 favoritos/líderes (ESPN suele ordenarlos por ranking o posiciones de clasificación)
                             top_drivers = competitors[:3]
                             if not top_drivers: continue
                             
@@ -60,9 +58,7 @@ def analizar_cartelera_motor():
                             driver_2 = top_drivers[1].get("athlete", {}).get("displayName", "Piloto Contendiente") if len(top_drivers) > 1 else ""
                             driver_3 = top_drivers[2].get("athlete", {}).get("displayName", "") if len(top_drivers) > 2 else ""
 
-                            # Simulación de probabilidad para mercados de motor (ganar una carrera entre 20+ pilotos con >30% es un pick de alta confianza)
                             prob_d1 = 78.5
-                            
                             estado_pick = "pendiente"
                             if is_final:
                                 estado_pick = "acertado" if top_drivers[0].get("winner") or top_drivers[0].get("order") == 1 else "fallado"
@@ -72,7 +68,7 @@ def analizar_cartelera_motor():
                             })
 
                             picks_disponibles.append({
-                                "partido": race_name, "home": driver_1, "away": driver_2, "fecha": fecha_hora_col, "is_final": is_final
+                                "partido": race_name, "home": driver_1, "away": driver_2, "fecha": fecha_hora_col, "is_final": is_final, "estado_pick": estado_pick
                             })
 
                             marcador_str = f"🏆 **Bandera a Cuadros (Finalizado)**\n" if is_final else (f"⏱ **En Pista (En Vivo)**\n" if status_type == "STATUS_IN_PROGRESS" else "")
@@ -101,11 +97,13 @@ def analizar_cartelera_motor():
 
     if len(picks_disponibles) >= 1:
         p1 = picks_disponibles[0]
+        badge_p1 = " ✅" if p1["estado_pick"] == "acertado" else (" ❌" if p1["estado_pick"] == "fallado" else " ⏳")
+
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP MOTOR: POLE POSITION IA** 🌟\n\n"
             "🏎️ **PICK PRINCIPAL (Cuota Segura)**\n"
-            f"• **{p1['partido']}** | Mercado: {p1['home']} (Finaliza Top 3)\n"
+            f"• **{p1['partido']}** | Mercado: {p1['home']} (Finaliza Top 3){badge_p1}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL MOTOR", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

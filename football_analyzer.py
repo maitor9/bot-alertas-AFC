@@ -8,6 +8,21 @@ def poisson(k, lmbda):
     except:
         return 0
 
+def calcular_cuotas(prob):
+    try:
+        if prob <= 1.0: prob = 1.0
+        if prob >= 99.0: prob = 99.0
+        # Cuota decimal con margen de casa
+        decimal = round(100.0 / (prob * 1.04), 2)
+        # Cuota americana aproximada
+        if decimal >= 2.0:
+            americana = f"+{int((decimal - 1) * 100)}"
+        else:
+            americana = f"-{int(100 / (decimal - 1))}"
+        return f"{decimal} ({americana})"
+    except:
+        return "1.90 (-110)"
+
 def extraer_win_pct(team_data):
     try:
         records = team_data.get("records", [])
@@ -32,26 +47,45 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def es_partido_caliente(home_name, away_name):
-    # Lista ampliada de derbis y clásicos mundiales de alta tensión
     rivales_historicos = [
         ("real madrid", "barcelona"), ("inter", "milan"), ("lazio", "roma"),
         ("boca", "river"), ("celta", "deportivo"), ("liverpool", "everton"),
         ("arsenal", "tottenham"), ("manchester", "city"), ("united", "liverpool"),
         ("porto", "benfica"), ("ajax", "feyenoord"), ("psg", "marseille"),
         ("atletico", "real madrid"), ("juventus", "inter"), ("napoli", "juventus"),
-        ("barcelona", "espanyol"), ("sevilla", "betis"), ("celtic", "rangers")
+        ("barcelona", "espanyol"), ("sevilla", "betis"), ("celtic", "rangers"),
+        ("millonarios", "santa fe"), ("nacional", "america"), ("colo colo", "u de chile")
     ]
     h_low = home_name.lower()
     a_low = away_name.lower()
-    
     for t1, t2 in rivales_historicos:
         if (t1 in h_low and t2 in a_low) or (t2 in h_low and t1 in a_low):
             return True, "🔥⚡ [PARTIDO DE ALTO VOLTAJE] - CLÁSICO / DERBI"
-            
-    return False, "⚽ Partido Estándar de Liga"
+    return False, "⚽ Partido Oficial"
+
+def obtener_todas_las_ligas_futbol():
+    # Descarga dinámica de las ligas de fútbol disponibles en la API principal de ESPN
+    url = "https://site.api.espn.com/apis/site/v2/sports/soccer/leagues"
+    try:
+        res = requests.get(url, timeout=4)
+        if res.status_code == 200:
+            data = res.json()
+            slugs = []
+            for league in data.get("leagues", []):
+                slug = league.get("slug") or league.get("abbreviation")
+                if slug: slugs.append(slug.lower())
+            if slugs: return list(set(slugs))
+    except Exception:
+        pass
+    # Respaldo masivo global si falla el endpoint de descubrimiento
+    return [
+        "eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "uefa.champions", "uefa.europa", "uefa.europa.conf",
+        "col.1", "arg.1", "bra.1", "mex.1", "usa.1", "ned.1", "por.1", "tur.1", "arg.2", "bra.2",
+        "eng.2", "esp.2", "ita.2", "ger.2", "fra.2", "copa.libertadores", "copa.sudamericana"
+    ]
 
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera de Fútbol con Detector de Partidos Calientes...", flush=True)
+    print("⚽ Escaneando cartelera GLOBAL de Fútbol (Todas las ligas de la API)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip = []
@@ -61,17 +95,18 @@ def analizar_partidos_futbol_prematch():
     manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
     fechas = [hoy_str, manana_str]
     
-    ligas_futbol = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "uefa.champions", "uefa.europa", "col.1"]
+    ligas_futbol = obtener_todas_las_ligas_futbol()
 
     for liga in ligas_futbol:
         for fecha in fechas:
             url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{liga}/scoreboard?dates={fecha}"
             try:
-                response = requests.get(url, timeout=3.5)
+                response = requests.get(url, timeout=2.5)
                 if response.status_code == 200:
                     data = response.json()
                     events = data.get("events", [])
-                    liga_nombre = data.get("leagues", [{}])[0].get("name", "Fútbol")
+                    league_info = data.get("leagues", [{}])[0]
+                    liga_nombre = league_info.get("name") or league_info.get("shortName") or "Fútbol Internacional"
 
                     for event in events:
                         event_id = event.get("id")
@@ -99,10 +134,8 @@ def analizar_partidos_futbol_prematch():
                             win_pct_h = extraer_win_pct(home)
                             win_pct_a = extraer_win_pct(away)
 
-                            # Detector de alta tensión / derbi
                             es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name)
 
-                            # Poisson base
                             lambda_h = 1.35 + (win_pct_h * 1.25) + 0.25 
                             lambda_a = 1.10 + (win_pct_a * 1.15)
                             total_lambda = lambda_h + lambda_a
@@ -124,7 +157,6 @@ def analizar_partidos_futbol_prematch():
                             p_1x = round(min(96.0, p_win_h + p_draw + 10.0), 1)
                             p_x2 = round(min(96.0, p_win_a + p_draw + 5.0), 1)
 
-                            # Factor multiplicador de fricción para partidos calientes
                             factor_tension = 1.30 if es_caliente else 1.0
                             p_tarjetas_over = round(min(92.0, 58.0 * factor_tension + (total_lambda * 4.0)), 1)
                             p_penalti = round(min(80.0, 35.0 * factor_tension + (abs(win_pct_h - win_pct_a) * 15.0)), 1)
@@ -136,37 +168,45 @@ def analizar_partidos_futbol_prematch():
                                 home_score, away_score = 0, 0
                                 
                             total_goals = home_score + away_score
+                            btts_real = (home_score > 0 and away_score > 0)
 
                             oportunidades_alta_confianza = []
                             
                             if es_caliente:
-                                oportunidades_alta_confianza.append(f"• **🔥⚡ ALERTA MÁXIMA DE RIVALIDAD:** Alto riesgo de fricción, roces y tarjetas.")
+                                oportunidades_alta_confianza.append(f"• **🔥⚡ ALERTA MÁXIMA DE RIVALIDAD:** Alto riesgo de fricción y tarjetas.")
 
                             if p_1x >= 65.0:
                                 est = "acertado" if (home_score >= away_score and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Doble Oportunidad (1X):** {p_1x}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                                cuota_str = calcular_cuotas(p_1x)
+                                oportunidades_alta_confianza.append(f"• **Doble Oportunidad (1X):** {p_1x}% | Cuota: *{cuota_str}*" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
                             
                             if p_x2 >= 65.0:
                                 est = "acertado" if (away_score >= home_score and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Doble Oportunidad (X2):** {p_x2}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                                cuota_str = calcular_cuotas(p_x2)
+                                oportunidades_alta_confianza.append(f"• **Doble Oportunidad (X2):** {p_x2}% | Cuota: *{cuota_str}*" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
                             if p_over_05_ht >= 65.0:
                                 est = "acertado" if (total_goals >= 1 and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Over 0.5 Goles (1T):** {p_over_05_ht}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                                cuota_str = calcular_cuotas(p_over_05_ht)
+                                oportunidades_alta_confianza.append(f"• **Over 0.5 Goles (1T):** {p_over_05_ht}% | Cuota: *{cuota_str}*" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
                             if p_over_15 >= 65.0:
                                 est = "acertado" if (total_goals > 1.5 and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Over 1.5 Goles:** {p_over_15}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                                cuota_str = calcular_cuotas(p_over_15)
+                                oportunidades_alta_confianza.append(f"• **Over 1.5 Goles:** {p_over_15}% | Cuota: *{cuota_str}*" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
                             if p_over_25 >= 65.0:
                                 est = "acertado" if (total_goals > 2.5 and is_final) else ("fallado" if is_final else "pendiente")
-                                oportunidades_alta_confianza.append(f"• **Over 2.5 Goles:** {p_over_25}%" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
+                                cuota_str = calcular_cuotas(p_over_25)
+                                oportunidades_alta_confianza.append(f"• **Over 2.5 Goles:** {p_over_25}% | Cuota: *{cuota_str}*" + (" ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")))
 
                             if p_tarjetas_over >= 65.0:
-                                oportunidades_alta_confianza.append(f"• **Tarjetas (Over 4.5):** {p_tarjetas_over}% ⏳ *(Coeficiente de Fricción Alto)*")
+                                cuota_str = calcular_cuotas(p_tarjetas_over)
+                                oportunidades_alta_confianza.append(f"• **Tarjetas (Over 4.5):** {p_tarjetas_over}% | Cuota: *{cuota_str}* ⏳")
 
                             if p_penalti >= 65.0:
-                                oportunidades_alta_confianza.append(f"• **Penalti en el Partido (Sí):** {p_penalti}% ⏳ *(Presión en el área)*")
+                                cuota_str = calcular_cuotas(p_penalti)
+                                oportunidades_alta_confianza.append(f"• **Penalti (Sí):** {p_penalti}% | Cuota: *{cuota_str}* ⏳")
 
                             estado_over_15 = "acertado" if (total_goals > 1.5 and is_final) else ("fallado" if is_final else "pendiente")
                             
@@ -175,12 +215,12 @@ def analizar_partidos_futbol_prematch():
                                 "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over_15": p_over_15, "p_btts": p_btts,
                                 "estado_over_15": estado_over_15, "is_final": is_final,
                                 "liga": liga_nombre, "fecha": fecha_hora_col, "home_score": home_score, "away_score": away_score,
-                                "prob": p_over_15, "mercado": "Más de 1.5 Goles", "estado_pick": estado_over_15
+                                "prob": p_over_15, "mercado": f"Over 1.5 Goles (Cuota: {calcular_cuotas(p_over_15)})", "estado_pick": estado_over_15
                             })
                             
                             if p_over_15 >= 75.0:
                                 picks_vip.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre, "mercado": "Más de 1.5 Goles", 
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre, "mercado": f"Over 1.5 Goles (Cuota: {calcular_cuotas(p_over_15)})", 
                                     "prob": p_over_15, "fecha": fecha_hora_col, "estado_pick": estado_over_15, 
                                     "marcador": f"{home_score} - {away_score}" if is_final else "Pendiente"
                                 })
@@ -189,7 +229,7 @@ def analizar_partidos_futbol_prematch():
                             str_oportunidades = "\n".join(oportunidades_alta_confianza) if oportunidades_alta_confianza else "• Ningún mercado supera el 65% de confianza."
 
                             mensaje = (
-                                f"⚽ **ANÁLISIS TÉCNICO PROFUNDO (FÚTBOL)**\n"
+                                f"⚽ **ANÁLISIS PROFESIONAL DE FÚTBOL**\n"
                                 f"📌 *{etiqueta_partido}*\n\n"
                                 f"🏟 **{home_name} vs. {away_name}**\n"
                                 f"🏆 *{liga_nombre}*\n"
@@ -218,8 +258,8 @@ def analizar_partidos_futbol_prematch():
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP: PARLEYS INTELIGENTES DE LA JORNADA** 🌟\n\n"
             "🟢 **1. PARLEY RIESGO BAJO (Cuota Segura)**\n"
-            f"• **{p1_bajo['partido']}** | Más de 1.5 Goles (Prob: {p1_bajo['p_over_15']}%){badge_p1}\n"
-            f"• **{p2_bajo['partido']}** | Más de 1.5 Goles (Prob: {p2_bajo['p_over_15']}%){badge_p2}\n"
+            f"• **{p1_bajo['partido']}** | Más de 1.5 Goles (Prob: {p1_bajo['p_over_15']}% | Cuota: {calcular_cuotas(p1_bajo['p_over_15'])}){badge_p1}\n"
+            f"• **{p2_bajo['partido']}** | Más de 1.5 Goles (Prob: {p2_bajo['p_over_15']}% | Cuota: {calcular_cuotas(p2_bajo['p_over_15'])}){badge_p2}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL DE PARLEYS IA", "mensaje": resumen_parleys})
 

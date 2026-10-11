@@ -10,14 +10,13 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_cartelera_ufc():
-    print("🥊 Escaneando cartelera de UFC (Ventana de 8 días)...", flush=True)
+    print("🥊 Escaneando cartelera de UFC (Hoy a +7 días)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
     eventos_procesados = set()
 
-    # Escaneamos 8 días para asegurar que atrapamos la cartelera del sábado
-    base_date = datetime.now() - timedelta(days=1)
+    base_date = datetime.now()
     fechas = [(base_date + timedelta(days=i)).strftime('%Y%m%d') for i in range(8)]
 
     for fecha in fechas:
@@ -50,7 +49,6 @@ def analizar_cartelera_ufc():
                         f1_name = f1_data.get("athlete", {}).get("displayName", "Peleador 1")
                         f2_name = f2_data.get("athlete", {}).get("displayName", "Peleador 2")
 
-                        # Simulador de Eficiencia para MMA
                         hash_1 = sum([ord(c) for c in f1_name])
                         hash_2 = sum([ord(c) for c in f2_name])
                         diff_hash = (hash_1 % 20) - (hash_2 % 20)
@@ -77,7 +75,9 @@ def analizar_cartelera_ufc():
                             })
 
                         picks_disponibles.append({
-                            "partido": f"{f1_name} vs {f2_name}", "home": f1_name, "away": f2_name, "p_win_h": p_win_1, "p_win_a": p_win_2, "fecha": fecha_hora_col, "is_final": is_final
+                            "partido": f"{f1_name} vs {f2_name}", "home": f1_name, "away": f2_name, 
+                            "p_win_h": p_win_1, "p_win_a": p_win_2, "fecha": fecha_hora_col, "is_final": is_final,
+                            "estado_win_1": estado_win_1, "estado_win_2": estado_win_2
                         })
 
                         favorito = f1_name if p_win_1 > 50 else f2_name
@@ -108,12 +108,18 @@ def analizar_cartelera_ufc():
         por_ganador = sorted(picks_disponibles, key=lambda x: max(x["p_win_h"], x["p_win_a"]), reverse=True)
         p1, p2 = por_ganador[0], por_ganador[1] if len(por_ganador) > 1 else por_ganador[0]
 
+        est_p1 = p1["estado_win_1"] if p1["p_win_h"] > p1["p_win_a"] else p1["estado_win_2"]
+        badge_p1 = " ✅" if est_p1 == "acertado" else (" ❌" if est_p1 == "fallado" else " ⏳")
+        
+        est_p2 = p2["estado_win_1"] if p2["p_win_h"] > p2["p_win_a"] else p2["estado_win_2"]
+        badge_p2 = " ✅" if est_p2 == "acertado" else (" ❌" if est_p2 == "fallado" else " ⏳")
+
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP UFC: OCTÁGONO IA** 🌟\n\n"
             "🔴 **PARLEY PRINCIPAL (Cuota Alta)**\n"
-            f"• **{p1['partido']}** | Gana {p1['home'] if p1['p_win_h'] > p1['p_win_a'] else p1['away']} (Prob: {max(p1['p_win_h'], p1['p_win_a'])}%)\n"
-            f"• **{p2['partido']}** | Gana {p2['home'] if p2['p_win_h'] > p2['p_win_a'] else p2['away']} (Prob: {max(p2['p_win_h'], p2['p_win_a'])}%)\n"
+            f"• **{p1['partido']}** | Gana {p1['home'] if p1['p_win_h'] > p1['p_win_a'] else p1['away']} (Prob: {max(p1['p_win_h'], p1['p_win_a'])}%){badge_p1}\n"
+            f"• **{p2['partido']}** | Gana {p2['home'] if p2['p_win_h'] > p2['p_win_a'] else p2['away']} (Prob: {max(p2['p_win_h'], p2['p_win_a'])}%){badge_p2}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL UFC", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

@@ -212,4 +212,10 @@ def analizar_partidos_nba():
             "🌟 **SELECCIÓN VIP BASKET IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
             f"• **{p1['partido']}** | Más de {p1['line']} Pts (Prob: {p1['p_over']}%){badge_p1}\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p
+            f"• **{p2['partido']}** | Más de {p2['line']} Pts (Prob: {p2['p_over']}%){badge_p2}\n\n"
+            "🟡 **2. PARLEY MEDIO**\n"
+            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
+        )
+        analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL BASKET", "mensaje": resumen_parleys})
+
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

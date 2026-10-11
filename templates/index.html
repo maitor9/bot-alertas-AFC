@@ -15,6 +15,7 @@
             --accent-blue: #3b82f6;
             --accent-nfl: #10b981;
             --accent-nhl: #38bdf8;
+            --accent-ufc: #ef4444;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -58,6 +59,7 @@
         .sport-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff !important; border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59, 130, 246, 0.4); }
         .sport-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000 !important; border-color: var(--accent-nfl); box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4); }
         .sport-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000 !important; border-color: var(--accent-nhl); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.4); }
+        .sport-btn.active-ufc { background: linear-gradient(135deg, var(--accent-ufc) 0%, #7f1d1d 100%); color: #fff !important; border-color: var(--accent-ufc); box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4); }
 
         .hero-section { max-width: 1240px; margin: 40px auto; padding: 0 24px; text-align: center; }
         .hero-title { font-family: 'Orbitron', sans-serif; font-size: 35px; font-weight: 900; line-height: 1.2; margin: 0 0 15px 0; }
@@ -76,6 +78,7 @@
         .tab-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff; border-color: var(--accent-blue); }
         .tab-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000; border-color: var(--accent-nfl); }
         .tab-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000; border-color: var(--accent-nhl); }
+        .tab-btn.active-ufc { background: linear-gradient(135deg, var(--accent-ufc) 0%, #7f1d1d 100%); color: #fff; border-color: var(--accent-ufc); }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
 
@@ -100,6 +103,7 @@
             <button id="btnBaseball" class="sport-btn" onclick="mostrarSeccion('baseball')">⚾ BÉISBOL</button>
             <button id="btnNfl" class="sport-btn" onclick="mostrarSeccion('nfl')">🏈 NFL</button>
             <button id="btnNhl" class="sport-btn" onclick="mostrarSeccion('nhl')">🏒 NHL</button>
+            <button id="btnUfc" class="sport-btn" onclick="mostrarSeccion('ufc')">🥊 UFC</button>
         </div>
     </div>
 
@@ -168,9 +172,22 @@
         </div>
     </div>
 
+    <!-- UFC -->
+    <div id="seccion-ufc" style="display: none;">
+        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-ufc);">Combates UFC</h1></div>
+        <div class="main-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active-ufc" onclick="cambiarPestana('ufc', 'prematch', event, 'active-ufc')">🥊 Combates PRO</button>
+                <button class="tab-btn" onclick="cambiarPestana('ufc', 'vip', event, 'active-ufc')">💎 Picks VIP</button>
+            </div>
+            <div id="ufc-prematch"><div id="grid-ufc-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando UFC...</h3></div></div></div>
+            <div id="ufc-vip" style="display: none;"><div id="grid-picks-vip-ufc" class="grid"><div class="empty-card"><h3>💎 Cargando VIP UFC...</h3></div></div></div>
+        </div>
+    </div>
+
     <script>
         function mostrarSeccion(deporte) {
-            ['futbol', 'basket', 'baseball', 'nfl', 'nhl'].forEach(d => {
+            ['futbol', 'basket', 'baseball', 'nfl', 'nhl', 'ufc'].forEach(d => {
                 document.getElementById('seccion-' + d).style.display = (d === deporte) ? 'block' : 'none';
                 document.getElementById('btn' + d.charAt(0).toUpperCase() + d.slice(1)).className = 'sport-btn';
             });
@@ -180,14 +197,13 @@
             if(deporte==='baseball') cl='active-mlb';
             if(deporte==='nfl') cl='active-nfl';
             if(deporte==='nhl') cl='active-nhl';
+            if(deporte==='ufc') cl='active-ufc';
             document.getElementById('btn' + deporte.charAt(0).toUpperCase() + deporte.slice(1)).classList.add(cl);
         }
 
         function cambiarPestana(deporte, pestana, evt, claseActiva) {
             const tabs = document.querySelectorAll(`#seccion-${deporte} .tab-btn`);
-            tabs.forEach(t => {
-                t.className = 'tab-btn'; // Limpia todas las clases
-            });
+            tabs.forEach(t => t.className = 'tab-btn');
             evt.currentTarget.classList.add(claseActiva);
 
             const divs = document.querySelectorAll(`#seccion-${deporte} > .main-container > div[id^="${deporte}-"]`);
@@ -209,12 +225,12 @@
                             </div>
                         </div>`).join('');
                 } else {
-                    document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ No hay eventos programados hoy</h3></div>';
+                    document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ No hay eventos programados</h3></div>';
                 }
 
                 if (resultado.picks_vip && resultado.picks_vip.length > 0) {
                     document.getElementById(gridVip).innerHTML = resultado.picks_vip.map(pick => {
-                        let badge = pick.estado_pick === 'acertado' ? `<div style="color:#10b981; font-weight:bold;">✅ ACERTADO (${pick.marcador})</div>` : (pick.estado_pick === 'fallado' ? `<div style="color:#ef4444; font-weight:bold;">❌ NO ACERTADO (${pick.marcador})</div>` : "");
+                        let badge = pick.estado_pick === 'acertado' ? `<div style="color:#10b981; font-weight:bold;">✅ ACERTADO</div>` : (pick.estado_pick === 'fallado' ? `<div style="color:#ef4444; font-weight:bold;">❌ NO ACERTADO</div>` : "");
                         return `
                         <div class="match-card" style="border-color: ${colorVar};">
                             <div style="color: ${colorVar}; font-weight:bold; text-align:center;">🏆 ${pick.liga} | ✅ ${pick.prob}%</div>
@@ -227,7 +243,7 @@
                         </div>`;
                     }).join('');
                 } else {
-                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP (>=75%) hoy</h3></div>';
+                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP (>=75%) programados</h3></div>';
                 }
             } catch (error) {
                 document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ Error de conexión</h3></div>';
@@ -240,6 +256,7 @@
             cargarData('/api/baseball_prematch', 'grid-baseball-prematch', 'grid-picks-vip-baseball', 'var(--accent-blue)');
             cargarData('/api/nfl_prematch', 'grid-nfl-prematch', 'grid-picks-vip-nfl', 'var(--accent-nfl)');
             cargarData('/api/nhl_prematch', 'grid-nhl-prematch', 'grid-picks-vip-nhl', 'var(--accent-nhl)');
+            cargarData('/api/ufc_prematch', 'grid-ufc-prematch', 'grid-picks-vip-ufc', 'var(--accent-ufc)');
         };
     </script>
 </body>

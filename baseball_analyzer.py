@@ -14,7 +14,7 @@ def extraer_win_pct(team_data):
         records = team_data.get("records", [])
         if records:
             summary = records[0].get("summary", "0-0")
-            wins, losses = map(int, summary.split("-"))
+            wins, losses = map(int, summary.split("-")[:2])
             total = wins + losses
             if total > 0: return wins / total
     except Exception:
@@ -30,19 +30,20 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_baseball():
-    print("⚾ Escaneando cartelera de Béisbol (MLB)...", flush=True)
+    print("⚾ Escaneando cartelera de Béisbol (Hoy y Mañana)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
-
-    hoy_str = datetime.now().strftime("%Y%m%d")
-    manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
-    fechas_escaneo = [hoy_str, manana_str]
     eventos_procesados = set()
 
+    # Solo Hoy y Mañana para refresco diario
+    hoy_str = datetime.now().strftime("%Y%m%d")
+    manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+    fechas = [hoy_str, manana_str]
+
     for liga in LIGAS_BASEBALL:
-        for fecha_req in fechas_escaneo:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/baseball/{liga['codigo']}/scoreboard?dates={fecha_req}"
+        for fecha in fechas:
+            url = f"https://site.api.espn.com/apis/site/v2/sports/baseball/{liga['codigo']}/scoreboard?dates={fecha}"
             try:
                 response = requests.get(url, timeout=3.5)
                 if response.status_code == 200:
@@ -51,7 +52,7 @@ def analizar_partidos_baseball():
 
                     for event in events:
                         event_id = event.get("id")
-                        if event_id in eventos_procesados: continue
+                        if not event_id or event_id in eventos_procesados: continue
                         eventos_procesados.add(event_id)
 
                         try:
@@ -60,7 +61,6 @@ def analizar_partidos_baseball():
                             
                             valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"]
                             if status_type not in valid_statuses: continue
-
                             is_final = status_type in ["STATUS_FINAL", "STATUS_FULL_TIME"]
                             fecha_hora_col = convertir_hora_colombia(event.get("date", ""))
 
@@ -90,7 +90,6 @@ def analizar_partidos_baseball():
                             p_win_h = round(prob_home_win, 1)
                             p_win_a = round(100.0 - p_win_h, 1)
 
-                            valor_handicap = 1.5 # Run Line estándar en béisbol
                             handicap_str = f"{home_name} -1.5" if mu_diff > 0 else f"{away_name} -1.5"
 
                             ajuste_ofensivo = ((win_pct_h - 0.5) + (win_pct_a - 0.5)) * 3.0
@@ -108,20 +107,23 @@ def analizar_partidos_baseball():
 
                             if p_win_h >= 75.0:
                                 picks_altisimos.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Gana {home_name} (Moneyline)", "prob": p_win_h, "fecha": fecha_hora_col, "estado_pick": estado_win_h, "marcador": f"{home_score} - {away_score}"
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Gana {home_name}", "prob": p_win_h, "fecha": fecha_hora_col, "estado_pick": estado_win_h, "marcador": f"{home_score} - {away_score}"
                                 })
                             elif p_win_a >= 75.0:
                                 picks_altisimos.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Gana {away_name} (Moneyline)", "prob": p_win_a, "fecha": fecha_hora_col, "estado_pick": estado_win_a, "marcador": f"{home_score} - {away_score}"
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Gana {away_name}", "prob": p_win_a, "fecha": fecha_hora_col, "estado_pick": estado_win_a, "marcador": f"{home_score} - {away_score}"
                                 })
 
                             if p_over_alt >= 75.0:
                                 picks_altisimos.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Más de {linea_sugerida} Carreras", "prob": p_over_alt, "fecha": fecha_hora_col, "estado_pick": estado_over, "marcador": (f"{total_runs} Carreras" if is_final else f"{home_score} - {away_score}")
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], "mercado": f"Más de {linea_sugerida} Carreras", "prob": p_over_alt, "fecha": fecha_hora_col, "estado_pick": estado_over, "marcador": f"{total_runs} Carreras"
                                 })
 
                             picks_disponibles.append({
-                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, "fecha": fecha_hora_col, "is_final": is_final
+                                "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name, 
+                                "p_win_h": p_win_h, "p_win_a": p_win_a, "p_over": p_over_alt, "line": linea_sugerida, 
+                                "fecha": fecha_hora_col, "is_final": is_final,
+                                "estado_over": estado_over, "estado_win_h": estado_win_h, "estado_win_a": estado_win_a
                             })
 
                             favorito = home_name if p_win_h > 50 else away_name
@@ -157,16 +159,23 @@ def analizar_partidos_baseball():
     if len(picks_disponibles) >= 3:
         por_seguridad = sorted(picks_disponibles, key=lambda x: x["p_over"], reverse=True)
         por_ganador = sorted(picks_disponibles, key=lambda x: max(x["p_win_h"], x["p_win_a"]), reverse=True)
-        p1, p2, p3 = por_seguridad[0], por_seguridad[1] if len(por_seguridad) > 1 else por_seguridad[0], por_ganador[0]
+        p1, p2, p3 = por_seguridad[0], por_seguridad[1], por_ganador[0]
+
+        badge_p1 = " ✅" if p1["estado_over"] == "acertado" else (" ❌" if p1["estado_over"] == "fallado" else " ⏳")
+        badge_p2 = " ✅" if p2["estado_over"] == "acertado" else (" ❌" if p2["estado_over"] == "fallado" else " ⏳")
+        
+        ganador_p3 = p3["home"] if p3["p_win_h"] > p3["p_win_a"] else p3["away"]
+        est_p3 = p3["estado_win_h"] if p3["p_win_h"] > p3["p_win_a"] else p3["estado_win_a"]
+        badge_p3 = " ✅" if est_p3 == "acertado" else (" ❌" if est_p3 == "fallado" else " ⏳")
 
         resumen_parleys = (
             "🌟 **SELECCIÓN VIP BÉISBOL: DIAMANTE IA** 🌟\n\n"
             "🟢 **1. PARLEY SEGURO**\n"
-            f"• **{p1['partido']}** | Más de {p1['line']} Carreras (Prob: {p1['p_over']}%)\n"
-            f"• **{p2['partido']}** | Más de {p2['line']} Carreras (Prob: {p2['p_over']}%)\n\n"
+            f"• **{p1['partido']}** | Más de {p1['line']} Carreras (Prob: {p1['p_over']}%){badge_p1}\n"
+            f"• **{p2['partido']}** | Más de {p2['line']} Carreras (Prob: {p2['p_over']}%){badge_p2}\n\n"
             "🟡 **2. PARLEY MEDIO**\n"
-            f"• **{p3['partido']}** | Gana {p3['home'] if p3['p_win_h'] > p3['p_win_a'] else p3['away']} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%)\n"
+            f"• **{p3['partido']}** | Gana {ganador_p3} (Prob: {max(p3['p_win_h'], p3['p_win_a'])}%){badge_p3}\n"
         )
         analisis_lista.insert(0, {"tipo": "parley", "partido": "🔥 TICKET ESPECIAL MLB", "mensaje": resumen_parleys})
 
-    return {"partidos": analisis_lista, "picks_vip": picks_altisimos}
+    return {"partidos": analisis_lista, "picks_vip": picks_altisimos, "raw_picks": picks_disponibles}

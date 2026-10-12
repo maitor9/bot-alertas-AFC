@@ -6,9 +6,7 @@ import concurrent.futures
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
     {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
-    {"codigo": "mens-euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
     {"codigo": "eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
-    {"codigo": "mens-eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
     {"codigo": "esp.1", "nombre": "Liga Endesa (España)", "base_total": 164.5, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.0},
     {"codigo": "tur.1", "nombre": "BSL (Turquía)", "base_total": 164.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.2},
     {"codigo": "gre.1", "nombre": "A1 (Grecia)", "base_total": 156.0, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
@@ -63,11 +61,10 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
-# Función aislada para ser ejecutada en paralelo
 def procesar_api_basket(liga, fecha):
+    # Soporte para rutas de leagues específicas en ESPN
     url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga['codigo']}/scoreboard?dates={fecha}"
     try:
-        # Timeout estricto de 3.5s para no bloquear el hilo
         response = requests.get(url, timeout=3.5)
         if response.status_code == 200:
             return liga, response.json()
@@ -76,7 +73,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera (Motor Multihilo Activado - Anti Timeout)...", flush=True)
+    print("🏀 Escaneando cartelera Global de Basket (Con nombres de liga corregidos)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -87,17 +84,15 @@ def analizar_partidos_nba():
     manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
     fechas = [hoy_str, manana_str]
 
-    # Preparamos las 28 combinaciones de Ligas y Fechas
     tareas_url = [(liga, fecha) for liga in LIGAS_BASKET for fecha in fechas]
 
-    # LANZAMIENTO MULTIHILO: Escaneamos todo en menos de 4 segundos
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futuros = [executor.submit(procesar_api_basket, t[0], t[1]) for t in tareas_url]
         
         for futuro in concurrent.futures.as_completed(futuros):
             liga, data = futuro.result()
             
-            if not data: continue # Si falló o hizo timeout, pasamos a la siguiente
+            if not data: continue
             
             events = data.get("events", [])
             for event in events:
@@ -166,9 +161,9 @@ def analizar_partidos_nba():
                     oportunidades_alta_confianza = []
                     candidatos_grid = []
 
-                    # --- MOTORES DE INEFICIENCIA (+EV) DE BALONCESTO ---
+                    # --- MOTORES DE INEFICIENCIA (+EV) ---
                     if win_pct_a > win_pct_h and p_win_h >= 45.0:
-                        val_just = "Mercado infla visita. Localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
+                        val_just = "Mercado infla visita. Factor de localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Moneyline: Gana {home_name}", 
@@ -181,7 +176,7 @@ def analizar_partidos_nba():
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Under {linea_over_base} Pts", 
-                            "justificacion": "Choque de élite. Defensas de Playoffs aseguran un juego táctico.",
+                            "justificacion": "Choque de élite. Defensas tácticas dominan.",
                             "prob": 55.0, "cuota": calcular_cuotas_valor(55.0)
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
@@ -190,13 +185,12 @@ def analizar_partidos_nba():
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Over {linea_over_base - 3} Pts", 
-                            "justificacion": "Equipos en mala racha. Defensas rotas y ritmo rápido sin táctica.",
+                            "justificacion": "Equipos en mala racha. Transiciones rápidas y defensas frágiles.",
                             "prob": 58.0, "cuota": calcular_cuotas_valor(58.0)
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base - 3} Pts:** 58.0% | Cuota: *{calcular_cuotas_valor(58.0)}* ⏳ (Valor: Defensas rotas)")
 
-
-                    # --- MERCADOS SEGUROS CLÁSICOS ---
+                    # --- MERCADOS SEGUROS ---
                     def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
                         if prob_val >= umbral:
                             est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")

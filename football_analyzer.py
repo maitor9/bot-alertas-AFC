@@ -255,10 +255,8 @@ def analizar_partidos_futbol_prematch():
                                     cuota_str = calcular_cuotas(prob_val)
                                     badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
                                     oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                                    # Todos los que pasen se agregan a la lista del Grid para no dejar la pantalla vacía
                                     candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
-                            # Umbrales calibrados matemáticamente para asegurar resultados sin sacrificar calidad
                             evaluar_mercado_seguro("Doble Oportunidad (1X)", p_1x, home_score >= away_score, 70.0)
                             evaluar_mercado_seguro("Doble Oportunidad (X2)", p_x2, away_score >= home_score, 70.0)
                             evaluar_mercado_seguro("Over 1.5 Goles", p_over_15, total_goals > 1.5, 68.0)
@@ -269,17 +267,16 @@ def analizar_partidos_futbol_prematch():
                             if not oportunidades_alta_confianza:
                                 continue
 
-                            # POBLAR LA CUADRÍCULA (Grid) CON EL MEJOR MERCADO (Asegura que el partido aparezca)
+                            # POBLAR LA CUADRÍCULA (Grid) CON EL MEJOR MERCADO Y DOBLE MAPEO DE FECHA
                             if candidatos_grid:
                                 mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
                                 picks_disponibles.append({
                                     "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name,
-                                    "liga": liga_nombre, "fecha": fecha_hora_col, "is_final": is_final,
+                                    "liga": liga_nombre, "fecha": fecha_hora_col, "time": fecha_hora_col, "is_final": is_final,
                                     "prob": mejor_grid["prob"], "mercado": mejor_grid["mercado"],
                                     "estado_pick": mejor_grid["estado"]
                                 })
 
-                                # POBLAR EL VIP (Excluyendo Under 3.5 para no dar cuotas muy bajas)
                                 candidatos_vip = [m for m in candidatos_grid if "3.5" not in m["mercado"]]
                                 if candidatos_vip:
                                     mejor_vip = max(candidatos_vip, key=lambda x: x["prob"])

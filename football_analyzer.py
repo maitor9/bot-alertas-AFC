@@ -20,7 +20,6 @@ def calcular_cuotas(prob):
 def calcular_cuotas_valor(prob):
     try:
         if prob <= 1.0: prob = 1.0
-        # Menor margen para reflejar cuotas de mercado ineficientes
         decimal = round(100.0 / (prob * 1.02), 2)
         return f"{max(1.70, decimal)}"
     except:
@@ -87,7 +86,7 @@ def obtener_todas_las_ligas_futbol():
     ]
 
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera con Algoritmos de Ineficiencia de Mercado (+EV)...", flush=True)
+    print("⚽ Escaneando cartelera (Filtrando ruido y buscando valor)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -180,35 +179,18 @@ def analizar_partidos_futbol_prematch():
                             p_over_25 = round((1 - poisson(0, total_lambda) - poisson(1, total_lambda)) * 100, 1)
                             p_under_25 = round(100.0 - p_over_25, 1)
 
-                            # --- MOTORES DE INEFICIENCIA (+EV) ---
+                            p_home_ov_15 = round((1 - prob_0_h - prob_1_h) * 100, 1)
+                            p_away_ov_15 = round((1 - prob_0_a - prob_1_a) * 100, 1)
+                            p_win_to_nil_h = round((p_win_h / 100.0) * prob_0_a * 100, 1)
                             
-                            # 1. Falso Favorito / Hándicap Asiático a favor del Underdog
-                            if form_h >= 0.65 and form_a <= 0.40 and p_win_h < 45.0:
-                                prob_ev = round(p_1x, 1)
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
-                                    "mercado": f"{home_name} Hándicap Asiático +1.0 o (1X)", 
-                                    "justificacion": "Mercado infla a la visita por 'nombre'. Local llega en gran estado de forma y descansado.",
-                                    "prob": prob_ev, "cuota": calcular_cuotas_valor(prob_ev - 15.0) # Se ajusta probabilidad para simular cuota de valor
-                                })
-
-                            # 2. BTTS Oculto en Ligas Menores / Ligas Under
-                            if liga_under and lambda_h > 1.3 and lambda_a > 1.15 and p_btts >= 50.0:
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
-                                    "mercado": "Ambos Anotan: SÍ", 
-                                    "justificacion": "Liga de tendencia 'Under', pero ambos equipos tienen alta producción ofensiva reciente. Cuota con gran valor.",
-                                    "prob": p_btts, "cuota": calcular_cuotas_valor(p_btts)
-                                })
-                            
-                            # 3. Under Táctico (Derbis o choques de miedo)
-                            if es_caliente and total_lambda < 2.3 and p_under_25 >= 55.0:
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
-                                    "mercado": "Menos de 2.5 Goles", 
-                                    "justificacion": "Derbi pasional. La fricción y el miedo a perder primarán sobre el juego abierto. Tendencia táctica.",
-                                    "prob": p_under_25, "cuota": calcular_cuotas_valor(p_under_25)
-                                })
+                            p_roja = 18.0
+                            motivo_roja = ""
+                            if es_caliente:
+                                p_roja += 22.0
+                                motivo_roja = "Derbi"
+                            if liga_sudamericana:
+                                p_roja += 12.0
+                                motivo_roja = "Liga Friccionada" if not motivo_roja else "Derbi Sudamericano"
 
                             try:
                                 home_score = int(home.get("score", "0"))
@@ -222,6 +204,60 @@ def analizar_partidos_futbol_prematch():
                             oportunidades_alta_confianza = []
                             candidatos_seguros = []
 
+                            # --- EXTRACCIÓN DE PICKS DE VALOR (+EV) ---
+                            if p_roja >= 40.0:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": f"Tarjeta Roja: Sí", "justificacion": motivo_roja,
+                                    "prob": p_roja, "cuota": calcular_cuotas_valor(p_roja)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **Roja (Sí):** {p_roja}% | Cuota: *{calcular_cuotas_valor(p_roja)}* ⏳ (Valor: {motivo_roja})")
+                            
+                            if form_h >= 0.65 and form_a <= 0.40 and p_win_h < 45.0:
+                                prob_ev = round(p_1x, 1)
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": f"{home_name} Hándicap Asiático +1.0 o (1X)", 
+                                    "justificacion": "Mercado infla a la visita. Local sólido.",
+                                    "prob": prob_ev, "cuota": calcular_cuotas_valor(prob_ev - 15.0) 
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **{home_name} Hándicap +1.0 (1X):** {prob_ev}% | Cuota: *{calcular_cuotas_valor(prob_ev - 15.0)}* ⏳ (Valor: Falso Favorito)")
+
+                            if liga_under and lambda_h > 1.3 and lambda_a > 1.15 and p_btts >= 50.0:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": "Ambos Anotan: SÍ", 
+                                    "justificacion": "Liga Under pero alta producción actual.",
+                                    "prob": p_btts, "cuota": calcular_cuotas_valor(p_btts)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **Ambos Anotan (Sí):** {p_btts}% | Cuota: *{calcular_cuotas_valor(p_btts)}* ⏳ (Valor: Tendencia oculta)")
+                            
+                            if es_caliente and total_lambda < 2.3 and p_under_25 >= 55.0:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": "Menos de 2.5 Goles", 
+                                    "justificacion": "Derbi pasional y cerrado. Miedo a perder.",
+                                    "prob": p_under_25, "cuota": calcular_cuotas_valor(p_under_25)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **Under 2.5 Goles:** {p_under_25}% | Cuota: *{calcular_cuotas_valor(p_under_25)}* ⏳ (Valor: Under táctico)")
+
+                            if p_home_ov_15 >= 50.0 and p_home_ov_15 < 75.0 and lambda_h >= 1.6:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": f"{home_name} - Más de 1.5 Goles", "justificacion": "Superioridad ofensiva local",
+                                    "prob": p_home_ov_15, "cuota": calcular_cuotas_valor(p_home_ov_15)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **{home_name} Over 1.5:** {p_home_ov_15}% | Cuota: *{calcular_cuotas_valor(p_home_ov_15)}* ⏳ (Valor: Ofensiva fuerte)")
+                                
+                            if p_win_to_nil_h >= 35.0 and p_win_to_nil_h < 60.0:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": f"{home_name} Gana a Cero (Win to Nil)", "justificacion": "Defensa local sólida",
+                                    "prob": p_win_to_nil_h, "cuota": calcular_cuotas_valor(p_win_to_nil_h)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **{home_name} Gana a Cero:** {p_win_to_nil_h}% | Cuota: *{calcular_cuotas_valor(p_win_to_nil_h)}* ⏳ (Valor: Defensa de hierro)")
+
+                            # --- MERCADOS SEGUROS CLÁSICOS ---
                             def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido):
                                 umbral = 75.0 if "Doble Oportunidad" in nombre_mercado else 65.0
                                 if prob_val >= umbral:
@@ -236,6 +272,10 @@ def analizar_partidos_futbol_prematch():
                             evaluar_mercado_seguro("Doble Oportunidad (X2)", p_x2, away_score >= home_score)
                             evaluar_mercado_seguro("Over 1.5 Goles", p_over_15, total_goals > 1.5)
                             evaluar_mercado_seguro("Ambos Marcan (BTTS)", p_btts, btts_real)
+
+                            # FILTRO DE RUIDO ABSOLUTO: Si no hay oportunidades seguras ni de valor, saltamos el partido
+                            if not oportunidades_alta_confianza:
+                                continue
 
                             if candidatos_seguros:
                                 mejor_seguro = max(candidatos_seguros, key=lambda x: x["prob"])
@@ -254,7 +294,7 @@ def analizar_partidos_futbol_prematch():
                                 })
 
                             marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score}\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
-                            str_oportunidades = "\n".join(oportunidades_alta_confianza) if oportunidades_alta_confianza else "• Partido de pronóstico reservado."
+                            str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
                             mensaje = (
                                 f"⚽ **ANÁLISIS SABERMÉTRICO PROFESIONAL**\n"
@@ -263,7 +303,7 @@ def analizar_partidos_futbol_prematch():
                                 f"🏆 *{liga_nombre}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                                 f"{marcador_str}\n"
-                                f"🎯 **Oportunidades Estadísticas (> 65%):**\n"
+                                f"🎯 **Oportunidades Estadísticas:**\n"
                                 f"{str_oportunidades}"
                             )
 
@@ -292,7 +332,7 @@ def analizar_partidos_futbol_prematch():
         
     if len(picks_vip_valor) >= 1:
         resumen_parleys += "💎 **2. PARLEY ALTO VALOR (+EV / Contexto & Estadística)**\n"
-        for i, p_val in enumerate(picks_vip_valor[:2]): # Muestra hasta 2 picks de valor
+        for i, p_val in enumerate(picks_vip_valor[:2]):
             resumen_parleys += (
                 f"• **{p_val['partido']}** | {p_val['mercado']}\n"
                 f"  ↳ *Contexto de Valor:* {p_val['justificacion']} (Prob Real: {p_val['prob']}% | Cuota Aprox: {p_val['cuota']}) ⏳\n"

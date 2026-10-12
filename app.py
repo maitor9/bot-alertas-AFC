@@ -42,12 +42,40 @@ def api_alertas():
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():
     resultado = analizar_partidos_futbol_prematch()
-    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
+    
+    # Blindaje de seguridad para asegurar que las tarjetas lean la fecha sin "undefined"
+    for item in resultado.get("raw_picks", []):
+        f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
+        item["fecha"] = f_val
+        item["time"] = f_val
+        item["datetime"] = f_val
+
+    return jsonify({
+        "status": "success", 
+        "total_analizados": len(resultado["partidos"]), 
+        "data": resultado["partidos"], 
+        "picks_vip": resultado["picks_vip"],
+        "raw_picks": resultado.get("raw_picks", [])
+    })
 
 @app.route("/api/nba_prematch", methods=["GET"])
 def api_nba_prematch():
     resultado = analizar_partidos_nba()
-    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
+    
+    # Blindaje de seguridad para asegurar que las tarjetas lean la fecha sin "undefined"
+    for item in resultado.get("raw_picks", []):
+        f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
+        item["fecha"] = f_val
+        item["time"] = f_val
+        item["datetime"] = f_val
+
+    return jsonify({
+        "status": "success", 
+        "total_analizados": len(resultado["partidos"]), 
+        "data": resultado["partidos"], 
+        "picks_vip": resultado["picks_vip"],
+        "raw_picks": resultado.get("raw_picks", [])
+    })
 
 @app.route("/api/baseball_prematch", methods=["GET"])
 def api_baseball_prematch():
@@ -76,7 +104,6 @@ def api_motor_prematch():
 
 @app.route("/api/mega_parley", methods=["GET"])
 def api_mega_parley():
-    # Extrae los 2 mejores picks VIP de TODOS los deportes
     f = analizar_partidos_futbol_prematch().get("picks_vip", [])[:2]
     b = analizar_partidos_nba().get("picks_vip", [])[:2]
     mlb = analizar_partidos_baseball().get("picks_vip", [])[:2]
@@ -86,7 +113,6 @@ def api_mega_parley():
     motor = analizar_cartelera_motor().get("picks_vip", [])[:2]
 
     mega_list = []
-    # Agrupamos todos los picks en una sola lista
     for p in (f + b + mlb + nfl + nhl + ufc + motor):
         status_symbol = " ✅" if p.get("estado_pick") == "acertado" else (" ❌" if p.get("estado_pick") == "fallado" else " ⏳")
         mega_list.append({
@@ -101,4 +127,4 @@ def api_mega_parley():
     return jsonify({"status": "success", "mega_ticket": mega_list})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=10000, debug=True)

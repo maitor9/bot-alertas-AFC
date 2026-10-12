@@ -6,7 +6,10 @@ import concurrent.futures
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
     {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
+    {"codigo": "mens-euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
     {"codigo": "eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
+    {"codigo": "mens-eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
+    {"codigo": "fiba.champions", "nombre": "FIBA Champions League", "base_total": 158.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.2},
     {"codigo": "esp.1", "nombre": "Liga Endesa (España)", "base_total": 164.5, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.0},
     {"codigo": "tur.1", "nombre": "BSL (Turquía)", "base_total": 164.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.2},
     {"codigo": "gre.1", "nombre": "A1 (Grecia)", "base_total": 156.0, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
@@ -62,18 +65,25 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def procesar_api_basket(liga, fecha):
-    # Soporte para rutas de leagues específicas en ESPN
     url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga['codigo']}/scoreboard?dates={fecha}"
     try:
         response = requests.get(url, timeout=3.5)
         if response.status_code == 200:
-            return liga, response.json()
+            data = response.json()
+            # Validación robusta de nombre de liga desde la respuesta si existe
+            leagues = data.get("leagues", [])
+            if leagues:
+                api_nombre = leagues[0].get("name") or leagues[0].get("shortName")
+                if api_nombre and len(api_nombre) > 3:
+                    liga = liga.copy()
+                    liga["nombre"] = api_nombre
+            return liga, data
     except:
         pass
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Global de Basket (Con nombres de liga corregidos)...", flush=True)
+    print("🏀 Escaneando cartelera Global de Basket (Conector Resiliente Europa & NBA)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -86,7 +96,7 @@ def analizar_partidos_nba():
 
     tareas_url = [(liga, fecha) for liga in LIGAS_BASKET for fecha in fechas]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as executor:
         futuros = [executor.submit(procesar_api_basket, t[0], t[1]) for t in tareas_url]
         
         for futuro in concurrent.futures.as_completed(futuros):
@@ -112,8 +122,8 @@ def analizar_partidos_nba():
                     teams = competition.get("competitors", [])
                     if len(teams) < 2: continue
 
-                    home = next((t for t in teams if t.get("homeAway") == "home"), teams[0])
-                    away = next((t for t in teams if t.get("homeAway") == "away"), teams[1])
+                    home = next((t for t in teams if t.get("homeAway"] == "home"), teams[0])
+                    away = next((t for t in teams if t.get("homeAway"] == "away"), teams[1])
 
                     home_name = home.get("team", {}).get("displayName", "Local")
                     away_name = away.get("team", {}).get("displayName", "Visita")

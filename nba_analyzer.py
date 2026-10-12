@@ -206,9 +206,15 @@ def analizar_partidos_nba():
                     if candidatos_grid:
                         mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
                         picks_disponibles.append({
-                            "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name,
-                            "liga": liga["nombre"], "fecha": fecha_hora_col, "is_final": is_final,
-                            "prob": mejor_grid["prob"], "mercado": mejor_grid["mercado"],
+                            "partido": f"{home_name} vs {away_name}", 
+                            "home": home_name, 
+                            "away": away_name,
+                            "liga": liga["nombre"], 
+                            "fecha": fecha_hora_col, 
+                            "time": fecha_hora_col,       # Respaldo contra el error "undefined" en la UI
+                            "is_final": is_final,
+                            "prob": mejor_grid["prob"], 
+                            "mercado": mejor_grid["mercado"],
                             "estado_pick": mejor_grid["estado"]
                         })
 

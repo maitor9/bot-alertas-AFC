@@ -2,13 +2,20 @@ from datetime import datetime, timedelta
 import math
 import requests
 
+# Matriz Expandida: Incluye variaciones de slugs para garantizar la captura de FIBA/Europa
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
+    {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
+    {"codigo": "mens-euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
+    {"codigo": "eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
+    {"codigo": "mens-eurocup", "nombre": "Eurocup", "base_total": 162.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 3.0},
     {"codigo": "esp.1", "nombre": "Liga Endesa (España)", "base_total": 164.5, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.0},
-    {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.0},
-    {"codigo": "ita.1", "nombre": "Lega Basket Serie A (Italia)", "base_total": 162.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 2.8},
+    {"codigo": "tur.1", "nombre": "BSL (Turquía)", "base_total": 164.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.2},
+    {"codigo": "gre.1", "nombre": "A1 (Grecia)", "base_total": 156.0, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
+    {"codigo": "ita.1", "nombre": "Lega Basket (Italia)", "base_total": 162.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 2.8},
     {"codigo": "ger.1", "nombre": "BBL (Alemania)", "base_total": 166.0, "sd_margin": 11.5, "sd_total": 12.5, "home_adv": 2.5},
     {"codigo": "fra.1", "nombre": "LNB Pro A (Francia)", "base_total": 158.0, "sd_margin": 10.5, "sd_total": 11.5, "home_adv": 2.8},
+    {"codigo": "aba.1", "nombre": "Liga Adriática", "base_total": 160.0, "sd_margin": 11.0, "sd_total": 12.0, "home_adv": 3.0},
     {"codigo": "wnba", "nombre": "WNBA", "base_total": 165.5, "sd_margin": 10.5, "sd_total": 12.0, "home_adv": 2.5},
     {"codigo": "mens-college-basketball", "nombre": "NCAA Masculino", "base_total": 145.5, "sd_margin": 11.5, "sd_total": 11.0, "home_adv": 3.5}
 ]
@@ -29,7 +36,7 @@ def calcular_cuotas_valor(prob):
     try:
         if prob <= 1.0: prob = 1.0
         decimal = round(100.0 / (prob * 1.02), 2)
-        return f"{max(1.75, decimal)}"
+        return f"{max(1.70, decimal)}"
     except:
         return "2.20"
 
@@ -38,12 +45,16 @@ def extraer_win_pct(team_data):
         records = team_data.get("records", [])
         if records:
             summary = records[0].get("summary", "0-0")
-            wins, losses = map(int, summary.split("-")[:2])
-            total = wins + losses
-            if total > 0: return wins / total
+            # Soporte robusto si ESPN entrega el récord de Euroliga de forma extraña
+            partes = summary.replace("W", "").replace("L", "").split("-")
+            if len(partes) >= 2:
+                wins = int(partes[0])
+                losses = int(partes[1])
+                total = wins + losses
+                if total > 0: return wins / total
     except Exception:
         pass
-    return 0.500
+    return 0.500 # Valor neutral para no descartar el partido si falta info en fase de grupos
 
 def convertir_hora_colombia(date_str):
     try:
@@ -54,7 +65,7 @@ def convertir_hora_colombia(date_str):
         return "📅 Próximamente"
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera de Baloncesto con Algoritmos de Valor (+EV)...", flush=True)
+    print("🏀 Escaneando cartelera de Baloncesto (Matriz Global FIBA & NBA +EV)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -146,12 +157,13 @@ def analizar_partidos_nba():
 
                             # --- MOTORES DE INEFICIENCIA (+EV) DE BALONCESTO ---
                             
-                            # 1. El Falso Favorito (Home Underdog con valor)
+                            # 1. El Falso Favorito (Home Underdog con valor / Factor Infierno FIBA)
                             if win_pct_a > win_pct_h and p_win_h >= 45.0:
+                                val_just = "Mercado infla visita. Localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
                                 picks_vip_valor.append({
                                     "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                                     "mercado": f"Moneyline: Gana {home_name}", 
-                                    "justificacion": "Mercado sobrevalora el récord visitante. Fuerte ventaja de localía.",
+                                    "justificacion": val_just,
                                     "prob": p_win_h, "cuota": calcular_cuotas_valor(p_win_h) 
                                 })
                                 oportunidades_alta_confianza.append(f"• 💎 **Gana {home_name} (ML):** {p_win_h}% | Cuota: *{calcular_cuotas_valor(p_win_h)}* ⏳ (Valor: Underdog Local)")
@@ -161,7 +173,7 @@ def analizar_partidos_nba():
                                 picks_vip_valor.append({
                                     "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                                     "mercado": f"Under {linea_over_base} Pts", 
-                                    "justificacion": "Choque de élite. El público espera puntos, la realidad dicta defensas de Playoffs.",
+                                    "justificacion": "Choque de élite. Defensas de Playoffs aseguran un juego táctico.",
                                     "prob": 55.0, "cuota": calcular_cuotas_valor(55.0)
                                 })
                                 oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
@@ -177,8 +189,8 @@ def analizar_partidos_nba():
                                 oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base - 3} Pts:** 58.0% | Cuota: *{calcular_cuotas_valor(58.0)}* ⏳ (Valor: Defensas rotas)")
 
 
-                            # --- MERCADOS SEGUROS CLÁSICOS (Líneas ajustadas) ---
-                            def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=68.0):
+                            # --- MERCADOS SEGUROS CLÁSICOS ---
+                            def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
                                 if prob_val >= umbral:
                                     est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
                                     cuota_str = calcular_cuotas(prob_val)
@@ -186,25 +198,21 @@ def analizar_partidos_nba():
                                     oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
                                     candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
-                            evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 72.0)
-                            evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 72.0)
+                            evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 70.0)
+                            evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 70.0)
                             
-                            # Spread seguro
                             spread_won = False
                             if is_final:
                                 if cover_estado == home_name: spread_won = (home_score + safe_spread_val) > away_score
                                 else: spread_won = (away_score + safe_spread_val) > home_score
-                            evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, 68.0)
+                            evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, 65.0)
                             
-                            # Totales seguros
-                            evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, 68.0)
-                            evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, 68.0)
+                            evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, 65.0)
+                            evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, 65.0)
 
-                            # FILTRO DE RUIDO ABSOLUTO
                             if not oportunidades_alta_confianza:
                                 continue
 
-                            # POBLAR LA CUADRÍCULA (Grid) CON EL MEJOR MERCADO
                             if candidatos_grid:
                                 mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
                                 picks_disponibles.append({
@@ -214,8 +222,7 @@ def analizar_partidos_nba():
                                     "estado_pick": mejor_grid["estado"]
                                 })
 
-                                # POBLAR EL VIP (Exigencia estricta del 75%)
-                                if mejor_grid["prob"] >= 75.0:
+                                if mejor_grid["prob"] >= 72.0:
                                     picks_vip_seguros.append({
                                         "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
                                         "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 

@@ -82,7 +82,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Global de Basket (Sintaxis validada)...", flush=True)
+    print("🏀 Escaneando cartelera Global de Basket (Con umbrales adaptados para Euroliga)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -121,7 +121,6 @@ def analizar_partidos_nba():
                     teams = competition.get("competitors", [])
                     if len(teams) < 2: continue
 
-                    # Corrección exacta del paréntesis en el buscador de local/visita
                     home = next((t for t in teams if t.get("homeAway") == "home"), teams[0])
                     away = next((t for t in teams if t.get("homeAway") == "away"), teams[1])
 
@@ -171,9 +170,13 @@ def analizar_partidos_nba():
                     oportunidades_alta_confianza = []
                     candidatos_grid = []
 
+                    # Umbral flexible para Europa (permite capturar partidos muy parejos)
+                    es_liga_europea = "Euro" in liga["nombre"] or "Endesa" in liga["nombre"] or "BSL" in liga["nombre"]
+                    umbral_dinamico = 58.0 if es_liga_europea else 65.0
+
                     # --- MOTORES DE INEFICIENCIA (+EV) ---
-                    if win_pct_a > win_pct_h and p_win_h >= 45.0:
-                        val_just = "Mercado infla visita. Factor de localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
+                    if win_pct_a > win_pct_h and p_win_h >= 42.0:
+                        val_just = "Mercado infla visita. Factor de localía hostil clave en Europa." if es_liga_europea else "Mercado sobrevalora el récord visitante."
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Moneyline: Gana {home_name}", 
@@ -182,44 +185,35 @@ def analizar_partidos_nba():
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Gana {home_name} (ML):** {p_win_h}% | Cuota: *{calcular_cuotas_valor(p_win_h)}* ⏳ (Valor: Underdog Local)")
 
-                    if win_pct_h > 0.65 and win_pct_a > 0.65 and p_under_safe >= 50.0:
+                    if p_under_safe >= 50.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Under {linea_over_base} Pts", 
-                            "justificacion": "Choque de élite. Defensas tácticas dominan.",
+                            "justificacion": "Alta exigencia táctica y posesiones largas en competiciones FIBA/Europa.",
                             "prob": 55.0, "cuota": calcular_cuotas_valor(55.0)
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
 
-                    if win_pct_h < 0.40 and win_pct_a < 0.40 and p_over_safe >= 50.0:
-                        picks_vip_valor.append({
-                            "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
-                            "mercado": f"Over {linea_over_base - 3} Pts", 
-                            "justificacion": "Equipos en mala racha. Transiciones rápidas y defensas frágiles.",
-                            "prob": 58.0, "cuota": calcular_cuotas_valor(58.0)
-                        })
-                        oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base - 3} Pts:** 58.0% | Cuota: *{calcular_cuotas_valor(58.0)}* ⏳ (Valor: Defensas rotas)")
-
-                    # --- MERCADOS SEGUROS ---
-                    def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
-                        if prob_val >= umbral:
+                    # --- MERCADOS SEGUROS (Con umbral adaptado) ---
+                    def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, base_umbral):
+                        if prob_val >= base_umbral:
                             est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
                             cuota_str = calcular_cuotas(prob_val)
                             badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
                             oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
                             candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
-                    evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 70.0)
-                    evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 70.0)
+                    evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, umbral_dinamico)
+                    evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, umbral_dinamico)
                     
                     spread_won = False
                     if is_final:
                         if cover_estado == home_name: spread_won = (home_score + safe_spread_val) > away_score
                         else: spread_won = (away_score + safe_spread_val) > home_score
-                    evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, 65.0)
+                    evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, umbral_dinamico)
                     
-                    evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, 65.0)
-                    evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, 65.0)
+                    evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, umbral_dinamico)
+                    evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, umbral_dinamico)
 
                     if not oportunidades_alta_confianza:
                         continue
@@ -233,7 +227,7 @@ def analizar_partidos_nba():
                             "estado_pick": mejor_grid["estado"]
                         })
 
-                        if mejor_grid["prob"] >= 72.0:
+                        if mejor_grid["prob"] >= (65.0 if es_liga_europea else 72.0):
                             picks_vip_seguros.append({
                                 "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
                                 "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 

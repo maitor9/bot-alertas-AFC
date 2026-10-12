@@ -70,7 +70,6 @@ def procesar_api_basket(liga, fecha):
         response = requests.get(url, timeout=3.5)
         if response.status_code == 200:
             data = response.json()
-            # Validación robusta de nombre de liga desde la respuesta si existe
             leagues = data.get("leagues", [])
             if leagues:
                 api_nombre = leagues[0].get("name") or leagues[0].get("shortName")
@@ -83,7 +82,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Global de Basket (Conector Resiliente Europa & NBA)...", flush=True)
+    print("🏀 Escaneando cartelera Global de Basket (Sintaxis validada)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -122,8 +121,9 @@ def analizar_partidos_nba():
                     teams = competition.get("competitors", [])
                     if len(teams) < 2: continue
 
-                    home = next((t for t in teams if t.get("homeAway"] == "home"), teams[0])
-                    away = next((t for t in teams if t.get("homeAway"] == "away"), teams[1])
+                    # Corrección exacta del paréntesis en el buscador de local/visita
+                    home = next((t for t in teams if t.get("homeAway") == "home"), teams[0])
+                    away = next((t for t in teams if t.get("homeAway") == "away"), teams[1])
 
                     home_name = home.get("team", {}).get("displayName", "Local")
                     away_name = away.get("team", {}).get("displayName", "Visita")

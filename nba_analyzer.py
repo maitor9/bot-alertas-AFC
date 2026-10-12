@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import math
 import requests
+import concurrent.futures
 
-# Matriz Expandida: Incluye variaciones de slugs para garantizar la captura de FIBA/Europa
 LIGAS_BASKET = [
     {"codigo": "nba", "nombre": "NBA", "base_total": 225.5, "sd_margin": 12.5, "sd_total": 15.0, "home_adv": 3.0},
     {"codigo": "euroleague", "nombre": "Euroliga", "base_total": 160.5, "sd_margin": 10.0, "sd_total": 11.0, "home_adv": 3.5},
@@ -36,7 +36,7 @@ def calcular_cuotas_valor(prob):
     try:
         if prob <= 1.0: prob = 1.0
         decimal = round(100.0 / (prob * 1.02), 2)
-        return f"{max(1.70, decimal)}"
+        return f"{max(1.75, decimal)}"
     except:
         return "2.20"
 
@@ -45,7 +45,6 @@ def extraer_win_pct(team_data):
         records = team_data.get("records", [])
         if records:
             summary = records[0].get("summary", "0-0")
-            # Soporte robusto si ESPN entrega el récord de Euroliga de forma extraña
             partes = summary.replace("W", "").replace("L", "").split("-")
             if len(partes) >= 2:
                 wins = int(partes[0])
@@ -54,7 +53,7 @@ def extraer_win_pct(team_data):
                 if total > 0: return wins / total
     except Exception:
         pass
-    return 0.500 # Valor neutral para no descartar el partido si falta info en fase de grupos
+    return 0.500 
 
 def convertir_hora_colombia(date_str):
     try:
@@ -64,8 +63,20 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
+# Función aislada para ser ejecutada en paralelo
+def procesar_api_basket(liga, fecha):
+    url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga['codigo']}/scoreboard?dates={fecha}"
+    try:
+        # Timeout estricto de 3.5s para no bloquear el hilo
+        response = requests.get(url, timeout=3.5)
+        if response.status_code == 200:
+            return liga, response.json()
+    except:
+        pass
+    return liga, None
+
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera de Baloncesto (Matriz Global FIBA & NBA +EV)...", flush=True)
+    print("🏀 Escaneando cartelera (Motor Multihilo Activado - Anti Timeout)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -76,177 +87,172 @@ def analizar_partidos_nba():
     manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
     fechas = [hoy_str, manana_str]
 
-    for liga in LIGAS_BASKET:
-        for fecha in fechas:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga['codigo']}/scoreboard?dates={fecha}"
-            try:
-                response = requests.get(url, timeout=2.5)
-                if response.status_code == 200:
-                    data = response.json()
-                    events = data.get("events", [])
+    # Preparamos las 28 combinaciones de Ligas y Fechas
+    tareas_url = [(liga, fecha) for liga in LIGAS_BASKET for fecha in fechas]
 
-                    for event in events:
-                        event_id = event.get("id")
-                        if not event_id or event_id in eventos_procesados: continue
-                        eventos_procesados.add(event_id)
+    # LANZAMIENTO MULTIHILO: Escaneamos todo en menos de 4 segundos
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futuros = [executor.submit(procesar_api_basket, t[0], t[1]) for t in tareas_url]
+        
+        for futuro in concurrent.futures.as_completed(futuros):
+            liga, data = futuro.result()
+            
+            if not data: continue # Si falló o hizo timeout, pasamos a la siguiente
+            
+            events = data.get("events", [])
+            for event in events:
+                event_id = event.get("id")
+                if not event_id or event_id in eventos_procesados: continue
+                eventos_procesados.add(event_id)
 
-                        try:
-                            competition = event.get("competitions", [{}])[0]
-                            status_type = competition.get("status", {}).get("type", {}).get("name", "")
-                            
-                            valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"]
-                            if status_type not in valid_statuses: continue
-                            is_final = status_type in ["STATUS_FINAL", "STATUS_FULL_TIME"]
-                            fecha_hora_col = convertir_hora_colombia(event.get("date", ""))
+                try:
+                    competition = event.get("competitions", [{}])[0]
+                    status_type = competition.get("status", {}).get("type", {}).get("name", "")
+                    
+                    valid_statuses = ["STATUS_SCHEDULED", "STATUS_PRE", "STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"]
+                    if status_type not in valid_statuses: continue
+                    is_final = status_type in ["STATUS_FINAL", "STATUS_FULL_TIME"]
+                    fecha_hora_col = convertir_hora_colombia(event.get("date", ""))
 
-                            teams = competition.get("competitors", [])
-                            if len(teams) < 2: continue
+                    teams = competition.get("competitors", [])
+                    if len(teams) < 2: continue
 
-                            home = next((t for t in teams if t.get("homeAway") == "home"), teams[0])
-                            away = next((t for t in teams if t.get("homeAway") == "away"), teams[1])
+                    home = next((t for t in teams if t.get("homeAway") == "home"), teams[0])
+                    away = next((t for t in teams if t.get("homeAway") == "away"), teams[1])
 
-                            home_name = home.get("team", {}).get("displayName", "Local")
-                            away_name = away.get("team", {}).get("displayName", "Visita")
-                            
-                            win_pct_h = extraer_win_pct(home)
-                            win_pct_a = extraer_win_pct(away)
+                    home_name = home.get("team", {}).get("displayName", "Local")
+                    away_name = away.get("team", {}).get("displayName", "Visita")
+                    
+                    win_pct_h = extraer_win_pct(home)
+                    win_pct_a = extraer_win_pct(away)
 
-                            # 1. Modelo Estadístico Puro (Línea de base)
-                            diff_pct = win_pct_h - win_pct_a 
-                            mu_diff = (diff_pct * 15.0) + liga["home_adv"]
-                            
-                            prob_home_win = (1.0 - normal_cdf(0, mu_diff, liga["sd_margin"])) * 100.0
-                            p_win_h = round(prob_home_win, 1)
-                            p_win_a = round(100.0 - p_win_h, 1)
+                    diff_pct = win_pct_h - win_pct_a 
+                    mu_diff = (diff_pct * 15.0) + liga["home_adv"]
+                    
+                    prob_home_win = (1.0 - normal_cdf(0, mu_diff, liga["sd_margin"])) * 100.0
+                    p_win_h = round(prob_home_win, 1)
+                    p_win_a = round(100.0 - p_win_h, 1)
 
-                            # Ajuste de totales según eficiencia
-                            ajuste_ofensivo = ((win_pct_h - 0.5) + (win_pct_a - 0.5)) * 18.0
-                            mu_total = round(liga["base_total"] + ajuste_ofensivo, 1)
-                            
-                            # Líneas base (Mercado proyectado)
-                            valor_handicap_base = round(abs(mu_diff) * 2.0) / 2.0
-                            linea_over_base = round(mu_total, 1)
-                            
-                            # Líneas Seguras (Para el VIP y Grid) - Movemos la línea a nuestro favor
-                            margen_seguro = 5.5
-                            safe_spread_val = max(1.0, valor_handicap_base - margen_seguro)
-                            
-                            if mu_diff > 0:
-                                p_spread_safe = round((1.0 - normal_cdf(safe_spread_val, mu_diff, liga["sd_margin"])) * 100.0, 1)
-                                safe_spread_str = f"{home_name} +{safe_spread_val}" if safe_spread_val < 0 else f"{home_name} -{safe_spread_val}"
-                                cover_estado = home_name
-                            else:
-                                p_spread_safe = round(normal_cdf(-safe_spread_val, mu_diff, liga["sd_margin"]) * 100.0, 1)
-                                safe_spread_str = f"{away_name} +{safe_spread_val}" if safe_spread_val < 0 else f"{away_name} -{safe_spread_val}"
-                                cover_estado = away_name
+                    ajuste_ofensivo = ((win_pct_h - 0.5) + (win_pct_a - 0.5)) * 18.0
+                    mu_total = round(liga["base_total"] + ajuste_ofensivo, 1)
+                    
+                    valor_handicap_base = round(abs(mu_diff) * 2.0) / 2.0
+                    linea_over_base = round(mu_total, 1)
+                    
+                    margen_seguro = 5.5
+                    safe_spread_val = max(1.0, valor_handicap_base - margen_seguro)
+                    
+                    if mu_diff > 0:
+                        p_spread_safe = round((1.0 - normal_cdf(safe_spread_val, mu_diff, liga["sd_margin"])) * 100.0, 1)
+                        safe_spread_str = f"{home_name} +{safe_spread_val}" if safe_spread_val < 0 else f"{home_name} -{safe_spread_val}"
+                        cover_estado = home_name
+                    else:
+                        p_spread_safe = round(normal_cdf(-safe_spread_val, mu_diff, liga["sd_margin"]) * 100.0, 1)
+                        safe_spread_str = f"{away_name} +{safe_spread_val}" if safe_spread_val < 0 else f"{away_name} -{safe_spread_val}"
+                        cover_estado = away_name
 
-                            linea_over_safe = round(mu_total - 6.5, 1)
-                            linea_under_safe = round(mu_total + 6.5, 1)
-                            p_over_safe = round((1.0 - normal_cdf(linea_over_safe, mu_total, liga["sd_total"])) * 100.0, 1)
-                            p_under_safe = round(normal_cdf(linea_under_safe, mu_total, liga["sd_total"]) * 100.0, 1)
+                    linea_over_safe = round(mu_total - 6.5, 1)
+                    linea_under_safe = round(mu_total + 6.5, 1)
+                    p_over_safe = round((1.0 - normal_cdf(linea_over_safe, mu_total, liga["sd_total"])) * 100.0, 1)
+                    p_under_safe = round(normal_cdf(linea_under_safe, mu_total, liga["sd_total"]) * 100.0, 1)
 
-                            try:
-                                home_score = int(home.get("score", "0"))
-                                away_score = int(away.get("score", "0"))
-                            except ValueError:
-                                home_score, away_score = 0, 0
-                            total_points = home_score + away_score
+                    try:
+                        home_score = int(home.get("score", "0"))
+                        away_score = int(away.get("score", "0"))
+                    except ValueError:
+                        home_score, away_score = 0, 0
+                    total_points = home_score + away_score
 
-                            oportunidades_alta_confianza = []
-                            candidatos_grid = []
+                    oportunidades_alta_confianza = []
+                    candidatos_grid = []
 
-                            # --- MOTORES DE INEFICIENCIA (+EV) DE BALONCESTO ---
-                            
-                            # 1. El Falso Favorito (Home Underdog con valor / Factor Infierno FIBA)
-                            if win_pct_a > win_pct_h and p_win_h >= 45.0:
-                                val_just = "Mercado infla visita. Localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
-                                    "mercado": f"Moneyline: Gana {home_name}", 
-                                    "justificacion": val_just,
-                                    "prob": p_win_h, "cuota": calcular_cuotas_valor(p_win_h) 
-                                })
-                                oportunidades_alta_confianza.append(f"• 💎 **Gana {home_name} (ML):** {p_win_h}% | Cuota: *{calcular_cuotas_valor(p_win_h)}* ⏳ (Valor: Underdog Local)")
+                    # --- MOTORES DE INEFICIENCIA (+EV) DE BALONCESTO ---
+                    if win_pct_a > win_pct_h and p_win_h >= 45.0:
+                        val_just = "Mercado infla visita. Localía hostil clave." if "Euro" in liga["nombre"] else "Mercado sobrevalora el récord visitante."
+                        picks_vip_valor.append({
+                            "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
+                            "mercado": f"Moneyline: Gana {home_name}", 
+                            "justificacion": val_just,
+                            "prob": p_win_h, "cuota": calcular_cuotas_valor(p_win_h) 
+                        })
+                        oportunidades_alta_confianza.append(f"• 💎 **Gana {home_name} (ML):** {p_win_h}% | Cuota: *{calcular_cuotas_valor(p_win_h)}* ⏳ (Valor: Underdog Local)")
 
-                            # 2. El Under de Élite (Choque de Playoffs táctico)
-                            if win_pct_h > 0.65 and win_pct_a > 0.65 and p_under_safe >= 50.0:
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
-                                    "mercado": f"Under {linea_over_base} Pts", 
-                                    "justificacion": "Choque de élite. Defensas de Playoffs aseguran un juego táctico.",
-                                    "prob": 55.0, "cuota": calcular_cuotas_valor(55.0)
-                                })
-                                oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
+                    if win_pct_h > 0.65 and win_pct_a > 0.65 and p_under_safe >= 50.0:
+                        picks_vip_valor.append({
+                            "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
+                            "mercado": f"Under {linea_over_base} Pts", 
+                            "justificacion": "Choque de élite. Defensas de Playoffs aseguran un juego táctico.",
+                            "prob": 55.0, "cuota": calcular_cuotas_valor(55.0)
+                        })
+                        oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
 
-                            # 3. El Over de los Desesperados (Equipos malos, ritmo rápido)
-                            if win_pct_h < 0.40 and win_pct_a < 0.40 and p_over_safe >= 50.0:
-                                picks_vip_valor.append({
-                                    "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
-                                    "mercado": f"Over {linea_over_base - 3} Pts", 
-                                    "justificacion": "Equipos en mala racha. Defensas rotas y ritmo rápido sin táctica.",
-                                    "prob": 58.0, "cuota": calcular_cuotas_valor(58.0)
-                                })
-                                oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base - 3} Pts:** 58.0% | Cuota: *{calcular_cuotas_valor(58.0)}* ⏳ (Valor: Defensas rotas)")
+                    if win_pct_h < 0.40 and win_pct_a < 0.40 and p_over_safe >= 50.0:
+                        picks_vip_valor.append({
+                            "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
+                            "mercado": f"Over {linea_over_base - 3} Pts", 
+                            "justificacion": "Equipos en mala racha. Defensas rotas y ritmo rápido sin táctica.",
+                            "prob": 58.0, "cuota": calcular_cuotas_valor(58.0)
+                        })
+                        oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base - 3} Pts:** 58.0% | Cuota: *{calcular_cuotas_valor(58.0)}* ⏳ (Valor: Defensas rotas)")
 
 
-                            # --- MERCADOS SEGUROS CLÁSICOS ---
-                            def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
-                                if prob_val >= umbral:
-                                    est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
-                                    cuota_str = calcular_cuotas(prob_val)
-                                    badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
-                                    oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                                    candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
+                    # --- MERCADOS SEGUROS CLÁSICOS ---
+                    def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
+                        if prob_val >= umbral:
+                            est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
+                            cuota_str = calcular_cuotas(prob_val)
+                            badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
+                            oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
+                            candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
-                            evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 70.0)
-                            evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 70.0)
-                            
-                            spread_won = False
-                            if is_final:
-                                if cover_estado == home_name: spread_won = (home_score + safe_spread_val) > away_score
-                                else: spread_won = (away_score + safe_spread_val) > home_score
-                            evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, 65.0)
-                            
-                            evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, 65.0)
-                            evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, 65.0)
+                    evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 70.0)
+                    evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 70.0)
+                    
+                    spread_won = False
+                    if is_final:
+                        if cover_estado == home_name: spread_won = (home_score + safe_spread_val) > away_score
+                        else: spread_won = (away_score + safe_spread_val) > home_score
+                    evaluar_mercado_seguro(f"Hándicap {safe_spread_str}", p_spread_safe, spread_won, 65.0)
+                    
+                    evaluar_mercado_seguro(f"Over {linea_over_safe} Pts", p_over_safe, total_points > linea_over_safe, 65.0)
+                    evaluar_mercado_seguro(f"Under {linea_under_safe} Pts", p_under_safe, total_points < linea_under_safe, 65.0)
 
-                            if not oportunidades_alta_confianza:
-                                continue
+                    if not oportunidades_alta_confianza:
+                        continue
 
-                            if candidatos_grid:
-                                mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
-                                picks_disponibles.append({
-                                    "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name,
-                                    "liga": liga["nombre"], "fecha": fecha_hora_col, "is_final": is_final,
-                                    "prob": mejor_grid["prob"], "mercado": mejor_grid["mercado"],
-                                    "estado_pick": mejor_grid["estado"]
-                                })
+                    if candidatos_grid:
+                        mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
+                        picks_disponibles.append({
+                            "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name,
+                            "liga": liga["nombre"], "fecha": fecha_hora_col, "is_final": is_final,
+                            "prob": mejor_grid["prob"], "mercado": mejor_grid["mercado"],
+                            "estado_pick": mejor_grid["estado"]
+                        })
 
-                                if mejor_grid["prob"] >= 72.0:
-                                    picks_vip_seguros.append({
-                                        "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
-                                        "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 
-                                        "prob": mejor_grid["prob"], "estado_pick": mejor_grid["estado"]
-                                    })
+                        if mejor_grid["prob"] >= 72.0:
+                            picks_vip_seguros.append({
+                                "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
+                                "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 
+                                "prob": mejor_grid["prob"], "estado_pick": mejor_grid["estado"]
+                            })
 
-                            marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score} (Total: {total_points})\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
-                            str_oportunidades = "\n".join(oportunidades_alta_confianza)
+                    marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score} (Total: {total_points})\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
+                    str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
-                            mensaje = (
-                                f"🏀 **ANÁLISIS SABERMÉTRICO BASKET**\n"
-                                f"🏟 **{home_name} vs. {away_name}**\n"
-                                f"🏆 *{liga['nombre']}*\n"
-                                f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
-                                f"{marcador_str}\n"
-                                f"🎯 **Oportunidades Estadísticas de Valor:**\n"
-                                f"{str_oportunidades}"
-                            )
+                    mensaje = (
+                        f"🏀 **ANÁLISIS SABERMÉTRICO BASKET**\n"
+                        f"🏟 **{home_name} vs. {away_name}**\n"
+                        f"🏆 *{liga['nombre']}*\n"
+                        f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
+                        f"{marcador_str}\n"
+                        f"🎯 **Oportunidades Estadísticas de Valor:**\n"
+                        f"{str_oportunidades}"
+                    )
 
-                            analisis_lista.append({"tipo": "partido", "partido": f"{home_name} vs {away_name}", "mensaje": mensaje, "is_final": is_final})
-                        except Exception:
-                            continue
-            except Exception:
-                continue
+                    analisis_lista.append({"tipo": "partido", "partido": f"{home_name} vs {away_name}", "mensaje": mensaje, "is_final": is_final})
+                except Exception:
+                    continue
+            
 
     analisis_lista = sorted(analisis_lista, key=lambda x: x.get("is_final", False))
     picks_vip_seguros = sorted(picks_vip_seguros, key=lambda x: x["prob"], reverse=True)

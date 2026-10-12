@@ -70,19 +70,13 @@ def procesar_api_basket(liga, fecha):
         response = requests.get(url, timeout=3.5)
         if response.status_code == 200:
             data = response.json()
-            leagues = data.get("leagues", [])
-            if leagues:
-                api_nombre = leagues[0].get("name") or leagues[0].get("shortName")
-                if api_nombre and len(api_nombre) > 3:
-                    liga = liga.copy()
-                    liga["nombre"] = api_nombre
             return liga, data
     except:
         pass
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Global de Basket (Con umbrales adaptados para Euroliga)...", flush=True)
+    print("🏀 Escaneando cartelera Global de Basket (Mapeo Directo por URL)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -170,8 +164,7 @@ def analizar_partidos_nba():
                     oportunidades_alta_confianza = []
                     candidatos_grid = []
 
-                    # Umbral flexible para Europa (permite capturar partidos muy parejos)
-                    es_liga_europea = "Euro" in liga["nombre"] or "Endesa" in liga["nombre"] or "BSL" in liga["nombre"]
+                    es_liga_europea = "Euro" in liga["nombre"] or "Endesa" in liga["nombre"] or "BSL" in liga["nombre"] or "Champions" in liga["nombre"]
                     umbral_dinamico = 58.0 if es_liga_europea else 65.0
 
                     # --- MOTORES DE INEFICIENCIA (+EV) ---
@@ -194,7 +187,7 @@ def analizar_partidos_nba():
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Under {linea_over_base} Pts:** 55.0% | Cuota: *{calcular_cuotas_valor(55.0)}* ⏳ (Valor: Under Táctico)")
 
-                    # --- MERCADOS SEGUROS (Con umbral adaptado) ---
+                    # --- MERCADOS SEGUROS ---
                     def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, base_umbral):
                         if prob_val >= base_umbral:
                             est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
@@ -227,7 +220,7 @@ def analizar_partidos_nba():
                             "estado_pick": mejor_grid["estado"]
                         })
 
-                        if mejor_grid["prob"] >= (65.0 if es_liga_europea else 72.0):
+                        if mejor_grid["prob"] >= (62.0 if es_liga_europea else 72.0):
                             picks_vip_seguros.append({
                                 "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
                                 "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 

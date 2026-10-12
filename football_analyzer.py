@@ -39,7 +39,7 @@ def extraer_form_index(team_data):
                 return (wins + (draws * 0.5)) / total
     except Exception:
         pass
-    return 0.55 # Promedio base ligeramente optimista si la API oculta el récord
+    return 0.55 # Base de forma neutra optimista para garantizar cálculos si la API oculta datos
 
 def convertir_hora_colombia(date_str):
     try:
@@ -68,27 +68,18 @@ def es_partido_caliente(home_name, away_name):
             return True, "🔥⚡ ALTA TENSIÓN"
     return False, "⚽ Partido Oficial"
 
-def obtener_todas_las_ligas_futbol():
-    url = "https://site.api.espn.com/apis/site/v2/sports/soccer/leagues"
-    try:
-        res = requests.get(url, timeout=4)
-        if res.status_code == 200:
-            data = res.json()
-            slugs = []
-            for league in data.get("leagues", []):
-                slug = league.get("slug") or league.get("abbreviation")
-                if slug: slugs.append(slug.lower())
-            if slugs: return list(set(slugs))
-    except Exception:
-        pass
-    # Respaldo robusto si el endpoint falla
+def obtener_ligas_robustas():
+    # Lista estática definitiva para evitar Timeouts en Render y cubrir Fechas FIFA
     return [
-        "eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "uefa.champions", "uefa.europa",
-        "col.1", "arg.1", "bra.1", "mex.1", "usa.1", "ned.1", "por.1", "tur.1"
+        "eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "ned.1", "por.1",
+        "arg.1", "bra.1", "col.1", "mex.1", "usa.1", "chi.1", "per.1", "uru.1",
+        "uefa.champions", "uefa.europa", "copa.libertadores", "copa.sudamericana",
+        "fifa.world.qualification.conmebol", "fifa.world.qualification.uefa",
+        "fifa.world.qualification.concacaf", "uefa.nations", "fifa.friendly"
     ]
 
 def analizar_partidos_futbol_prematch():
-    print("⚽ Escaneando cartelera (Integrando mercados Under para Ligas Tácticas)...", flush=True)
+    print("⚽ Escaneando cartelera (Lista de Ligas Robusta - Anti Timeouts)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -99,16 +90,16 @@ def analizar_partidos_futbol_prematch():
     manana_str = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
     fechas = [hoy_str, manana_str]
     
-    ligas_futbol = obtener_todas_las_ligas_futbol()
+    ligas_futbol = obtener_ligas_robustas()
 
     for liga in ligas_futbol:
-        liga_under = any(x in liga for x in ["arg", "col", "bra", "mex", "uru", "chi", "per", "2", "3"])
+        liga_under = any(x in liga for x in ["arg", "col", "bra", "mex", "uru", "chi", "per", "conmebol", "friendly"])
         factor_liga = 0.85 if liga_under else 1.05
 
         for fecha in fechas:
             url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{liga}/scoreboard?dates={fecha}"
             try:
-                response = requests.get(url, timeout=2.5)
+                response = requests.get(url, timeout=2.5) # Timeout estricto para cuidar los workers
                 if response.status_code == 200:
                     data = response.json()
                     events = data.get("events", [])
@@ -146,7 +137,6 @@ def analizar_partidos_futbol_prematch():
 
                             es_caliente, etiqueta_partido = es_partido_caliente(home_name, away_name)
 
-                            # Lambdas base recalibrados para no matar ligas sudamericanas
                             lambda_h = 1.40 * factor_liga * mult_h
                             lambda_a = 1.20 * factor_liga * mult_a
                             
@@ -188,10 +178,8 @@ def analizar_partidos_futbol_prematch():
 
                             p_under_25 = round((p_0_total + p_1_total + p_2_total) * 100, 1)
                             p_under_35 = round((p_0_total + p_1_total + p_2_total + p_3_total) * 100, 1)
-                            p_over_25 = round(100.0 - p_under_25, 1)
-
+                            
                             p_home_ov_15 = round((1 - prob_0_h - prob_1_h) * 100, 1)
-                            p_away_ov_15 = round((1 - prob_0_a - prob_1_a) * 100, 1)
                             p_win_to_nil_h = round((p_win_h / 100.0) * prob_0_a * 100, 1)
                             
                             p_roja = 18.0
@@ -199,9 +187,9 @@ def analizar_partidos_futbol_prematch():
                             if es_caliente:
                                 p_roja += 22.0
                                 motivo_roja = "Derbi (Fricción alta)"
-                            if liga_sudamericana:
+                            if liga_under:
                                 p_roja += 12.0
-                                motivo_roja = "Liga Táctica/Fuerte" if not motivo_roja else "Derbi Sudamericano de alta tensión"
+                                motivo_roja = "Juego Táctico Friccionado" if not motivo_roja else "Derbi de Altísima Tensión"
 
                             try:
                                 home_score = int(home.get("score", "0"))
@@ -213,7 +201,7 @@ def analizar_partidos_futbol_prematch():
                             btts_real = (home_score > 0 and away_score > 0)
                             
                             oportunidades_alta_confianza = []
-                            candidatos_seguros = []
+                            candidatos_grid = []
 
                             # --- EXTRACCIÓN DE PICKS DE VALOR (+EV) ---
                             if p_roja >= 40.0:
@@ -260,49 +248,47 @@ def analizar_partidos_futbol_prematch():
                                 })
                                 oportunidades_alta_confianza.append(f"• 💎 **{home_name} Over 1.5:** {p_home_ov_15}% | Cuota: *{calcular_cuotas_valor(p_home_ov_15)}* ⏳ (Valor: Dominio local)")
 
-                            # --- MERCADOS SEGUROS (Con Umbrales Flexibles para Ligas Cerradas) ---
-                            def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido):
-                                # Ajuste de purismo: 72% para DO, 80% para Under 3.5, 62% genérico para que no se borren partidos parejos.
-                                umbral = 62.0
-                                if "Doble Oportunidad" in nombre_mercado: umbral = 72.0
-                                if "3.5" in nombre_mercado: umbral = 80.0 
-
+                            # --- MERCADOS SEGUROS CLÁSICOS ---
+                            def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral):
                                 if prob_val >= umbral:
                                     est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
                                     cuota_str = calcular_cuotas(prob_val)
                                     badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
                                     oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                                    if "Doble Oportunidad" not in nombre_mercado and "3.5" not in nombre_mercado:
-                                        candidatos_seguros.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
+                                    # Todos los que pasen se agregan a la lista del Grid para no dejar la pantalla vacía
+                                    candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
 
-                            evaluar_mercado_seguro("Doble Oportunidad (1X)", p_1x, home_score >= away_score)
-                            evaluar_mercado_seguro("Doble Oportunidad (X2)", p_x2, away_score >= home_score)
-                            evaluar_mercado_seguro("Over 1.5 Goles", p_over_15, total_goals > 1.5)
-                            evaluar_mercado_seguro("Ambos Marcan (BTTS)", p_btts, btts_real)
-                            
-                            # Nuevos mercados de seguridad integrados
-                            evaluar_mercado_seguro("Menos de 2.5 Goles", p_under_25, total_goals < 2.5)
-                            evaluar_mercado_seguro("Menos de 3.5 Goles", p_under_35, total_goals < 3.5)
+                            # Umbrales calibrados matemáticamente para asegurar resultados sin sacrificar calidad
+                            evaluar_mercado_seguro("Doble Oportunidad (1X)", p_1x, home_score >= away_score, 70.0)
+                            evaluar_mercado_seguro("Doble Oportunidad (X2)", p_x2, away_score >= home_score, 70.0)
+                            evaluar_mercado_seguro("Over 1.5 Goles", p_over_15, total_goals > 1.5, 68.0)
+                            evaluar_mercado_seguro("Ambos Marcan (BTTS)", p_btts, btts_real, 65.0)
+                            evaluar_mercado_seguro("Menos de 2.5 Goles", p_under_25, total_goals < 2.5, 65.0)
+                            evaluar_mercado_seguro("Menos de 3.5 Goles", p_under_35, total_goals < 3.5, 75.0)
 
-                            # FILTRO MAESTRO: Si la matriz no arrojó NADA por encima de los límites, no imprimimos tarjeta.
                             if not oportunidades_alta_confianza:
                                 continue
 
-                            if candidatos_seguros:
-                                mejor_seguro = max(candidatos_seguros, key=lambda x: x["prob"])
-                                if mejor_seguro["prob"] >= 70.0:
-                                    picks_vip_seguros.append({
-                                        "partido": f"{home_name} vs {away_name}", "liga": liga_nombre, 
-                                        "mercado": f"{mejor_seguro['mercado']} (Cuota: {calcular_cuotas(mejor_seguro['prob'])})", 
-                                        "prob": mejor_seguro["prob"], "estado_pick": mejor_seguro["estado"]
-                                    })
-                                
+                            # POBLAR LA CUADRÍCULA (Grid) CON EL MEJOR MERCADO (Asegura que el partido aparezca)
+                            if candidatos_grid:
+                                mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
                                 picks_disponibles.append({
                                     "partido": f"{home_name} vs {away_name}", "home": home_name, "away": away_name,
                                     "liga": liga_nombre, "fecha": fecha_hora_col, "is_final": is_final,
-                                    "prob": mejor_seguro["prob"], "mercado": f"{mejor_seguro['mercado']}",
-                                    "estado_pick": mejor_seguro["estado"]
+                                    "prob": mejor_grid["prob"], "mercado": mejor_grid["mercado"],
+                                    "estado_pick": mejor_grid["estado"]
                                 })
+
+                                # POBLAR EL VIP (Excluyendo Under 3.5 para no dar cuotas muy bajas)
+                                candidatos_vip = [m for m in candidatos_grid if "3.5" not in m["mercado"]]
+                                if candidatos_vip:
+                                    mejor_vip = max(candidatos_vip, key=lambda x: x["prob"])
+                                    if mejor_vip["prob"] >= 72.0:
+                                        picks_vip_seguros.append({
+                                            "partido": f"{home_name} vs {away_name}", "liga": liga_nombre, 
+                                            "mercado": f"{mejor_vip['mercado']} (Cuota: {calcular_cuotas(mejor_vip['prob'])})", 
+                                            "prob": mejor_vip["prob"], "estado_pick": mejor_vip["estado"]
+                                        })
 
                             marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score}\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
                             str_oportunidades = "\n".join(oportunidades_alta_confianza)
@@ -314,7 +300,7 @@ def analizar_partidos_futbol_prematch():
                                 f"🏆 *{liga_nombre}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                                 f"{marcador_str}\n"
-                                f"🎯 **Oportunidades Estadísticas de Valor:**\n"
+                                f"🎯 **Oportunidades Estadísticas:**\n"
                                 f"{str_oportunidades}"
                             )
 
@@ -343,7 +329,7 @@ def analizar_partidos_futbol_prematch():
         
     if len(picks_vip_valor) >= 1:
         resumen_parleys += "💎 **2. PARLEY ALTO VALOR (+EV / Contexto & Estadística)**\n"
-        for i, p_val in enumerate(picks_vip_valor[:2]):
+        for p_val in picks_vip_valor[:2]:
             resumen_parleys += (
                 f"• **{p_val['partido']}** | {p_val['mercado']}\n"
                 f"  ↳ *Análisis:* {p_val['justificacion']} (Prob Real: {p_val['prob']}% | Cuota Aprox: {p_val['cuota']}) ⏳\n"

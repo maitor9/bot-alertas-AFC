@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bot Alertas AFC - Panel Cuantitativo</title>
-    <!-- Tailwind CSS CDN para un diseño rápido y limpio -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body {
@@ -20,7 +19,7 @@
         }
         .cyber-card:hover {
             transform: translateY(-3px);
-            border-color: #d4af37; /* Toque oro cyberpunk */
+            border-color: #d4af37;
         }
         .tab-btn {
             transition: all 0.3s ease;
@@ -35,7 +34,6 @@
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8">
 
-    <!-- CABECERA -->
     <header class="text-center mb-8">
         <h1 class="text-3xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 mb-2">
             Rastreo y Proyecciones Sabermétricas
@@ -43,7 +41,6 @@
         <p class="text-xs md:text-sm text-slate-400 uppercase tracking-widest">Modelos Cuantitativos • Clan Smash Burgers Analytics</p>
     </header>
 
-    <!-- SELECTOR DE DEPORTES Y MÓDULOS -->
     <nav class="flex flex-wrap justify-center gap-2 mb-6 max-w-5xl">
         <button onclick="cargarDeporte('football_prematch', 'Fútbol')" id="btn-football" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">⚽ Fútbol</button>
         <button onclick="cargarDeporte('nba_prematch', 'NBA & NCAA')" id="btn-nba" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏀 Basket</button>
@@ -52,34 +49,36 @@
         <button onclick="cargarDeporte('nhl_prematch', 'NHL')" id="btn-nhl" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏒 NHL</button>
         <button onclick="cargarDeporte('ufc_prematch', 'UFC')" id="btn-ufc" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🥊 UFC</button>
         <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏎️ Motor</button>
-        <!-- NUEVO BOTÓN DE TARJETAS -->
         <button onclick="cargarTarjetas()" id="btn-tarjetas" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-amber-950/60 text-amber-300 hover:bg-amber-900/60 border border-amber-600/50">Picks Tarjetas 🟨</button>
     </nav>
 
-    <!-- SUB-PESTAÑAS (PRO vs VIP) -->
     <div id="sub-tabs" class="flex justify-center gap-4 mb-8">
         <button onclick="cambiarVista('pro')" id="tab-pro" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-medium bg-slate-900 border border-slate-700 text-slate-300 tab-active">Partidos PRO</button>
         <button onclick="cambiarVista('vip')" id="tab-vip" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-medium bg-slate-900 border border-slate-700 text-slate-300">Picks VIP</button>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL DE TARJETAS -->
     <main id="content-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
-        <!-- Los datos se inyectarán dinámicamente aquí -->
     </main>
 
-    <!-- SCRIPT DE CONTROL Y CONSUMO DE API -->
     <script>
         let currentEndpoint = 'football_prematch';
         let currentSportName = 'Fútbol';
-        let currentMode = 'pro'; // 'pro', 'vip', o 'tarjetas'
+        let currentMode = 'pro';
         let cachedData = null;
+
+        function obtenerEmojiEstado(estado) {
+            if (!estado) return '⏳';
+            const est = estado.toLowerCase();
+            if (est.includes('acertado')) return '✅';
+            if (est.includes('fallado') || est.includes('perdido')) return '❌';
+            return '⏳';
+        }
 
         async function cargarDeporte(endpoint, sportName) {
             currentEndpoint = endpoint;
             currentSportName = sportName;
             currentMode = 'pro';
             
-            // Actualizar estilos de botones de deporte
             document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400'));
             const activeBtn = document.getElementById('btn-' + endpoint.replace('_prematch', ''));
             if(activeBtn) activeBtn.classList.add('ring-2', 'ring-amber-400');
@@ -90,7 +89,7 @@
 
         async function cargarTarjetas() {
             currentMode = 'tarjetas';
-            document.getElementById('sub-tabs').style.display = 'none'; // Ocultamos pro/vip para tarjetas
+            document.getElementById('sub-tabs').style.display = 'none';
             
             document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400'));
             document.getElementById('btn-tarjetas').classList.add('ring-2', 'ring-amber-400');
@@ -153,13 +152,13 @@
                 
                 let formattedHtml = "";
                 if (currentMode === 'pro') {
-                    // Convertimos saltos de línea y formateamos markdown básico simulado
                     let text = item.mensaje || '';
                     text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300">$1</strong>');
                     text = text.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic text-xs">$1</span>');
                     formattedHtml = `<div class="text-sm space-y-2 whitespace-pre-line text-slate-200">${text}</div>`;
                 } else {
-                    // Vista VIP
+                    const estadoRaw = item.estado_pick || 'pendiente';
+                    const emojiEstado = obtenerEmojiEstado(estadoRaw);
                     formattedHtml = `
                         <div>
                             <span class="text-xs uppercase tracking-wider text-amber-400 font-semibold">${item.liga || currentSportName}</span>
@@ -171,7 +170,7 @@
                         </div>
                         <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-800 text-xs">
                             <span class="text-slate-400">Probabilidad: <strong class="text-emerald-400">${item.prob}%</strong></span>
-                            <span class="text-slate-400">Estado: <strong class="text-amber-300">${item.estado_pick || 'Pendiente'}</strong></span>
+                            <span class="text-slate-400">Estado: <span class="text-base">${emojiEstado}</span></span>
                         </div>
                     `;
                 }
@@ -197,14 +196,13 @@
                     <div class="text-sm space-y-2 whitespace-pre-line text-slate-200">${text}</div>
                     <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
                         <span class="text-amber-400 font-semibold">🟨 Mercado de Fricción</span>
-                        <span class="text-slate-400">${alerta.fecha}</span>
+                        <span class="text-slate-400">⏳ ${alerta.fecha}</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // Cargar Fútbol por defecto al abrir la página
         window.onload = () => cargarDeporte('football_prematch', 'Fútbol');
     </script>
 </body>

@@ -3,333 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFC Analytics - AI Cyber Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <title>Bot Alertas AFC - Panel Cuantitativo</title>
+    <!-- Tailwind CSS CDN para un diseño rápido y limpio -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        :root {
-            --bg-color: #030508;
-            --card-bg: rgba(10, 14, 23, 0.85);
-            --card-border: rgba(245, 158, 11, 0.18);
-            --accent-gold: #f59e0b;
-            --accent-orange: #f97316;
-            --accent-blue: #3b82f6;
-            --accent-nfl: #10b981;
-            --accent-nhl: #38bdf8;
-            --accent-ufc: #ef4444;
-            --accent-motor: #a855f7;
-            --accent-mega: #ec4899;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-        }
-
-        * { box-sizing: border-box; }
-
         body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.07) 0%, transparent 35%),
-                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-            color: var(--text-primary);
-            margin: 0; padding: 0; min-height: 100vh;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        .navbar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 6%; background: rgba(3, 5, 8, 0.95);
-            backdrop-filter: blur(20px); border-bottom: 1px solid var(--card-border);
-            position: sticky; top: 0; z-index: 100;
+        .cyber-card {
+            background: linear-gradient(145deg, #131b2e, #0f172a);
+            border: 1px solid #1e293b;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
-
-        .brand { 
-            display: flex; align-items: center; gap: 14px; 
-            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; 
-            letter-spacing: 1px; color: #fff;
+        .cyber-card:hover {
+            transform: translateY(-3px);
+            border-color: #d4af37; /* Toque oro cyberpunk */
         }
-        
-        .sport-selector { display: flex; gap: 8px; flex-wrap: wrap; }
-        .sport-btn {
-            background: rgba(10, 14, 23, 0.8); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 8px 14px; border-radius: 12px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 11px;
-            cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px;
-        }
-        .sport-btn.active-fut { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000 !important; border-color: var(--accent-gold); box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4); }
-        .sport-btn.active-bas { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000 !important; border-color: var(--accent-orange); box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4); }
-        .sport-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff !important; border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59, 130, 246, 0.4); }
-        .sport-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000 !important; border-color: var(--accent-nfl); box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4); }
-        .sport-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000 !important; border-color: var(--accent-nhl); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.4); }
-        .sport-btn.active-ufc { background: linear-gradient(135deg, var(--accent-ufc) 0%, #7f1d1d 100%); color: #fff !important; border-color: var(--accent-ufc); box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4); }
-        .sport-btn.active-motor { background: linear-gradient(135deg, var(--accent-motor) 0%, #581c87 100%); color: #fff !important; border-color: var(--accent-motor); box-shadow: 0 4px 18px rgba(168, 85, 247, 0.4); }
-        .sport-btn.active-mega { background: linear-gradient(135deg, var(--accent-mega) 0%, #be185d 100%); color: #fff !important; border-color: var(--accent-mega); box-shadow: 0 4px 18px rgba(236, 72, 153, 0.4); }
-
-        .hero-section { max-width: 1240px; margin: 40px auto; padding: 0 24px; text-align: center; }
-        .hero-title { font-family: 'Orbitron', sans-serif; font-size: 35px; font-weight: 900; line-height: 1.2; margin: 0 0 15px 0; }
-        
-        .main-container { max-width: 1240px; margin: 30px auto; padding: 0 24px; }
-        .tabs-nav { display: flex; gap: 14px; margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; flex-wrap: wrap; justify-content: center; }
-
         .tab-btn {
-            background: rgba(10, 14, 23, 0.6); border: 1px solid var(--card-border);
-            color: var(--text-secondary); padding: 12px 20px; border-radius: 16px;
-            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; 
-            cursor: pointer; transition: all 0.3s ease;
+            transition: all 0.3s ease;
         }
-        .tab-btn.active-fut { background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%); color: #000; border-color: var(--accent-gold); }
-        .tab-btn.active-bas { background: linear-gradient(135deg, var(--accent-orange) 0%, #c2410c 100%); color: #000; border-color: var(--accent-orange); }
-        .tab-btn.active-mlb { background: linear-gradient(135deg, var(--accent-blue) 0%, #1e3a8a 100%); color: #fff; border-color: var(--accent-blue); }
-        .tab-btn.active-nfl { background: linear-gradient(135deg, var(--accent-nfl) 0%, #047857 100%); color: #000; border-color: var(--accent-nfl); }
-        .tab-btn.active-nhl { background: linear-gradient(135deg, var(--accent-nhl) 0%, #0369a1 100%); color: #000; border-color: var(--accent-nhl); }
-        .tab-btn.active-ufc { background: linear-gradient(135deg, var(--accent-ufc) 0%, #7f1d1d 100%); color: #fff; border-color: var(--accent-ufc); }
-        .tab-btn.active-motor { background: linear-gradient(135deg, var(--accent-motor) 0%, #581c87 100%); color: #fff; border-color: var(--accent-motor); }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
-
-        .match-card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 24px; transition: all 0.3s ease;
-            backdrop-filter: blur(12px); position: relative; overflow: hidden;
+        .tab-active {
+            background: linear-gradient(135deg, #d4af37, #b8860b) !important;
+            color: #0b0f19 !important;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
         }
-        .match-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
-
-        .teams-title { font-size: 18px; font-weight: 700; text-align: center; margin: 15px 0; line-height: 1.3; }
-        .empty-card { grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 24px; color: var(--text-secondary); }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
 
-    <div class="navbar">
-        <div class="brand"><span>AFC ANALYTICS</span></div>
-        <div class="sport-selector">
-            <button id="btnFutbol" class="sport-btn active-fut" onclick="mostrarSeccion('futbol')">⚽ FÚTBOL</button>
-            <button id="btnBasket" class="sport-btn" onclick="mostrarSeccion('basket')">🏀 BASKET</button>
-            <button id="btnBaseball" class="sport-btn" onclick="mostrarSeccion('baseball')">⚾ BÉISBOL</button>
-            <button id="btnNfl" class="sport-btn" onclick="mostrarSeccion('nfl')">🏈 NFL</button>
-            <button id="btnNhl" class="sport-btn" onclick="mostrarSeccion('nhl')">🏒 NHL</button>
-            <button id="btnUfc" class="sport-btn" onclick="mostrarSeccion('ufc')">🥊 UFC</button>
-            <button id="btnMotor" class="sport-btn" onclick="mostrarSeccion('motor')">🏎️ MOTOR</button>
-            <button id="btnMega" class="sport-btn" onclick="mostrarSeccion('mega')">🔥 MEGA PARLEY</button>
-        </div>
+    <!-- CABECERA -->
+    <header class="text-center mb-8">
+        <h1 class="text-3xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 mb-2">
+            Rastreo y Proyecciones Sabermétricas
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400 uppercase tracking-widest">Modelos Cuantitativos • Clan Smash Burgers Analytics</p>
+    </header>
+
+    <!-- SELECTOR DE DEPORTES Y MÓDULOS -->
+    <nav class="flex flex-wrap justify-center gap-2 mb-6 max-w-5xl">
+        <button onclick="cargarDeporte('football_prematch', 'Fútbol')" id="btn-football" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">⚽ Fútbol</button>
+        <button onclick="cargarDeporte('nba_prematch', 'NBA & NCAA')" id="btn-nba" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏀 Basket</button>
+        <button onclick="cargarDeporte('baseball_prematch', 'Béisbol MLB')" id="btn-baseball" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">⚾ Béisbol</button>
+        <button onclick="cargarDeporte('nfl_prematch', 'NFL')" id="btn-nfl" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏈 NFL</button>
+        <button onclick="cargarDeporte('nhl_prematch', 'NHL')" id="btn-nhl" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏒 NHL</button>
+        <button onclick="cargarDeporte('ufc_prematch', 'UFC')" id="btn-ufc" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🥊 UFC</button>
+        <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">🏎️ Motor</button>
+        <!-- NUEVO BOTÓN DE TARJETAS -->
+        <button onclick="cargarTarjetas()" id="btn-tarjetas" class="sport-btn px-4 py-2 rounded-xl text-xs md:text-sm font-semibold bg-amber-950/60 text-amber-300 hover:bg-amber-900/60 border border-amber-600/50">Picks Tarjetas 🟨</button>
+    </nav>
+
+    <!-- SUB-PESTAÑAS (PRO vs VIP) -->
+    <div id="sub-tabs" class="flex justify-center gap-4 mb-8">
+        <button onclick="cambiarVista('pro')" id="tab-pro" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-medium bg-slate-900 border border-slate-700 text-slate-300 tab-active">Partidos PRO</button>
+        <button onclick="cambiarVista('vip')" id="tab-vip" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-medium bg-slate-900 border border-slate-700 text-slate-300">Picks VIP</button>
     </div>
 
-    <!-- FÚTBOL -->
-    <div id="seccion-futbol" style="display: block;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-gold);">Rastreo y Proyecciones de Fútbol</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-fut" onclick="cambiarPestana('futbol', 'prematch', event, 'active-fut')">⚽ Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('futbol', 'vip', event, 'active-fut')">💎 Picks VIP</button>
-            </div>
-            <div id="futbol-prematch"><div id="grid-football-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando fútbol...</h3></div></div></div>
-            <div id="futbol-vip" style="display: none;"><div id="grid-picks-vip-futbol" class="grid"><div class="empty-card"><h3>💎 Cargando VIP fútbol...</h3></div></div></div>
-        </div>
-    </div>
+    <!-- CONTENEDOR PRINCIPAL DE TARJETAS -->
+    <main id="content-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
+        <!-- Los datos se inyectarán dinámicamente aquí -->
+    </main>
 
-    <!-- BASKET -->
-    <div id="seccion-basket" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-orange);">Proyecciones NBA y Europa</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-bas" onclick="cambiarPestana('basket', 'prematch', event, 'active-bas')">🏀 Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('basket', 'vip', event, 'active-bas')">💎 Picks VIP</button>
-            </div>
-            <div id="basket-prematch"><div id="grid-basket-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando basket...</h3></div></div></div>
-            <div id="basket-vip" style="display: none;"><div id="grid-picks-vip-basket" class="grid"><div class="empty-card"><h3>💎 Cargando VIP basket...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- BÉISBOL -->
-    <div id="seccion-baseball" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-blue);">Sabermetría MLB</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-mlb" onclick="cambiarPestana('baseball', 'prematch', event, 'active-mlb')">⚾ Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('baseball', 'vip', event, 'active-mlb')">💎 Picks VIP</button>
-            </div>
-            <div id="baseball-prematch"><div id="grid-baseball-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando béisbol...</h3></div></div></div>
-            <div id="baseball-vip" style="display: none;"><div id="grid-picks-vip-baseball" class="grid"><div class="empty-card"><h3>💎 Cargando VIP béisbol...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- NFL -->
-    <div id="seccion-nfl" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-nfl);">Analítica NFL</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-nfl" onclick="cambiarPestana('nfl', 'prematch', event, 'active-nfl')">🏈 Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('nfl', 'vip', event, 'active-nfl')">💎 Picks VIP</button>
-            </div>
-            <div id="nfl-prematch"><div id="grid-nfl-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando NFL...</h3></div></div></div>
-            <div id="nfl-vip" style="display: none;"><div id="grid-picks-vip-nfl" class="grid"><div class="empty-card"><h3>💎 Cargando VIP NFL...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- NHL -->
-    <div id="seccion-nhl" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-nhl);">Analítica NHL Hockey</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-nhl" onclick="cambiarPestana('nhl', 'prematch', event, 'active-nhl')">🏒 Partidos PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('nhl', 'vip', event, 'active-nhl')">💎 Picks VIP</button>
-            </div>
-            <div id="nhl-prematch"><div id="grid-nhl-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando NHL...</h3></div></div></div>
-            <div id="nhl-vip" style="display: none;"><div id="grid-picks-vip-nhl" class="grid"><div class="empty-card"><h3>💎 Cargando VIP NHL...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- UFC -->
-    <div id="seccion-ufc" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-ufc);">Combates UFC</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-ufc" onclick="cambiarPestana('ufc', 'prematch', event, 'active-ufc')">🥊 Combates PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('ufc', 'vip', event, 'active-ufc')">💎 Picks VIP</button>
-            </div>
-            <div id="ufc-prematch"><div id="grid-ufc-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando UFC...</h3></div></div></div>
-            <div id="ufc-vip" style="display: none;"><div id="grid-picks-vip-ufc" class="grid"><div class="empty-card"><h3>💎 Cargando VIP UFC...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- MOTOR -->
-    <div id="seccion-motor" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-motor);">Fórmula 1 y NASCAR</h1></div>
-        <div class="main-container">
-            <div class="tabs-nav">
-                <button class="tab-btn active-motor" onclick="cambiarPestana('motor', 'prematch', event, 'active-motor')">🏎️ Carreras PRO</button>
-                <button class="tab-btn" onclick="cambiarPestana('motor', 'vip', event, 'active-motor')">💎 Picks VIP</button>
-            </div>
-            <div id="motor-prematch"><div id="grid-motor-prematch" class="grid"><div class="empty-card"><h3>⏳ Cargando Motor...</h3></div></div></div>
-            <div id="motor-vip" style="display: none;"><div id="grid-picks-vip-motor" class="grid"><div class="empty-card"><h3>💎 Cargando VIP Motor...</h3></div></div></div>
-        </div>
-    </div>
-
-    <!-- MEGA PARLEY -->
-    <div id="seccion-mega" style="display: none;">
-        <div class="hero-section"><h1 class="hero-title" style="color: var(--accent-mega);">🔥 MEGA TICKET MULTIDEPORTE</h1></div>
-        <div class="main-container">
-            <div id="grid-mega-ticket" class="grid" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
-                <div class="empty-card"><h3>⏳ Generando Ticket Multideporte...</h3></div>
-            </div>
-        </div>
-    </div>
-
+    <!-- SCRIPT DE CONTROL Y CONSUMO DE API -->
     <script>
-        function mostrarSeccion(deporte) {
-            ['futbol', 'basket', 'baseball', 'nfl', 'nhl', 'ufc', 'motor', 'mega'].forEach(d => {
-                document.getElementById('seccion-' + d).style.display = (d === deporte) ? 'block' : 'none';
-                document.getElementById('btn' + d.charAt(0).toUpperCase() + d.slice(1)).className = 'sport-btn';
-            });
-            let cl = '';
-            if(deporte==='futbol') cl='active-fut';
-            if(deporte==='basket') cl='active-bas';
-            if(deporte==='baseball') cl='active-mlb';
-            if(deporte==='nfl') cl='active-nfl';
-            if(deporte==='nhl') cl='active-nhl';
-            if(deporte==='ufc') cl='active-ufc';
-            if(deporte==='motor') cl='active-motor';
-            if(deporte==='mega') cl='active-mega';
-            document.getElementById('btn' + deporte.charAt(0).toUpperCase() + deporte.slice(1)).classList.add(cl);
+        let currentEndpoint = 'football_prematch';
+        let currentSportName = 'Fútbol';
+        let currentMode = 'pro'; // 'pro', 'vip', o 'tarjetas'
+        let cachedData = null;
+
+        async function cargarDeporte(endpoint, sportName) {
+            currentEndpoint = endpoint;
+            currentSportName = sportName;
+            currentMode = 'pro';
             
-            if(deporte === 'mega') cargarMegaParley();
+            // Actualizar estilos de botones de deporte
+            document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400'));
+            const activeBtn = document.getElementById('btn-' + endpoint.replace('_prematch', ''));
+            if(activeBtn) activeBtn.classList.add('ring-2', 'ring-amber-400');
+
+            document.getElementById('sub-tabs').style.display = 'flex';
+            cambiarVista('pro');
         }
 
-        function cambiarPestana(deporte, pestana, evt, claseActiva) {
-            const tabs = document.querySelectorAll(`#seccion-${deporte} .tab-btn`);
-            tabs.forEach(t => t.className = 'tab-btn');
-            evt.currentTarget.classList.add(claseActiva);
+        async function cargarTarjetas() {
+            currentMode = 'tarjetas';
+            document.getElementById('sub-tabs').style.display = 'none'; // Ocultamos pro/vip para tarjetas
+            
+            document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400'));
+            document.getElementById('btn-tarjetas').classList.add('ring-2', 'ring-amber-400');
 
-            const divs = document.querySelectorAll(`#seccion-${deporte} > .main-container > div[id^="${deporte}-"]`);
-            divs.forEach(d => d.style.display = 'none');
-            document.getElementById(`${deporte}-${pestana}`).style.display = 'block';
-        }
+            const container = document.getElementById('content-container');
+            container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 animate-pulse">⚡ Analizando fricción y duelos calientes...</div>`;
 
-        async function cargarData(apiRoute, gridPro, gridVip, colorVar) {
             try {
-                let response = await fetch(apiRoute);
-                let resultado = await response.json();
+                const res = await fetch('/api/tarjetas_alerta');
+                const json = await res.json();
                 
-                if (resultado.data && resultado.data.length > 0) {
-                    document.getElementById(gridPro).innerHTML = resultado.data.map(item => `
-                        <div class="match-card" style="border-color: rgba(255,255,255,0.1);">
-                            <div class="teams-title">${item.partido}</div>
-                            <div style="background: rgba(255,255,255,0.03); border: 1px solid ${colorVar}; padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line;">
-                                ${item.mensaje}
-                            </div>
-                        </div>`).join('');
+                if(json.status === 'success' && json.alertas.length > 0) {
+                    renderizarTarjetas(json.alertas);
                 } else {
-                    document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ No hay eventos programados</h3></div>';
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 cyber-card rounded-2xl p-8">ℹ️ No hay alertas de fricción activas en este momento.</div>`;
                 }
-
-                if (resultado.picks_vip && resultado.picks_vip.length > 0) {
-                    document.getElementById(gridVip).innerHTML = resultado.picks_vip.map(pick => {
-                        let badge = pick.estado_pick === 'acertado' ? `<div style="color:#10b981; font-weight:bold;">✅ ACERTADO</div>` : (pick.estado_pick === 'fallado' ? `<div style="color:#ef4444; font-weight:bold;">❌ NO ACERTADO</div>` : "");
-                        return `
-                        <div class="match-card" style="border-color: ${colorVar};">
-                            <div style="color: ${colorVar}; font-weight:bold; text-align:center;">🏆 ${pick.liga} | ✅ ${pick.prob}%</div>
-                            <div class="teams-title">${pick.partido}</div>
-                            <div style="text-align: center; color: var(--text-secondary);">⏰ ${pick.fecha}</div>
-                            <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-top:10px; border-radius: 8px; text-align: center;">
-                                🎯 <b>Sugerencia:</b> ${pick.mercado}
-                            </div>
-                            ${badge ? '<div style="text-align:center; margin-top:10px;">'+badge+'</div>' : ''}
-                        </div>`;
-                    }).join('');
-                } else {
-                    document.getElementById(gridVip).innerHTML = '<div class="empty-card"><h3>ℹ️ No hay picks VIP programados</h3></div>';
-                }
-            } catch (error) {
-                document.getElementById(gridPro).innerHTML = '<div class="empty-card"><h3>⚠️ Error de conexión</h3></div>';
+            } catch (err) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400 cyber-card rounded-2xl p-8">⚠️ Error al conectar con el motor de tarjetas.</div>`;
             }
         }
 
-        async function cargarMegaParley() {
+        async function cambiarVista(modo) {
+            currentMode = modo;
+            document.getElementById('tab-pro').classList.toggle('tab-active', modo === 'pro');
+            document.getElementById('tab-vip').classList.toggle('tab-active', modo === 'vip');
+
+            const container = document.getElementById('content-container');
+            container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 animate-pulse">Cargando modelos para ${currentSportName}...</div>`;
+
             try {
-                let response = await fetch('/api/mega_parley');
-                let resultado = await response.json();
-                if(resultado.mega_ticket && resultado.mega_ticket.length > 0) {
-                    let itemsHtml = resultado.mega_ticket.map(item => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 0; border-bottom: 1px dashed rgba(255,255,255,0.1);">
-                            <div>
-                                <span style="font-size:11px; color:var(--accent-mega); font-weight:bold; text-transform:uppercase;">${item.deporte}</span>
-                                <div style="font-weight:bold; font-size:15px;">${item.partido}</div>
-                                <div style="font-size:12px; color:var(--text-secondary); margin-bottom: 3px;">⏰ ${item.fecha}</div>
-                                <div style="font-size:13px; color:var(--text-secondary);">🎯 ${item.mercado}</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="color:#10b981; font-weight:bold; font-size:14px;">${item.prob}%</div>
-                                <div>${item.status}</div>
+                const res = await fetch(`/api/${currentEndpoint}`);
+                cachedData = await res.json();
+                renderizarDatos();
+            } catch (err) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400 cyber-card rounded-2xl p-8">⚠️ Error al cargar los datos del servidor.</div>`;
+            }
+        }
+
+        function renderizarDatos() {
+            const container = document.getElementById('content-container');
+            container.innerHTML = '';
+
+            if (!cachedData) return;
+
+            let itemsToRender = [];
+            if (currentMode === 'pro') {
+                itemsToRender = cachedData.data || [];
+            } else {
+                itemsToRender = cachedData.picks_vip || [];
+            }
+
+            if (itemsToRender.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 cyber-card rounded-2xl p-8">ℹ️ No hay proyecciones disponibles para esta categoría en este momento.</div>`;
+                return;
+            }
+
+            itemsToRender.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "cyber-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden";
+                
+                let formattedHtml = "";
+                if (currentMode === 'pro') {
+                    // Convertimos saltos de línea y formateamos markdown básico simulado
+                    let text = item.mensaje || '';
+                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300">$1</strong>');
+                    text = text.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic text-xs">$1</span>');
+                    formattedHtml = `<div class="text-sm space-y-2 whitespace-pre-line text-slate-200">${text}</div>`;
+                } else {
+                    // Vista VIP
+                    formattedHtml = `
+                        <div>
+                            <span class="text-xs uppercase tracking-wider text-amber-400 font-semibold">${item.liga || currentSportName}</span>
+                            <h3 class="text-lg font-bold text-white mt-1 mb-2">${item.partido}</h3>
+                            <div class="bg-slate-900/80 rounded-xl p-3 border border-amber-500/20 mb-3">
+                                <span class="text-xs text-slate-400 block">Mercado Sugerido:</span>
+                                <span class="text-sm font-bold text-amber-200">${item.mercado}</span>
                             </div>
                         </div>
-                    `).join('');
-
-                    document.getElementById('grid-mega-ticket').innerHTML = `
-                        <div class="match-card" style="border-color: var(--accent-mega); background: rgba(236, 72, 153, 0.05);">
-                            <h2 style="text-align:center; color: var(--accent-mega); font-family:'Orbitron';">🎟️ TICKET MAESTRO COMBINADO</h2>
-                            <p style="text-align:center; font-size:12px; color:var(--text-secondary);">Top selecciones con mayor probabilidad por deporte</p>
-                            <div style="margin-top:20px;">
-                                ${itemsHtml}
-                            </div>
+                        <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-800 text-xs">
+                            <span class="text-slate-400">Probabilidad: <strong class="text-emerald-400">${item.prob}%</strong></span>
+                            <span class="text-slate-400">Estado: <strong class="text-amber-300">${item.estado_pick || 'Pendiente'}</strong></span>
                         </div>
                     `;
-                } else {
-                    document.getElementById('grid-mega-ticket').innerHTML = '<div class="empty-card"><h3>ℹ️ No hay datos suficientes hoy para armar el Mega Ticket</h3></div>';
                 }
-            } catch(e) {
-                document.getElementById('grid-mega-ticket').innerHTML = '<div class="empty-card"><h3>⚠️ Error cargando Mega Parley</h3></div>';
-            }
+
+                card.innerHTML = formattedHtml;
+                container.appendChild(card);
+            });
         }
 
-        window.onload = function() {
-            cargarData('/api/football_prematch', 'grid-football-prematch', 'grid-picks-vip-futbol', 'var(--accent-gold)');
-            cargarData('/api/nba_prematch', 'grid-basket-prematch', 'grid-picks-vip-basket', 'var(--accent-orange)');
-            cargarData('/api/baseball_prematch', 'grid-baseball-prematch', 'grid-picks-vip-baseball', 'var(--accent-blue)');
-            cargarData('/api/nfl_prematch', 'grid-nfl-prematch', 'grid-picks-vip-nfl', 'var(--accent-nfl)');
-            cargarData('/api/nhl_prematch', 'grid-nhl-prematch', 'grid-picks-vip-nhl', 'var(--accent-nhl)');
-            cargarData('/api/ufc_prematch', 'grid-ufc-prematch', 'grid-picks-vip-ufc', 'var(--accent-ufc)');
-            cargarData('/api/motor_prematch', 'grid-motor-prematch', 'grid-picks-vip-motor', 'var(--accent-motor)');
-        };
+        function renderizarTarjetas(alertas) {
+            const container = document.getElementById('content-container');
+            container.innerHTML = '';
+
+            alertas.forEach(alerta => {
+                const card = document.createElement('div');
+                card.className = "cyber-card rounded-2xl p-6 flex flex-col justify-between border-amber-500/30";
+                
+                let text = alerta.mensaje || '';
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300">$1</strong>');
+                text = text.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic text-xs">$1</span>');
+
+                card.innerHTML = `
+                    <div class="text-sm space-y-2 whitespace-pre-line text-slate-200">${text}</div>
+                    <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-amber-400 font-semibold">🟨 Mercado de Fricción</span>
+                        <span class="text-slate-400">${alerta.fecha}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Cargar Fútbol por defecto al abrir la página
+        window.onload = () => cargarDeporte('football_prematch', 'Fútbol');
     </script>
 </body>
 </html>

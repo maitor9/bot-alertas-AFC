@@ -8,6 +8,7 @@ from nfl_analyzer import analizar_partidos_nfl
 from nhl_analyzer import analizar_partidos_nhl
 from ufc_analyzer import analizar_cartelera_ufc
 from motorsports_analyzer import analizar_cartelera_motor
+from yellow_cards_analyzer import analizar_alertas_tarjetas
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
@@ -15,7 +16,7 @@ app = Flask(__name__)
 ultimas_alertas = []
 ultimos_partidos_00 = []
 
-def ejecutar_rastreador_en_vivo():
+def ejecutar_rastreador_en vivo():
     global ultimas_alertas, ultimos_partidos_00
     while True:
         try:
@@ -38,6 +39,15 @@ def api_partidos_00():
 @app.route("/api/alertas", methods=["GET"])
 def api_alertas():
     return jsonify(ultimas_alertas)
+
+@app.route("/api/tarjetas_alerta", methods=["GET"])
+def api_tarjetas_alerta():
+    resultado = analizar_alertas_tarjetas()
+    return jsonify({
+        "status": "success", 
+        "total_alertas": len(resultado), 
+        "alertas": resultado
+    })
 
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():

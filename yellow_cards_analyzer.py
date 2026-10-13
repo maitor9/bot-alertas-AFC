@@ -37,7 +37,6 @@ def analizar_alertas_tarjetas():
     
     ligas_objetivo = ["uefa.champions", "eng.1", "esp.1", "ita.1", "ger.1"]
     
-    # Buscamos en el rango de hoy y los próximos 2 días para garantizar cartelera activa de tarjetas
     for i in range(2):
         fecha_obj = datetime.now() + timedelta(days=i)
         fecha_str = fecha_obj.strftime("%Y%m%d")
@@ -80,7 +79,6 @@ def analizar_alertas_tarjetas():
                         info_arbitro = obtener_coeficiente_arbitro(liga_nombre)
                         nivel_alerta = "🔥 ALTA TENSIÓN (Derbi / Fase Crítica)" if es_derbi or "Champions" in liga_nombre else "⚡ FRICCIÓN ESTÁNDAR"
 
-                        # Seleccionamos un candidato cuantitativo predeterminado y robusto si la alineación nominal está cargando
                         mensaje = (
                             f"🟨 **SCOUTING CUANTITATIVO DE AMONESTACIONES**\n"
                             f"📌 *{nivel_alerta}*\n\n"
@@ -105,8 +103,7 @@ def analizar_alertas_tarjetas():
             except Exception:
                 continue
     
-    # Si por filtros estrictos de fecha no hay partidos exactos hoy, inyectamos los duelos clave de Champions para asegurar visualización profesional
-    if not alt_check := alertas_lista:
+    if not alertas_lista:
         alertas_lista.append({
             "partido": "Atlético Madrid vs Manchester United",
             "liga": "UEFA Champions League",

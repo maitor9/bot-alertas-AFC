@@ -16,7 +16,7 @@ app = Flask(__name__)
 ultimas_alertas = []
 ultimos_partidos_00 = []
 
-def ejecutar_rastreador_en vivo():
+def ejecutar_rastreador_en_vivo():
     global ultimas_alertas, ultimos_partidos_00
     while True:
         try:

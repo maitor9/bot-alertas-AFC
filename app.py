@@ -9,6 +9,7 @@ from nhl_analyzer import analizar_partidos_nhl
 from ufc_analyzer import analizar_cartelera_ufc
 from motorsports_analyzer import analizar_cartelera_motor
 from yellow_cards_analyzer import analizar_alertas_tarjetas
+from odds_tracker import actualizar_y_rastrear_cuotas
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
@@ -47,6 +48,15 @@ def api_tarjetas_alerta():
         "status": "success", 
         "total_alertas": len(resultado), 
         "alertas": resultado
+    })
+
+@app.route("/api/line_movement", methods=["GET"])
+def api_line_movement():
+    movimientos = actualizar_y_rastrear_cuotas("soccer_uefa_champs_league")
+    return jsonify({
+        "status": "success",
+        "total_registros": len(movimientos),
+        "movimientos": movimientos
     })
 
 @app.route("/api/football_prematch", methods=["GET"])
@@ -100,7 +110,7 @@ def api_nfl_prematch():
 @app.route("/api/nhl_prematch", methods=["GET"])
 def api_nhl_prematch():
     resultado = analizar_partidos_nhl()
-    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["partidos"], "picks_vip": resultado["picks_vip"]})
+    return jsonify({"status": "success", "total_analizados": len(resultado["partidos"]), "data": resultado["data"], "picks_vip": resultado["picks_vip"]})
 
 @app.route("/api/ufc_prematch", methods=["GET"])
 def api_ufc_prematch():

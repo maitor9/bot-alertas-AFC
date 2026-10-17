@@ -3,101 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Alertas AFC - Panel Cuantitativo</title>
+    <title>BOT_ALERTAS_AFC // Terminal Sabermétrico</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;900&family=Inter:wght@400;600;800&display=swap');
+
         body {
-            background-color: #070913;
-            color: #f1f5f9;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #030706;
+            color: #10b981;
+            font-family: 'Inter', sans-serif;
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 10% 90%, rgba(59, 130, 246, 0.06) 0%, transparent 40%);
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
             min-height: 100vh;
         }
-        .cyber-card {
-            background: linear-gradient(145deg, #0e1628, #090e1a);
-            border: 1px solid rgba(30, 41, 59, 0.8);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 55, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .font-mono-custom {
+            font-family: 'JetBrains Mono', monospace;
         }
-        .cyber-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(212, 175, 55, 0.6);
-            box-shadow: 0 12px 40px rgba(212, 175, 55, 0.15), inset 0 1px 2px rgba(212, 175, 55, 0.2);
+
+        /* Tarjeta estilo terminal hacker con bordes de neón */
+        .cyber-terminal-card {
+            background: linear-gradient(145deg, #06110e, #030807);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.05), inset 0 1px 1px rgba(16, 185, 129, 0.1);
+            transition: all 0.3s ease;
         }
-        .cyber-card-blue:hover {
-            border-color: rgba(59, 130, 246, 0.6);
-            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15), inset 0 1px 2px rgba(59, 130, 246, 0.2);
+
+        .cyber-terminal-card:hover {
+            border-color: rgba(245, 158, 11, 0.7);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.2), inset 0 1px 2px rgba(245, 158, 11, 0.2);
+            transform: translateY(-2px);
         }
+
+        /* Botones de comando estilo terminal */
+        .terminal-btn {
+            font-family: 'JetBrains Mono', monospace;
+            background: #06110e;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            transition: all 0.2s ease;
+        }
+
+        .terminal-btn:hover, .terminal-btn.active-command {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #f59e0b;
+            color: #ffb020;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
         .tab-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.2s ease;
         }
+
         .tab-active {
-            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-            color: #070913 !important;
-            font-weight: 800;
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+            background: #f59e0b !important;
+            color: #030706 !important;
+            font-weight: 900;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+            border-color: #f59e0b !important;
         }
-        .glow-text {
-            text-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
-        }
-        /* Scrollbar personalizado neón */
+
+        /* Scrollbar estilo consola */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #070913;
+            background: #030706;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 4px;
+            background: #065f46;
+            border-radius: 3px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #d4af37;
+            background: #f59e0b;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+<body class="min-h-screen flex flex-col p-4 md:p-6">
 
-    <!-- CABECERA NEÓN -->
-    <header class="text-center mb-8 relative">
-        <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-64 h-24 bg-amber-500/10 blur-3xl pointer-events-none rounded-full"></div>
-        <h1 class="text-3xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-100 to-amber-500 mb-2 glow-text">
-            Rastreo y Proyecciones Sabermétricas
-        </h1>
-        <p class="text-xs md:text-sm text-slate-400 uppercase tracking-widest font-semibold flex items-center justify-center gap-2">
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Modelos Cuantitativos AFP • Clan Smash Burgers Analytics
-        </p>
+    <!-- BARRA SUPERIOR DE SISTEMA (ESTILO TERMINAL) -->
+    <header class="w-full max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center border-b border-emerald-900/50 pb-4 mb-6">
+        <div class="flex items-center space-x-3 mb-2 md:mb-0">
+            <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded border border-amber-600/30">root@AFC-SYS:~#</span>
+            <h1 class="text-xl md:text-2xl font-black tracking-wider font-mono-custom text-emerald-400">
+                ./dashboard_sabermetrico.sh
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-mono-custom text-emerald-500/80">
+            <span class="flex items-center gap-1.5 bg-emerald-950/40 px-3 py-1 rounded border border-emerald-800/40">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                STATUS: ONLINE (24/7)
+            </span>
+            <span class="hidden sm:inline text-amber-400/80">Clan Smash Burgers Analytics</span>
+        </div>
     </header>
 
-    <!-- NAVEGACIÓN PRINCIPAL DE DEPORTES Y MÓDULOS -->
-    <nav class="flex flex-wrap justify-center gap-2 mb-6 max-w-6xl">
-        <button onclick="cargarDeporte('football_prematch', 'Fútbol')" id="btn-football" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">⚽ Fútbol</button>
-        <button onclick="cargarDeporte('nba_prematch', 'NBA & NCAA')" id="btn-nba" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">🏀 Basket</button>
-        <button onclick="cargarDeporte('baseball_prematch', 'Béisbol MLB')" id="btn-baseball" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">⚾ Béisbol</button>
-        <button onclick="cargarDeporte('nfl_prematch', 'NFL')" id="btn-nfl" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">🏈 NFL</button>
-        <button onclick="cargarDeporte('nhl_prematch', 'NHL')" id="btn-nhl" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">🏒 NHL</button>
-        <button onclick="cargarDeporte('ufc_prematch', 'UFC')" id="btn-ufc" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">🥊 UFC</button>
-        <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/80 shadow-lg">🏎️ Motor</button>
-        <button onclick="cargarTarjetas()" id="btn-tarjetas" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-amber-950/80 text-amber-300 hover:bg-amber-900 border border-amber-500/50 shadow-lg shadow-amber-950/40">Picks Tarjetas 🟨</button>
-        <button onclick="cargarLineMovement()" id="btn-line" class="sport-btn px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-blue-950/80 text-blue-300 hover:bg-blue-900 border border-blue-500/50 shadow-lg shadow-blue-950/40">📊 Cuotas CLV</button>
+    <!-- NAVEGACIÓN DE COMANDOS (SELECCIÓN DE DEPORTES Y MÓDULOS) -->
+    <nav class="w-full max-w-7xl mx-auto flex flex-wrap gap-2 mb-6 justify-center">
+        <button onclick="cargarDeporte('football_prematch', 'Fútbol')" id="btn-football" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./futbol.sh</button>
+        <button onclick="cargarDeporte('nba_prematch', 'NBA & NCAA')" id="btn-nba" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./basket.sh</button>
+        <button onclick="cargarDeporte('baseball_prematch', 'Béisbol MLB')" id="btn-baseball" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./mlb.sh</button>
+        <button onclick="cargarDeporte('nfl_prematch', 'NFL')" id="btn-nfl" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./nfl.sh</button>
+        <button onclick="cargarDeporte('nhl_prematch', 'NHL')" id="btn-nhl" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./nhl.sh</button>
+        <button onclick="cargarDeporte('ufc_prematch', 'UFC')" id="btn-ufc" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./ufc.sh</button>
+        <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./motor.sh</button>
+        <button onclick="cargarTarjetas()" id="btn-tarjetas" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-amber-500/50 text-amber-300">./tarjetas_friction.bin</button>
+        <button onclick="cargarLineMovement()" id="btn-line" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-blue-500/50 text-blue-300">./clv_odds.log</button>
     </nav>
 
-    <!-- SUB-PESTAÑAS (PRO vs VIP) -->
-    <div id="sub-tabs" class="flex justify-center gap-3 mb-8">
-        <button onclick="cambiarVista('pro')" id="tab-pro" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-semibold bg-slate-900 border border-slate-700 text-slate-300 tab-active">Partidos PRO</button>
-        <button onclick="cambiarVista('vip')" id="tab-vip" class="tab-btn px-6 py-2 rounded-full text-xs md:text-sm font-semibold bg-slate-900 border border-slate-700 text-slate-300 hover:border-amber-500/50">Picks VIP</button>
+    <!-- PESTAÑAS SECUNDARIAS (PRO / VIP) -->
+    <div id="sub-tabs" class="w-full max-w-7xl mx-auto flex justify-center gap-3 mb-6">
+        <button onclick="cambiarVista('pro')" id="tab-pro" class="tab-btn px-5 py-1.5 rounded text-xs font-bold bg-slate-900 border border-emerald-900/50 text-emerald-400 tab-active">[ MODO_PRO ]</button>
+        <button onclick="cambiarVista('vip')" id="tab-vip" class="tab-btn px-5 py-1.5 rounded text-xs font-bold bg-slate-900 border border-emerald-900/50 text-emerald-400 hover:border-amber-500/50">[ MODO_VIP_PICKS ]</button>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL DE TARJETAS -->
-    <main id="content-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
-        <!-- Inyección dinámica -->
+    <!-- CONTENEDOR PRINCIPAL DE DATOS -->
+    <main id="content-container" class="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Inyección dinámica de tarjetas de sistema -->
     </main>
 
-    <!-- SCRIPT DE CONTROL Y RENDERIZADO -->
+    <!-- SCRIPT DE CONTROL Y CONEXIÓN -->
     <script>
         let currentEndpoint = 'football_prematch';
         let currentSportName = 'Fútbol';
@@ -117,10 +145,10 @@
             currentSportName = sportName;
             currentMode = 'pro';
             
-            document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400', 'ring-blue-400', 'scale-105'));
+            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command', 'border-amber-400', 'bg-amber-950/40'));
             const activeBtn = document.getElementById('btn-' + endpoint.replace('_prematch', ''));
             if(activeBtn) {
-                activeBtn.classList.add('ring-2', 'ring-amber-400', 'scale-105');
+                activeBtn.classList.add('active-command');
             }
 
             document.getElementById('sub-tabs').style.display = 'flex';
@@ -131,11 +159,11 @@
             currentMode = 'tarjetas';
             document.getElementById('sub-tabs').style.display = 'none';
             
-            document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400', 'ring-blue-400', 'scale-105'));
-            document.getElementById('btn-tarjetas').classList.add('ring-2', 'ring-amber-400', 'scale-105');
+            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command'));
+            document.getElementById('btn-tarjetas').classList.add('active-command');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-amber-400 font-semibold animate-pulse tracking-wider">⚡ Escaneando plantillas y calculando coeficientes de fricción...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-amber-400 font-mono-custom animate-pulse">>>> EJECUTANDO motor de fricción y tarjetas nominales...</div>`;
 
             try {
                 const res = await fetch('/api/tarjetas_alerta');
@@ -144,10 +172,10 @@
                 if(json.status === 'success' && json.alertas.length > 0) {
                     renderizarTarjetas(json.alertas);
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 cyber-card rounded-2xl p-8">ℹ️ No hay alertas de fricción activas en este momento.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay alertas de fricción activas en este buffer.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-card rounded-2xl p-8 border-rose-500/30">⚠️ Error al conectar con el motor cuantitativo de tarjetas.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al procesar el stream de tarjetas.</div>`;
             }
         }
 
@@ -155,11 +183,11 @@
             currentMode = 'line_movement';
             document.getElementById('sub-tabs').style.display = 'none';
 
-            document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-400', 'ring-blue-400', 'scale-105'));
-            document.getElementById('btn-line').classList.add('ring-2', 'ring-blue-400', 'scale-105');
+            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command'));
+            document.getElementById('btn-line').classList.add('active-command');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-semibold animate-pulse tracking-wider">📊 Consultando evolución de líneas CLV en tiempo real...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-mono-custom animate-pulse">>>> LEYENDO registros CLV en The Odds API...</div>`;
 
             try {
                 const res = await fetch('/api/line_movement');
@@ -168,10 +196,10 @@
                 if(json.status === 'success' && json.movimientos.length > 0) {
                     renderizarLineMovement(json.movimientos);
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 cyber-card rounded-2xl p-8">ℹ️ No hay registros de movimiento de cuotas disponibles en este momento.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] Sin variaciones de cuotas registradas.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-card rounded-2xl p-8 border-rose-500/30">⚠️ Error al conectar con The Odds API.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Timeout al conectar con el servidor de cuotas.</div>`;
             }
         }
 
@@ -181,14 +209,14 @@
             document.getElementById('tab-vip').classList.toggle('tab-active', modo === 'vip');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-slate-400 animate-pulse tracking-wide">Cargando modelos analíticos para ${currentSportName}...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-emerald-400 font-mono-custom animate-pulse">>>> CARGANDO vectores para ${currentSportName}...</div>`;
 
             try {
                 const res = await fetch(`/api/${currentEndpoint}`);
                 cachedData = await res.json();
                 renderizarDatos();
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-card rounded-2xl p-8 border-rose-500/30">⚠️ Error al cargar los datos del servidor.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] No se pudo sincronizar con el backend Flask.</div>`;
             }
         }
 
@@ -206,35 +234,35 @@
             }
 
             if (itemsToRender.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 cyber-card rounded-2xl p-8">ℹ️ No hay proyecciones disponibles para esta categoría en este momento.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] Buffer vacío para este sector.</div>`;
                 return;
             }
 
             itemsToRender.forEach(item => {
                 const card = document.createElement('div');
-                card.className = "cyber-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden";
+                card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between relative overflow-hidden";
                 
                 let formattedHtml = "";
                 if (currentMode === 'pro') {
                     let text = item.mensaje || '';
-                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300">$1</strong>');
-                    text = text.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic text-xs">$1</span>');
-                    formattedHtml = `<div class="text-sm space-y-2 whitespace-pre-line text-slate-300">${text}</div>`;
+                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-400 font-mono-custom">$1</strong>');
+                    text = text.replace(/\*(.*?)\*/g, '<span class="text-emerald-600 font-mono-custom text-xs">$1</span>');
+                    formattedHtml = `<div class="text-xs md:text-sm space-y-2 whitespace-pre-line text-emerald-300 font-mono-custom">${text}</div>`;
                 } else {
                     const estadoRaw = item.estado_pick || 'pendiente';
                     const emojiEstado = obtenerEmojiEstado(estadoRaw);
                     formattedHtml = `
                         <div>
-                            <span class="text-xs uppercase tracking-wider text-amber-400 font-extrabold">${item.liga || currentSportName}</span>
-                            <h3 class="text-lg font-bold text-white mt-1 mb-3">${item.partido}</h3>
-                            <div class="bg-slate-950/80 rounded-xl p-3 border border-amber-500/20 mb-4 shadow-inner">
-                                <span class="text-xs text-slate-400 block mb-1">Mercado Sugerido:</span>
-                                <span class="text-sm font-bold text-amber-200 tracking-wide">${item.mercado}</span>
+                            <span class="text-[10px] font-mono-custom uppercase tracking-wider text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-600/30">${item.liga || currentSportName}</span>
+                            <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${item.partido}</h3>
+                            <div class="bg-black/60 rounded-lg p-3 border border-emerald-900/60 mb-4">
+                                <span class="text-[10px] font-mono-custom text-emerald-500 block mb-0.5">[TARGET_MARKET]:</span>
+                                <span class="text-xs font-mono-custom font-bold text-amber-300">${item.mercado}</span>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center pt-3 border-t border-slate-800/80 text-xs">
-                            <span class="text-slate-400">Probabilidad: <strong class="text-emerald-400 font-bold">${item.prob}%</strong></span>
-                            <span class="text-slate-400 flex items-center gap-1.5">Estado: <span class="text-base">${emojiEstado}</span></span>
+                        <div class="flex justify-between items-center pt-3 border-t border-emerald-900/40 text-xs font-mono-custom">
+                            <span class="text-emerald-500">PROB: <strong class="text-emerald-300">${item.prob}%</strong></span>
+                            <span class="text-emerald-500 flex items-center gap-1.5">STATUS: <span class="text-base">${emojiEstado}</span></span>
                         </div>
                     `;
                 }
@@ -250,17 +278,17 @@
 
             alertas.forEach(alerta => {
                 const card = document.createElement('div');
-                card.className = "cyber-card rounded-2xl p-6 flex flex-col justify-between border-amber-500/30 shadow-amber-950/20";
+                card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between border-amber-500/40";
                 
                 let text = alerta.mensaje || '';
-                text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300">$1</strong>');
-                text = text.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic text-xs">$1</span>');
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300 font-mono-custom">$1</strong>');
+                text = text.replace(/\*(.*?)\*/g, '<span class="text-emerald-600 font-mono-custom text-xs">$1</span>');
 
                 card.innerHTML = `
-                    <div class="text-sm space-y-2 whitespace-pre-line text-slate-300">${text}</div>
-                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
-                        <span class="text-amber-400 font-bold flex items-center gap-1">🟨 Mercado de Fricción</span>
-                        <span class="text-slate-400 font-medium">⏳ ${alerta.fecha}</span>
+                    <div class="text-xs md:text-sm space-y-2 whitespace-pre-line text-emerald-300 font-mono-custom">${text}</div>
+                    <div class="mt-4 pt-3 border-t border-amber-900/40 flex justify-between items-center text-xs font-mono-custom">
+                        <span class="text-amber-400 font-bold">[FRICCIÓN_DETECTADA]</span>
+                        <span class="text-emerald-400">⏳ ${alerta.fecha}</span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -273,25 +301,25 @@
 
             movimientos.forEach(mov => {
                 const card = document.createElement('div');
-                card.className = "cyber-card cyber-card-blue rounded-2xl p-6 flex flex-col justify-between border-blue-500/30 shadow-blue-950/20";
+                card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between border-blue-500/40";
                 
                 const colorVariacion = mov.variacion_pct < 0 ? 'text-emerald-400' : (mov.variacion_pct > 0 ? 'text-rose-400' : 'text-slate-300');
 
                 card.innerHTML = `
                     <div>
-                        <span class="text-xs uppercase tracking-wider text-blue-400 font-extrabold flex items-center gap-1">📊 Tracking de Línea (CLV)</span>
-                        <h3 class="text-lg font-bold text-white mt-1 mb-3">${mov.partido}</h3>
-                        <div class="bg-slate-950/80 rounded-xl p-3 border border-blue-500/20 mb-4 space-y-2 shadow-inner">
-                            <span class="text-xs text-slate-400 block">Mercado: <strong class="text-slate-200">${mov.mercado}</strong></span>
-                            <div class="flex justify-between text-xs pt-1 border-t border-slate-900">
-                                <span class="text-slate-400">Apertura: <strong class="text-slate-300 font-mono">${mov.cuota_apertura}</strong></span>
-                                <span class="text-slate-400">Actual: <strong class="text-blue-300 font-mono">${mov.cuota_actual}</strong></span>
+                        <span class="text-[10px] font-mono-custom uppercase tracking-wider text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-600/30">[CLV_TRACKING]</span>
+                        <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${mov.partido}</h3>
+                        <div class="bg-black/60 rounded-lg p-3 border border-blue-900/60 mb-4 space-y-2 font-mono-custom text-xs">
+                            <span class="text-slate-400 block">MARKET: <strong class="text-slate-200">${mov.mercado}</strong></span>
+                            <div class="flex justify-between pt-1 border-t border-blue-950">
+                                <span class="text-slate-400">OPEN: <strong class="text-slate-300">${mov.cuota_apertura}</strong></span>
+                                <span class="text-slate-400">CURRENT: <strong class="text-blue-300">${mov.cuota_actual}</strong></span>
                             </div>
                         </div>
                     </div>
-                    <div class="pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
-                        <span class="text-slate-400">Variación: <strong class="${colorVariacion} font-bold font-mono">${mov.variacion_pct}%</strong></span>
-                        <span class="font-bold text-slate-200 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800">${mov.tendencia}</span>
+                    <div class="pt-3 border-t border-blue-900/40 flex justify-between items-center text-xs font-mono-custom">
+                        <span class="text-slate-400">DELTA: <strong class="${colorVariacion}">${mov.variacion_pct}%</strong></span>
+                        <span class="font-bold text-slate-200 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px]">${mov.tendencia}</span>
                     </div>
                 `;
                 container.appendChild(card);

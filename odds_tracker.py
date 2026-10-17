@@ -47,7 +47,7 @@ def actualizar_y_rastrear_cuotas(sport_key="soccer_uefa_champs_league"):
             bookmakers = evento.get("bookmakers", [])
             if not bookmakers: continue
             
-            # Tomamos la cuota de una casa de referencia (ej. Bet365 o la primera disponible)
+            # Tomamos la cuota de Bet365 o la primera casa disponible
             bookmaker = next((b for b in bookmakers if b.get("key") == "bet365"), bookmakers[0])
             markets = bookmaker.get("markets", [])
             h2h_market = next((m for m in markets if m.get("key") == "h2h"), None)
@@ -57,40 +57,56 @@ def actualizar_y_rastrear_cuotas(sport_key="soccer_uefa_champs_league"):
             outcomes = h2h_market.get("outcomes", [])
             for outcome in outcomes:
                 nombre_equipo = outcome.get("name")
-                cuota_actual = outcome.get("price")
+                cuota_actual_api = float(outcome.get("price"))
                 mercado = f"Victoria {nombre_equipo} (1X2)"
                 
-                # Consultar si ya existe cuota de apertura en base de datos
+                # Consultamos si ya tenemos un registro histórico de apertura para este partido y mercado
                 cursor.execute("SELECT cuota_apertura FROM line_movement WHERE partido = ? AND mercado = ?", (partido_str, mercado))
                 row = cursor.fetchone()
                 
                 if row is None:
-                    # Registrar apertura
+                    # PRIMER REGISTRO: Establecemos inalterablemente la cuota de apertura
                     cursor.execute("""
                         INSERT INTO line_movement (partido, mercado, cuota_apertura, cuota_actual, variacion_pct, fecha_actualizacion)
                         VALUES (?, ?, ?, ?, 0.0, ?)
-                    """, (partido_str, mercado, cuota_actual, cuota_actual, datetime.now().strftime("%Y-%m-%d %H:%M")))
-                    apertura = cuota_actual
+                    """, (partido_str, mercado, cuota_actual_api, cuota_actual_api, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                    apertura = cuota_actual_api
+                    actual = cuota_actual_api
                     variacion = 0.0
                 else:
-                    apertura = row[0]
-                    # Calcular variación porcentual de la línea
-                    variacion = round(((cuota_actual - apertura) / apertura) * 100, 2)
+                    apertura = float(row[0])
+                    actual = cuota_actual_api
+                    
+                    # Cálculo preciso del porcentaje de variación con decimales reales
+                    if apertura > 0:
+                        variacion = round(((actual - apertura) / apertura) * 100, 2)
+                    else:
+                        variacion = 0.0
+                        
+                    # Actualizamos la cuota actual y el delta en la base de datos
                     cursor.execute("""
                         UPDATE line_movement 
                         SET cuota_actual = ?, variacion_pct = ?, fecha_actualizacion = ?
                         WHERE partido = ? AND mercado = ?
-                    """, (cuota_actual, variacion, datetime.now().strftime("%Y-%m-%d %H:%M"), partido_str, mercado))
+                    """, (actual, variacion, datetime.now().strftime("%Y-%m-%d %H:%M"), partido_str, mercado))
                 
                 conn.commit()
+                
+                # Determinación de tendencia basada en movimiento real de mercado
+                if variacion < -0.1:
+                    tendencia = "🔥 Steam Money (Bajada de cuota)"
+                elif variacion > 0.1:
+                    tendencia = "📈 Drift (Sube cuota)"
+                else:
+                    tendencia = "⚖️ Estable"
                 
                 resultados_tracking.append({
                     "partido": partido_str,
                     "mercado": mercado,
                     "cuota_apertura": apertura,
-                    "cuota_actual": cuota_actual,
+                    "cuota_actual": actual,
                     "variacion_pct": variacion,
-                    "tendencia": "🔥 Steam Money (Caída de cuota)" if variacion < -2.0 else ("📈 Drift (Sube cuota)" if variacion > 2.0 else "⚖️ Estable")
+                    "tendencia": tendencia
                 })
                 
         conn.close()

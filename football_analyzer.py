@@ -145,6 +145,20 @@ def analizar_partidos_futbol_prematch():
 
                             total_lambda = lambda_h + lambda_a
 
+                            # --- CÁLCULO DE GOLES PRIMER TIEMPO (HT) ---
+                            # Se escala lambda al primer tiempo (aprox 46% del volumen total de goles)
+                            lambda_h_ht = lambda_h * 0.46
+                            lambda_a_ht = lambda_a * 0.46
+                            total_lambda_ht = lambda_h_ht + lambda_a_ht
+
+                            p_ht_0_home = poisson(0, lambda_h_ht)
+                            p_ht_0_away = poisson(0, lambda_a_ht)
+                            p_ht_0_total = poisson(0, total_lambda_ht)
+
+                            p_ht_over_05 = round((1 - p_ht_0_total) * 100, 1)
+                            p_home_ht_over_05 = round((1 - p_ht_0_home) * 100, 1)
+                            p_away_ht_over_05 = round((1 - p_ht_0_away) * 100, 1)
+
                             prob_0_h, prob_1_h = poisson(0, lambda_h), poisson(1, lambda_h)
                             prob_0_a, prob_1_a = poisson(0, lambda_a), poisson(1, lambda_a)
                             
@@ -219,6 +233,24 @@ def analizar_partidos_futbol_prematch():
                                 })
                                 oportunidades_alta_confianza.append(f"• 💎 **{home_name} Hándicap +1.0 (1X):** {prob_ev}% | Cuota: *{calcular_cuotas_valor(prob_ev - 15.0)}* ⏳ (Valor: Falso Favorito)")
 
+                            if p_ht_over_05 >= 65.0:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": "Más de 0.5 Goles 1er Tiempo (Over 0.5 HT)",
+                                    "justificacion": "Alta expectativa ofensiva inicial según tasa de Poisson escalada.",
+                                    "prob": p_ht_over_05, "cuota": calcular_cuotas_valor(p_ht_over_05)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **Over 0.5 Goles (1er Tiempo):** {p_ht_over_05}% | Cuota: *{calcular_cuotas_valor(p_ht_over_05)}* ⏳ (Valor: Gol tempranero)")
+
+                            if p_home_ht_over_05 >= 55.0 and lambda_h >= 1.3:
+                                picks_vip_valor.append({
+                                    "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
+                                    "mercado": f"{home_name} - Anota en el 1er Tiempo",
+                                    "justificacion": "Presión alta local en los primeros 45 minutos.",
+                                    "prob": p_home_ht_over_05, "cuota": calcular_cuotas_valor(p_home_ht_over_05)
+                                })
+                                oportunidades_alta_confianza.append(f"• 💎 **{home_name} Gol en 1er Tiempo:** {p_home_ht_over_05}% | Cuota: *{calcular_cuotas_valor(p_home_ht_over_05)}* ⏳ (Valor: Salida ofensiva local)")
+
                             if liga_under and lambda_h > 1.25 and lambda_a > 1.15 and p_btts >= 50.0:
                                 picks_vip_valor.append({
                                     "partido": f"{home_name} vs {away_name}", "liga": liga_nombre,
@@ -257,6 +289,7 @@ def analizar_partidos_futbol_prematch():
                             evaluar_mercado_seguro("Doble Oportunidad (1X)", p_1x, home_score >= away_score, 70.0)
                             evaluar_mercado_seguro("Doble Oportunidad (X2)", p_x2, away_score >= home_score, 70.0)
                             evaluar_mercado_seguro("Over 1.5 Goles", p_over_15, total_goals > 1.5, 68.0)
+                            evaluar_mercado_seguro("Más de 0.5 Goles (1T)", p_ht_over_05, total_goals > 0, 72.0)
                             evaluar_mercado_seguro("Ambos Marcan (BTTS)", p_btts, btts_real, 65.0)
                             evaluar_mercado_seguro("Menos de 2.5 Goles", p_under_25, total_goals < 2.5, 65.0)
                             evaluar_mercado_seguro("Menos de 3.5 Goles", p_under_35, total_goals < 3.5, 75.0)

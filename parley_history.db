@@ -1,0 +1,110 @@
+import os
+import json
+import sqlite3
+from datetime import datetime
+from football_analyzer import analizar_partidos_futbol_prematch
+
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "87843c0f13532b677bc7dcde129e97ae")
+
+def init_parley_db():
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS parley_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT,
+            cuota_total REAL,
+            picks TEXT,
+            estado TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def guardar_parley_diario(cuota_total, picks):
+    init_parley_db()
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    # Evitar duplicados exactos en la misma hora, guardando el registro diario
+    cursor.execute("SELECT id FROM parley_history WHERE fecha LIKE ? AND cuota_total = ?", (datetime.now().strftime("%Y-%m-%d") + "%", cuota_total))
+    row = cursor.fetchone()
+    
+    if row is None:
+        picks_str = json.dumps(picks)
+        cursor.execute("""
+            INSERT INTO parley_history (fecha, cuota_total, picks, estado)
+            VALUES (?, ?, ?, 'pendiente')
+        """, (fecha_hoy, cuota_total, picks_str))
+        conn.commit()
+    conn.close()
+
+def obtener_historial_parleys():
+    init_parley_db()
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, fecha, cuota_total, picks, estado FROM parley_history ORDER BY id DESC LIMIT 20")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    historial = []
+    for r in rows:
+        historial.append({
+            "id": r[0],
+            "fecha": r[1],
+            "cuota_total": r[2],
+            "picks": json.loads(r[3]),
+            "estado": r[4]
+        })
+    return historial
+
+def generar_parley_optimo(target_cuota=1.50):
+    resultado_futbol = analizar_partidos_futbol_prematch()
+    picks_vip = resultado_futbol.get("picks_vip", [])
+    
+    if not picks_vip:
+        return {"status": "error", "mensaje": "No hay picks VIP disponibles en este momento.", "picks": []}
+
+    picks_ordenados = sorted(picks_vip, key=lambda x: x.get("prob", 0), reverse=True)
+    
+    parley_seleccionado = []
+    cuota_acumulada = 1.0
+    
+    for pick in picks_ordenados:
+        if cuota_acumulada >= target_cuota and len(parley_seleccionado) >= 1:
+            break
+            
+        partido = pick.get("partido", "")
+        mercado = pick.get("mercado", "")
+        prob = pick.get("prob", 75.0)
+        
+        cuota_real = 1.30
+        if "Cuota:" in mercado:
+            try:
+                partes = mercado.split("Cuota:")
+                val_str = partes[1].replace(")", "").strip()
+                cuota_real = float(val_str)
+            except:
+                pass
+
+        parley_seleccionado.append({
+            "partido": partido,
+            "mercado": mercado,
+            "prob": prob,
+            "cuota": float(cuota_real),
+            "estado_pick": pick.get("estado_pick", "pendiente")
+        })
+        cuota_acumulada *= float(cuota_real)
+
+    cuota_total_final = round(cuota_acumulada, 2)
+    
+    if parley_seleccionado:
+        guardar_parley_diario(cuota_total_final, parley_seleccionado)
+
+    return {
+        "status": "success",
+        "cuota_total": cuota_total_final,
+        "target_alcanzado": cuota_total_final >= target_cuota,
+        "picks": parley_seleccionado
+    }

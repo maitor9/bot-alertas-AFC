@@ -9,7 +9,7 @@ from nhl_analyzer import analizar_partidos_nhl
 from ufc_analyzer import analizar_cartelera_ufc
 from motorsports_analyzer import analizar_cartelera_motor
 from yellow_cards_analyzer import analizar_alertas_tarjetas
-from odds_tracker import actualizar_y_rastrear_cuotas
+from odds_tracker import generar_parley_optimo
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
@@ -50,20 +50,15 @@ def api_tarjetas_alerta():
         "alertas": resultado
     })
 
-@app.route("/api/line_movement", methods=["GET"])
-def api_line_movement():
-    movimientos = actualizar_y_rastrear_cuotas("soccer_uefa_champs_league")
-    return jsonify({
-        "status": "success",
-        "total_registros": len(movimientos),
-        "movimientos": movimientos
-    })
+@app.route("/api/parley_optimo", methods=["GET"])
+def api_parley_optimo():
+    resultado_parley = generar_parley_optimo(target_cuota=1.50)
+    return jsonify(resultado_parley)
 
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():
     resultado = analizar_partidos_futbol_prematch()
     
-    # Blindaje de seguridad para asegurar que las tarjetas lean la fecha sin "undefined"
     for item in resultado.get("raw_picks", []):
         f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
         item["fecha"] = f_val
@@ -82,7 +77,6 @@ def api_football_prematch():
 def api_nba_prematch():
     resultado = analizar_partidos_nba()
     
-    # Blindaje de seguridad para asegurar que las tarjetas lean la fecha sin "undefined"
     for item in resultado.get("raw_picks", []):
         f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
         item["fecha"] = f_val

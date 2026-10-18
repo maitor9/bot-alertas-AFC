@@ -23,7 +23,6 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Tarjeta estilo terminal hacker con bordes de neón */
         .cyber-terminal-card {
             background: linear-gradient(145deg, #06110e, #030807);
             border: 1px solid rgba(16, 185, 129, 0.25);
@@ -37,7 +36,6 @@
             transform: translateY(-2px);
         }
 
-        /* Botones de comando estilo terminal */
         .terminal-btn {
             font-family: 'JetBrains Mono', monospace;
             background: #06110e;
@@ -66,7 +64,6 @@
             border-color: #f59e0b !important;
         }
 
-        /* Scrollbar estilo consola */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -84,7 +81,6 @@
 </head>
 <body class="min-h-screen flex flex-col p-4 md:p-6">
 
-    <!-- BARRA SUPERIOR DE SISTEMA (ESTILO TERMINAL) -->
     <header class="w-full max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center border-b border-emerald-900/50 pb-4 mb-6">
         <div class="flex items-center space-x-3 mb-2 md:mb-0">
             <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded border border-amber-600/30">root@AFC-SYS:~#</span>
@@ -101,7 +97,6 @@
         </div>
     </header>
 
-    <!-- NAVEGACIÓN DE COMANDOS (SELECCIÓN DE DEPORTES Y MÓDULOS) -->
     <nav class="w-full max-w-7xl mx-auto flex flex-wrap gap-2 mb-6 justify-center">
         <button onclick="cargarDeporte('football_prematch', 'Fútbol')" id="btn-football" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./futbol.sh</button>
         <button onclick="cargarDeporte('nba_prematch', 'NBA & NCAA')" id="btn-nba" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./basket.sh</button>
@@ -111,21 +106,17 @@
         <button onclick="cargarDeporte('ufc_prematch', 'UFC')" id="btn-ufc" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./ufc.sh</button>
         <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./motor.sh</button>
         <button onclick="cargarTarjetas()" id="btn-tarjetas" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-amber-500/50 text-amber-300">./tarjetas_friction.bin</button>
-        <button onclick="cargarLineMovement()" id="btn-line" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-blue-500/50 text-blue-300">./clv_odds.log</button>
+        <button onclick="cargarParleyOptimo()" id="btn-parley" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-blue-500/50 text-blue-300">./parley_optimo_1.50.sh</button>
     </nav>
 
-    <!-- PESTAÑAS SECUNDARIAS (PRO / VIP) -->
     <div id="sub-tabs" class="w-full max-w-7xl mx-auto flex justify-center gap-3 mb-6">
         <button onclick="cambiarVista('pro')" id="tab-pro" class="tab-btn px-5 py-1.5 rounded text-xs font-bold bg-slate-900 border border-emerald-900/50 text-emerald-400 tab-active">[ MODO_PRO ]</button>
         <button onclick="cambiarVista('vip')" id="tab-vip" class="tab-btn px-5 py-1.5 rounded text-xs font-bold bg-slate-900 border border-emerald-900/50 text-emerald-400 hover:border-amber-500/50">[ MODO_VIP_PICKS ]</button>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL DE DATOS -->
     <main id="content-container" class="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <!-- Inyección dinámica de tarjetas de sistema -->
     </main>
 
-    <!-- SCRIPT DE CONTROL Y CONEXIÓN -->
     <script>
         let currentEndpoint = 'football_prematch';
         let currentSportName = 'Fútbol';
@@ -145,7 +136,7 @@
             currentSportName = sportName;
             currentMode = 'pro';
             
-            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command', 'border-amber-400', 'bg-amber-950/40'));
+            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command'));
             const activeBtn = document.getElementById('btn-' + endpoint.replace('_prematch', ''));
             if(activeBtn) {
                 activeBtn.classList.add('active-command');
@@ -179,27 +170,27 @@
             }
         }
 
-        async function cargarLineMovement() {
-            currentMode = 'line_movement';
+        async function cargarParleyOptimo() {
+            currentMode = 'parley_optimo';
             document.getElementById('sub-tabs').style.display = 'none';
 
             document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command'));
-            document.getElementById('btn-line').classList.add('active-command');
+            document.getElementById('btn-parley').classList.add('active-command');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-mono-custom animate-pulse">>>> LEYENDO registros CLV en The Odds API...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-mono-custom animate-pulse">>>> CALCULANDO combinatoria de alta probabilidad (Target: Cuota 1.50+)...</div>`;
 
             try {
-                const res = await fetch('/api/line_movement');
+                const res = await fetch('/api/parley_optimo');
                 const json = await res.json();
 
-                if(json.status === 'success' && json.movimientos.length > 0) {
-                    renderizarLineMovement(json.movimientos);
+                if(json.status === 'success' && json.picks.length > 0) {
+                    renderizarParleyOptimo(json);
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] Sin variaciones de cuotas registradas.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay suficientes datos para generar el parley óptimo.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Timeout al conectar con el servidor de cuotas.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al conectar con el motor de combinadas.</div>`;
             }
         }
 
@@ -295,31 +286,43 @@
             });
         }
 
-        function renderizarLineMovement(movimientos) {
+        function renderizarParleyOptimo(data) {
             const container = document.getElementById('content-container');
             container.innerHTML = '';
 
-            movimientos.forEach(mov => {
-                const card = document.createElement('div');
-                card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between border-blue-500/40";
-                
-                const colorVariacion = mov.variacion_pct < 0 ? 'text-emerald-400' : (mov.variacion_pct > 0 ? 'text-rose-400' : 'text-slate-300');
+            const headerCard = document.createElement('div');
+            headerCard.className = "cyber-terminal-card col-span-full rounded-xl p-6 border-amber-500/50 flex flex-col md:flex-row justify-between items-center gap-4 mb-2";
+            headerCard.innerHTML = `
+                <div>
+                    <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2 py-1 rounded border border-amber-600/30">[PARLEY_RECOMENDADO_AFC]</span>
+                    <h2 class="text-lg font-bold font-mono-custom text-white mt-2">Combinada de Fútbol (Alta Probabilidad)</h2>
+                    <p class="text-xs text-emerald-400 font-mono-custom mt-1">Validador de cuotas The Odds API • Target mínimo: 1.50</p>
+                </div>
+                <div class="text-right font-mono-custom">
+                    <span class="text-xs text-slate-400 block">CUOTA TOTAL ACUMULADA:</span>
+                    <span class="text-2xl font-black text-amber-300">${data.cuota_total}</span>
+                </div>
+            `;
+            container.appendChild(headerCard);
 
+            data.picks.forEach((pick, index) => {
+                const card = document.createElement('div');
+                card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between border-emerald-500/30";
                 card.innerHTML = `
                     <div>
-                        <span class="text-[10px] font-mono-custom uppercase tracking-wider text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-600/30">[CLV_TRACKING]</span>
-                        <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${mov.partido}</h3>
-                        <div class="bg-black/60 rounded-lg p-3 border border-blue-900/60 mb-4 space-y-2 font-mono-custom text-xs">
-                            <span class="text-slate-400 block">MARKET: <strong class="text-slate-200">${mov.mercado}</strong></span>
-                            <div class="flex justify-between pt-1 border-t border-blue-950">
-                                <span class="text-slate-400">OPEN: <strong class="text-slate-300">${mov.cuota_apertura}</strong></span>
-                                <span class="text-slate-400">CURRENT: <strong class="text-blue-300">${mov.cuota_actual}</strong></span>
+                        <span class="text-[10px] font-mono-custom uppercase tracking-wider text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/30">SELECCIÓN #${index + 1}</span>
+                        <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${pick.partido}</h3>
+                        <div class="bg-black/60 rounded-lg p-3 border border-emerald-900/60 mb-4 space-y-1 font-mono-custom text-xs">
+                            <span class="text-slate-400 block">MERCADO: <strong class="text-amber-300">${pick.mercado}</strong></span>
+                            <div class="flex justify-between pt-1 border-t border-emerald-950">
+                                <span class="text-slate-400">PROBABILIDAD: <strong class="text-emerald-300">${pick.prob}%</strong></span>
+                                <span class="text-slate-400">CUOTA: <strong class="text-blue-300 font-bold">${pick.cuota}</strong></span>
                             </div>
                         </div>
                     </div>
-                    <div class="pt-3 border-t border-blue-900/40 flex justify-between items-center text-xs font-mono-custom">
-                        <span class="text-slate-400">DELTA: <strong class="${colorVariacion}">${mov.variacion_pct}%</strong></span>
-                        <span class="font-bold text-slate-200 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px]">${mov.tendencia}</span>
+                    <div class="pt-3 border-t border-emerald-900/40 flex justify-between items-center text-xs font-mono-custom">
+                        <span class="text-emerald-500">ESTADO:</span>
+                        <span class="text-base">${pick.estado_pick === 'acertado' ? '✅' : (pick.estado_pick === 'fallado' ? '❌' : '⏳')}</span>
                     </div>
                 `;
                 container.appendChild(card);

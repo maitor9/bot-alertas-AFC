@@ -9,10 +9,8 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "87843c0f13532b677bc7dcde129e97ae")
 def init_odds_db():
     conn = sqlite3.connect('odds_tracking.db')
     cursor = conn.cursor()
-    # Forzamos la destrucción de tablas antiguas estáticas
-    cursor.execute('DROP TABLE IF EXISTS line_movement')
     cursor.execute('''
-        CREATE TABLE line_movement (
+        CREATE TABLE IF NOT EXISTS line_movement (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             partido TEXT,
             mercado TEXT,
@@ -25,41 +23,24 @@ def init_odds_db():
     conn.commit()
     conn.close()
 
-def actualizar_y_rastrear_cuotas(sport_key="soccer_uefa_champs_league"):
+def actualizar_y_rastrear_cuotas(sport_key="soccer_epl"):
     init_odds_db()
     conn = sqlite3.connect('odds_tracking.db')
     cursor = conn.cursor()
     
+    # Consultamos una liga con partidos activos reales (ej. Premier League)
     url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
     
     try:
         response = requests.get(url, timeout=5.0)
-        data = response.json() if response.status_code == 200 else []
-        
+        if response.status_code != 200:
+            print(f"⚠️ Error al conectar con The Odds API: {response.status_code}")
+            conn.close()
+            return []
+            
+        data = response.json()
         resultados_tracking = []
         
-        # Si la API no retorna partidos en curso en este segundo, inyectamos un set de mercado altamente realista con deltas y tendencias activas
-        if not data:
-            partidos_demo = [
-                ("Sabah FK vs Borussia Dortmund", "Victoria Borussia Dortmund (1X2)", 1.35, 1.28, -5.19, "🔥 Steam Money (Bajada)"),
-                ("Sabah FK vs Borussia Dortmund", "Victoria Sabah FK (1X2)", 9.50, 10.20, +7.37, "📈 Drift (Subida)"),
-                ("Sabah FK vs Borussia Dortmund", "Victoria Draw (1X2)", 5.80, 6.10, +5.17, "📈 Drift (Subida)"),
-                ("Fenerbahce vs Slavia Praha", "Victoria Fenerbahce (1X2)", 1.75, 1.68, -4.00, "🔥 Steam Money (Bajada)"),
-                ("Fenerbahce vs Slavia Praha", "Victoria Slavia Praha (1X2)", 4.50, 4.85, +7.78, "📈 Drift (Subida)"),
-                ("Manchester City vs AEK Athens", "Victoria Manchester City (1X2)", 1.12, 1.08, -3.57, "🔥 Steam Money (Bajada)"),
-            ]
-            for p, m, op, act, var, tend in partidos_demo:
-                resultados_tracking.append({
-                    "partido": p,
-                    "mercado": m,
-                    "cuota_apertura": op,
-                    "cuota_actual": act,
-                    "variacion_pct": var,
-                    "tendencia": tend
-                })
-            conn.close()
-            return resultados_tracking
-
         for evento in data:
             home_team = evento.get("home_team")
             away_team = evento.get("away_team")
@@ -68,32 +49,52 @@ def actualizar_y_rastrear_cuotas(sport_key="soccer_uefa_champs_league"):
             bookmakers = evento.get("bookmakers", [])
             if not bookmakers: continue
             
+            # Tomamos la cuota oficial de Bet365 o la primera casa disponible
             bookmaker = next((b for b in bookmakers if b.get("key") == "bet365"), bookmakers[0])
             markets = bookmaker.get("markets", [])
-            h2h_market = next((m for m in markets if m.get("key"] == "h2h"), None) # type: ignore
+            h2h_market = next((m for m in markets if m.get("key") == "h2h"), None)
             
             if not h2h_market: continue
             
             outcomes = h2h_market.get("outcomes", [])
             for outcome in outcomes:
                 nombre_equipo = outcome.get("name")
-                precio_api = float(outcome.get("price"))
+                precio_actual = float(outcome.get("price"))
                 mercado = f"Victoria {nombre_equipo} (1X2)"
                 
-                # Motor matemático de divergencia para forzar movimiento visible de mercado en tiempo real
-                desfase = (len(nombre_equipo) + datetime.now().minute) % 3
-                if desfase == 0:
-                    apertura = round(precio_api * 1.035, 2)
-                    actual = precio_api
-                elif desfase == 1:
-                    apertura = round(precio_api * 0.97, 2)
-                    actual = precio_api
-                else:
-                    apertura = precio_api
-                    actual = round(precio_api * 1.025, 2)
-                    
-                variacion = round(((actual - apertura) / apertura) * 100, 2)
+                # Verificamos si ya tenemos registrada una cuota de apertura en nuestra base de datos local
+                cursor.execute("SELECT cuota_apertura FROM line_movement WHERE partido = ? AND mercado = ?", (partido_str, mercado))
+                row = cursor.fetchone()
                 
+                if row is None:
+                    # Primera vez que el bot detecta este partido: fijamos estrictamente la cuota de apertura
+                    cursor.execute("""
+                        INSERT INTO line_movement (partido, mercado, cuota_apertura, cuota_actual, variacion_pct, fecha_actualizacion)
+                        VALUES (?, ?, ?, ?, 0.0, ?)
+                    """, (partido_str, mercado, precio_actual, precio_actual, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                    apertura = precio_actual
+                    actual = precio_actual
+                    variacion = 0.0
+                else:
+                    apertura = float(row[0])
+                    actual = precio_actual
+                    
+                    # Cálculo matemático real de la variación porcentual respecto a la apertura guardada
+                    if apertura > 0:
+                        variacion = round(((actual - apertura) / apertura) * 100, 2)
+                    else:
+                        variacion = 0.0
+                        
+                    # Actualizamos la cuota actual en la base de datos
+                    cursor.execute("""
+                        UPDATE line_movement 
+                        SET cuota_actual = ?, variacion_pct = ?, fecha_actualizacion = ?
+                        WHERE partido = ? AND mercado = ?
+                    """, (actual, variacion, datetime.now().strftime("%Y-%m-%d %H:%M"), partido_str, mercado))
+                
+                conn.commit()
+                
+                # Clasificación de tendencia basada en el movimiento real del mercado
                 if variacion < -0.1:
                     tendencia = "🔥 Steam Money (Bajada)"
                 elif variacion > 0.1:
@@ -114,4 +115,5 @@ def actualizar_y_rastrear_cuotas(sport_key="soccer_uefa_champs_league"):
         return resultados_tracking
     except Exception as e:
         print(f"⚠️ Error en tracking de cuotas: {e}")
+        conn.close()
         return []

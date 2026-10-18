@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOT_ALERTAS_AFP // Terminal Sabermétrico</title>
+    <title>BOT_ALERTAS_AFP // Terminal Neural</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;900&family=Inter:wght@400;600;800&display=swap');
@@ -85,7 +85,7 @@
         <div class="flex items-center space-x-3 mb-2 md:mb-0">
             <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2.5 py-1 rounded border border-amber-600/30">root@AFC-SYS:~#</span>
             <h1 class="text-xl md:text-2xl font-black tracking-wider font-mono-custom text-emerald-400">
-                ./dashboard_sabermetrico.sh
+                ./dashboard_neural.sh
             </h1>
         </div>
         <div class="flex items-center gap-4 text-xs font-mono-custom text-emerald-500/80">
@@ -107,6 +107,7 @@
         <button onclick="cargarDeporte('motor_prematch', 'Motor')" id="btn-motor" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider">./motor.sh</button>
         <button onclick="cargarTarjetas()" id="btn-tarjetas" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-amber-500/50 text-amber-300">./tarjetas_friction.bin</button>
         <button onclick="cargarParleyOptimo()" id="btn-parley" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-blue-500/50 text-blue-300">./parley_optimo_1.50.sh</button>
+        <button onclick="cargarHistorialParleys()" id="btn-historial" class="terminal-btn px-3.5 py-2 rounded text-xs font-bold uppercase tracking-wider border-purple-500/50 text-purple-300">./historial_parleys.log</button>
     </nav>
 
     <div id="sub-tabs" class="w-full max-w-7xl mx-auto flex justify-center gap-3 mb-6">
@@ -154,7 +155,7 @@
             document.getElementById('btn-tarjetas').classList.add('active-command');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-amber-400 font-mono-custom animate-pulse">>>> EJECUTANDO motor de fricción y tarjetas nominales...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-amber-400 font-mono-custom animate-pulse">>>> EJECUTANDO motor neural de fricción y tarjetas nominales...</div>`;
 
             try {
                 const res = await fetch('/api/tarjetas_alerta');
@@ -163,10 +164,10 @@
                 if(json.status === 'success' && json.alertas.length > 0) {
                     renderizarTarjetas(json.alertas);
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay alertas de fricción activas en este buffer.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay alertas de fricción activas en este buffer neural.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al procesar el stream de tarjetas.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al procesar el stream neural de tarjetas.</div>`;
             }
         }
 
@@ -178,7 +179,7 @@
             document.getElementById('btn-parley').classList.add('active-command');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-mono-custom animate-pulse">>>> CALCULANDO combinatoria de alta probabilidad (Target: Cuota 1.50+)...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-blue-400 font-mono-custom animate-pulse">>>> CALCULANDO combinatoria neural de alta probabilidad (Target: Cuota 1.50+)...</div>`;
 
             try {
                 const res = await fetch('/api/parley_optimo');
@@ -187,10 +188,34 @@
                 if(json.status === 'success' && json.picks.length > 0) {
                     renderizarParleyOptimo(json);
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay suficientes datos para generar el parley óptimo.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] No hay suficientes datos neurales para generar el parley óptimo.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al conectar con el motor de combinadas.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al conectar con el núcleo neural de combinadas.</div>`;
+            }
+        }
+
+        async function cargarHistorialParleys() {
+            currentMode = 'historial_parleys';
+            document.getElementById('sub-tabs').style.display = 'none';
+
+            document.querySelectorAll('.terminal-btn').forEach(b => b.classList.remove('active-command'));
+            document.getElementById('btn-historial').classList.add('active-command');
+
+            const container = document.getElementById('content-container');
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-purple-400 font-mono-custom animate-pulse">>>> LEYENDO registros de auditoría neural e historial...</div>`;
+
+            try {
+                const res = await fetch('/api/historial_parleys');
+                const json = await res.json();
+
+                if(json.status === 'success' && json.historial.length > 0) {
+                    renderizarHistorialParleys(json.historial);
+                } else {
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] El registro neural está vacío. Genera al menos un parley.</div>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-400 cyber-terminal-card rounded-xl p-8 font-mono-custom">[ERROR] Fallo al recuperar la base de datos de auditoría neural.</div>`;
             }
         }
 
@@ -200,7 +225,7 @@
             document.getElementById('tab-vip').classList.toggle('tab-active', modo === 'vip');
 
             const container = document.getElementById('content-container');
-            container.innerHTML = `<div class="col-span-full text-center py-16 text-emerald-400 font-mono-custom animate-pulse">>>> CARGANDO vectores para ${currentSportName}...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-16 text-emerald-400 font-mono-custom animate-pulse">>>> CARGANDO vectores neurales para ${currentSportName}...</div>`;
 
             try {
                 const res = await fetch(`/api/${currentEndpoint}`);
@@ -225,7 +250,7 @@
             }
 
             if (itemsToRender.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] Buffer vacío para este sector.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-emerald-500/70 cyber-terminal-card rounded-xl p-8 font-mono-custom">[INFO] Buffer neural vacío para este sector.</div>`;
                 return;
             }
 
@@ -247,7 +272,7 @@
                             <span class="text-[10px] font-mono-custom uppercase tracking-wider text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-600/30">${item.liga || currentSportName}</span>
                             <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${item.partido}</h3>
                             <div class="bg-black/60 rounded-lg p-3 border border-emerald-900/60 mb-4">
-                                <span class="text-[10px] font-mono-custom text-emerald-500 block mb-0.5">[TARGET_MARKET]:</span>
+                                <span class="text-[10px] font-mono-custom text-emerald-500 block mb-0.5">[NEURAL_TARGET]:</span>
                                 <span class="text-xs font-mono-custom font-bold text-amber-300">${item.mercado}</span>
                             </div>
                         </div>
@@ -278,7 +303,7 @@
                 card.innerHTML = `
                     <div class="text-xs md:text-sm space-y-2 whitespace-pre-line text-emerald-300 font-mono-custom">${text}</div>
                     <div class="mt-4 pt-3 border-t border-amber-900/40 flex justify-between items-center text-xs font-mono-custom">
-                        <span class="text-amber-400 font-bold">[FRICCIÓN_DETECTADA]</span>
+                        <span class="text-amber-400 font-bold">[FRICCIÓN_NEURAL]</span>
                         <span class="text-emerald-400">⏳ ${alerta.fecha}</span>
                     </div>
                 `;
@@ -294,7 +319,7 @@
             headerCard.className = "cyber-terminal-card col-span-full rounded-xl p-6 border-amber-500/50 flex flex-col md:flex-row justify-between items-center gap-4 mb-2";
             headerCard.innerHTML = `
                 <div>
-                    <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2 py-1 rounded border border-amber-600/30">[PARLEY_RECOMENDADO_AFC]</span>
+                    <span class="text-xs font-mono-custom text-amber-400 bg-amber-950/50 px-2 py-1 rounded border border-amber-600/30">[PARLEY_NEURAL_RECOMENDADO]</span>
                     <h2 class="text-lg font-bold font-mono-custom text-white mt-2">Combinada de Fútbol (Alta Probabilidad)</h2>
                     <p class="text-xs text-emerald-400 font-mono-custom mt-1">Validador de cuotas The Odds API • Target mínimo: 1.50</p>
                 </div>
@@ -310,7 +335,7 @@
                 card.className = "cyber-terminal-card rounded-xl p-5 flex flex-col justify-between border-emerald-500/30";
                 card.innerHTML = `
                     <div>
-                        <span class="text-[10px] font-mono-custom uppercase tracking-wider text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/30">SELECCIÓN #${index + 1}</span>
+                        <span class="text-[10px] font-mono-custom uppercase tracking-wider text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/30">SELECCIÓN NEURAL #${index + 1}</span>
                         <h3 class="text-base font-bold font-mono-custom text-white mt-2 mb-3">${pick.partido}</h3>
                         <div class="bg-black/60 rounded-lg p-3 border border-emerald-900/60 mb-4 space-y-1 font-mono-custom text-xs">
                             <span class="text-slate-400 block">MERCADO: <strong class="text-amber-300">${pick.mercado}</strong></span>
@@ -322,7 +347,56 @@
                     </div>
                     <div class="pt-3 border-t border-emerald-900/40 flex justify-between items-center text-xs font-mono-custom">
                         <span class="text-emerald-500">ESTADO:</span>
-                        <span class="text-base">${pick.estado_pick === 'acertado' ? '✅' : (pick.estado_pick === 'fallado' ? '❌' : '⏳')}</span>
+                        <span class="text-base">⏳ (Guardado en Auditoría Neural)</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderizarHistorialParleys(historial) {
+            const container = document.getElementById('content-container');
+            container.innerHTML = '';
+
+            const headerCard = document.createElement('div');
+            headerCard.className = "cyber-terminal-card col-span-full rounded-xl p-6 border-purple-500/50 flex flex-col md:flex-row justify-between items-center gap-4 mb-2";
+            headerCard.innerHTML = `
+                <div>
+                    <span class="text-xs font-mono-custom text-purple-400 bg-purple-950/50 px-2 py-1 rounded border border-purple-600/30">[AUDITORÍA_NEURAL]</span>
+                    <h2 class="text-lg font-bold font-mono-custom text-white mt-2">Historial de Parleys Registrados</h2>
+                    <p class="text-xs text-purple-300/80 font-mono-custom mt-1">Base de datos de persistencia neural semanal / diaria</p>
+                </div>
+                <div class="text-right font-mono-custom">
+                    <span class="text-xs text-slate-400 block">TOTAL REGISTROS:</span>
+                    <span class="text-xl font-black text-purple-300">${historial.length} Parleys</span>
+                </div>
+            `;
+            container.appendChild(headerCard);
+
+            historial.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "cyber-terminal-card col-span-full rounded-xl p-5 border-purple-500/30";
+                
+                let picksHtml = item.picks.map((p, idx) => `
+                    <div class="flex justify-between text-xs font-mono-custom border-b border-purple-950 py-1.5">
+                        <span class="text-slate-300">#${idx + 1} - ${p.partido} (${p.mercado})</span>
+                        <span class="text-amber-300 font-bold">Cuota: ${p.cuota}</span>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-purple-900/40 pb-3 mb-3">
+                        <div>
+                            <span class="text-[10px] font-mono-custom text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded">REGISTRO NEURAL #${item.id}</span>
+                            <span class="text-xs text-slate-400 ml-2">📅 ${item.fecha}</span>
+                        </div>
+                        <div class="mt-2 md:mt-0 font-mono-custom text-xs">
+                            <span class="text-slate-400 mr-2">Cuota Total: <strong class="text-amber-300 text-sm">${item.cuota_total}</strong></span>
+                            <span class="text-slate-400">Estado: <strong class="text-blue-400 uppercase">${item.estado}</strong></span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        ${picksHtml}
                     </div>
                 `;
                 container.appendChild(card);

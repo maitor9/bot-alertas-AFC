@@ -1,40 +1,70 @@
 import os
-import requests
+import json
+import sqlite3
+from datetime import datetime
 from football_analyzer import analizar_partidos_futbol_prematch
 
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "87843c0f13532b677bc7dcde129e97ae")
 
+def init_parley_db():
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS parley_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT,
+            cuota_total REAL,
+            picks TEXT,
+            estado TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def guardar_parley_diario(cuota_total, picks):
+    init_parley_db()
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    cursor.execute("SELECT id FROM parley_history WHERE fecha LIKE ? AND cuota_total = ?", (datetime.now().strftime("%Y-%m-%d") + "%", cuota_total))
+    row = cursor.fetchone()
+    
+    if row is None:
+        picks_str = json.dumps(picks)
+        cursor.execute("""
+            INSERT INTO parley_history (fecha, cuota_total, picks, estado)
+            VALUES (?, ?, ?, 'pendiente')
+        """, (fecha_hoy, cuota_total, picks_str))
+        conn.commit()
+    conn.close()
+
+def obtener_historial_parleys():
+    init_parley_db()
+    conn = sqlite3.connect('parley_history.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, fecha, cuota_total, picks, estado FROM parley_history ORDER BY id DESC LIMIT 20")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    historial = []
+    for r in rows:
+        historial.append({
+            "id": r[0],
+            "fecha": r[1],
+            "cuota_total": r[2],
+            "picks": json.loads(r[3]),
+            "estado": r[4]
+        })
+    return historial
+
 def generar_parley_optimo(target_cuota=1.50):
-    # 1. Obtenemos los picks VIP de fútbol del analizador sabermétrico
     resultado_futbol = analizar_partidos_futbol_prematch()
     picks_vip = resultado_futbol.get("picks_vip", [])
     
     if not picks_vip:
         return {"status": "error", "mensaje": "No hay picks VIP disponibles en este momento.", "picks": []}
 
-    # 2. Consultamos cuotas reales en The Odds API (Premier League como referencia principal)
-    url = f"https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
-    odds_map = {}
-    
-    try:
-        response = requests.get(url, timeout=5.0)
-        if response.status_code == 200:
-            data = response.json()
-            for evento in data:
-                home = evento.get("home_team", "").lower()
-                away = evento.get("away_team", "").lower()
-                bookmakers = evento.get("bookmakers", [])
-                if not bookmakers: continue
-                bm = next((b for b in bookmakers if b.get("key") == "bet365"), bookmakers[0])
-                markets = bm.get("markets", [])
-                h2h = next((m for m in markets if m.get("key") == "h2h"), None)
-                if h2h:
-                    prices = {o.get("name").lower(): o.get("price") for o in h2h.get("outcomes", [])}
-                    odds_map[(home, away)] = prices
-    except Exception as e:
-        print(f"⚠️ Error conectando a The Odds API para parley: {e}")
-
-    # 3. Ordenamos los picks por probabilidad de mayor a menor
     picks_ordenados = sorted(picks_vip, key=lambda x: x.get("prob", 0), reverse=True)
     
     parley_seleccionado = []
@@ -48,19 +78,14 @@ def generar_parley_optimo(target_cuota=1.50):
         mercado = pick.get("mercado", "")
         prob = pick.get("prob", 75.0)
         
-        # Asignación de cuota real validada o estimación de alta probabilidad
-        cuota_real = 1.28
-        if " vs " in partido:
-            equipos = partido.split(" vs ")
-            h_key = equipos[0].strip().lower()
-            a_key = equipos[1].strip().lower()
-            for (h_api, a_api), prices in odds_map.items():
-                if h_key in h_api or a_key in a_api:
-                    if equipos[0].lower() in mercado.lower():
-                        cuota_real = prices.get(equipos[0].lower(), 1.32)
-                    elif equipos[1].lower() in mercado.lower():
-                        cuota_real = prices.get(equipos[1].lower(), 1.42)
-                    break
+        cuota_real = 1.30
+        if "Cuota:" in mercado:
+            try:
+                partes = mercado.split("Cuota:")
+                val_str = partes[1].replace(")", "").strip()
+                cuota_real = float(val_str)
+            except:
+                pass
 
         parley_seleccionado.append({
             "partido": partido,
@@ -71,9 +96,14 @@ def generar_parley_optimo(target_cuota=1.50):
         })
         cuota_acumulada *= float(cuota_real)
 
+    cuota_total_final = round(cuota_acumulada, 2)
+    
+    if parley_seleccionado:
+        guardar_parley_diario(cuota_total_final, parley_seleccionado)
+
     return {
         "status": "success",
-        "cuota_total": round(cuota_acumulada, 2),
-        "target_alcanzado": cuota_acumulada >= target_cuota,
+        "cuota_total": cuota_total_final,
+        "target_alcanzado": cuota_total_final >= target_cuota,
         "picks": parley_seleccionado
     }

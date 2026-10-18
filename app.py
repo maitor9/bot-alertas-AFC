@@ -9,7 +9,7 @@ from nhl_analyzer import analizar_partidos_nhl
 from ufc_analyzer import analizar_cartelera_ufc
 from motorsports_analyzer import analizar_cartelera_motor
 from yellow_cards_analyzer import analizar_alertas_tarjetas
-from odds_tracker import generar_parley_optimo
+from odds_tracker import generar_parley_optimo, obtener_historial_parleys
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
@@ -55,10 +55,18 @@ def api_parley_optimo():
     resultado_parley = generar_parley_optimo(target_cuota=1.50)
     return jsonify(resultado_parley)
 
+@app.route("/api/historial_parleys", methods=["GET"])
+def api_historial_parleys():
+    historial = obtener_historial_parleys()
+    return jsonify({
+        "status": "success",
+        "total": len(historial),
+        "historial": historial
+    })
+
 @app.route("/api/football_prematch", methods=["GET"])
 def api_football_prematch():
     resultado = analizar_partidos_futbol_prematch()
-    
     for item in resultado.get("raw_picks", []):
         f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
         item["fecha"] = f_val
@@ -76,7 +84,6 @@ def api_football_prematch():
 @app.route("/api/nba_prematch", methods=["GET"])
 def api_nba_prematch():
     resultado = analizar_partidos_nba()
-    
     for item in resultado.get("raw_picks", []):
         f_val = item.get("fecha") or item.get("time") or item.get("datetime") or "📅 Próximamente"
         item["fecha"] = f_val

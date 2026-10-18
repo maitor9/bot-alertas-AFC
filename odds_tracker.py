@@ -7,7 +7,17 @@ from football_analyzer import analizar_partidos_futbol_prematch
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "87843c0f13532b677bc7dcde129e97ae")
 
 def init_parley_db():
-    conn = sqlite3.connect('parley_history.db')
+    db_file = 'parley_history.db'
+    # Si el archivo existe pero está corrupto o vacío, lo borramos para prevenir DatabaseError
+    if os.path.exists(db_file):
+        try:
+            conn = sqlite3.connect(db_file)
+            conn.execute("SELECT name FROM sqlite_master LIMIT 1;")
+            conn.close()
+        except sqlite3.DatabaseError:
+            os.remove(db_file)
+
+    conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS parley_history (

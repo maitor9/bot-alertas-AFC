@@ -82,30 +82,29 @@ def extraer_estadisticas_equipo(team_data, base_def):
 
     return float(puntos_favor), float(puntos_contra), float(win_pct)
 
-def extraer_top_jugadores(event_id, liga_codigo):
-    """Extrae líderes clave en puntos, rebotes y asistencias desde el resumen del evento."""
-    if not event_id:
-        return "No disponibles"
-    url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga_codigo}/summary?event={event_id}"
+def extraer_top_jugadores(competition, home_name, away_name):
+    """Extrae líderes o jugadores destacados directamente de los atletas en la competencia."""
     try:
-        res = requests.get(url, timeout=2.5)
-        if res.status_code == 200:
-            data = res.json()
-            leaders = data.get("leaders", [])
-            lines = []
+        leaders_info = []
+        competitors = competition.get("competitors", [])
+        for comp in competitors:
+            t_name = comp.get("team", {}).get("shortDisplayName", "")
+            leaders = comp.get("leaders", [])
             for cat in leaders:
                 cat_name = cat.get("displayName", "")
-                if cat_name in ["Points", "Rebounds", "Assists", "Puntos", "Rebotes", "Asistencias"]:
-                    top_player = cat.get("leaders", [{}])[0]
-                    athlete = top_player.get("athlete", {}).get("displayName", "")
-                    value = top_player.get("displayValue", "")
-                    if athlete and value:
-                        lines.append(f"{athlete} ({value} {cat_name[:3]})")
-            if lines:
-                return " | ".join(lines[:2])
+                if cat_name in ["Points", "Puntos", "Scoring Leader"]:
+                    top_list = cat.get("leaders", [])
+                    if top_list:
+                        player = top_list[0].get("athlete", {}).get("displayName", "")
+                        val = top_list[0].get("displayValue", "")
+                        if player:
+                            leaders_info.append(f"{t_name}: {player} ({val} PTS)")
+                            break
+        if leaders_info:
+            return " | ".join(leaders_info)
     except:
         pass
-    return "Análisis colectivo de rotación"
+    return f"Estrellas en duela ({home_name} vs {away_name})"
 
 def convertir_hora_colombia(date_str):
     try:
@@ -126,7 +125,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico + Top Players)...", flush=True)
+    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico Avanzado)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -211,7 +210,6 @@ def analizar_partidos_nba():
                     prob_ml = max(p_win_h, p_win_a)
                     pick_val_ml = home_name if p_win_h >= p_win_a else away_name
 
-                    # Priorizar recomendaciones de Over / Under y Moneyline con fuerte peso estadístico
                     if p_over_base >= 52.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
@@ -259,7 +257,7 @@ def analizar_partidos_nba():
                                 "prob": mejor_grid["prob"], "estado_pick": mejor_grid["estado"]
                             })
 
-                    top_players_info = extraer_top_jugadores(event_id, liga["codigo"])
+                    top_players_info = extraer_top_jugadores(competition, home_name, away_name)
                     marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score} (Total: {total_points})\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
                     str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
@@ -268,7 +266,7 @@ def analizar_partidos_nba():
                         f"🏟 **{home_name} vs. {away_name}**\n"
                         f"🏆 *{liga['nombre']}* (Línea Base Proyectada: {mu_total} Pts)\n"
                         f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
-                        f"🔥 *Key Players / Estrellas:* {top_players_info}\n"
+                        f"🔥 *Key Matchup / Estrellas:* {top_players_info}\n"
                         f"{marcador_str}\n"
                         f"🎯 **Oportunidades Estadísticas de Valor:**\n"
                         f"{str_oportunidades}"

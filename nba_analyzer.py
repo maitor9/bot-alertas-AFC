@@ -4,7 +4,7 @@ import requests
 import concurrent.futures
 
 LIGAS_BASKET_UNIVERSAL = [
-    {"codigo": "nba", "nombre": "NBA", "sd_margin": 9.5, "sd_total": 12.5, "home_adv": 3.0, "base_def": 114.5},
+    {"codigo": "nba", "nombre": "NBA", "sd_margin": 9.5, "sd_total": 12.0, "home_adv": 3.0, "base_def": 114.5},
     {"codigo": "wnba", "nombre": "WNBA", "sd_margin": 7.0, "sd_total": 9.0, "home_adv": 2.2, "base_def": 81.0},
     {"codigo": "mens-college-basketball", "nombre": "NCAA Masculino", "sd_margin": 10.0, "sd_total": 11.5, "home_adv": 3.5, "base_def": 73.0},
     {"codigo": "womens-college-basketball", "nombre": "NCAA Femenino", "sd_margin": 8.5, "sd_total": 10.5, "home_adv": 3.0, "base_def": 68.0},
@@ -75,13 +75,37 @@ def extraer_estadisticas_equipo(team_data, base_def):
     except Exception:
         pass
 
-    # Derivación dinámica basada en rendimiento real para evitar estancamientos
     if puntos_favor == 0.0:
         puntos_favor = base_def + ((win_pct - 0.5) * 12.0)
     if puntos_contra == 0.0:
         puntos_contra = base_def - ((win_pct - 0.5) * 12.0)
 
     return float(puntos_favor), float(puntos_contra), float(win_pct)
+
+def extraer_top_jugadores(event_id, liga_codigo):
+    """Extrae líderes clave en puntos, rebotes y asistencias desde el resumen del evento."""
+    if not event_id:
+        return "No disponibles"
+    url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/{liga_codigo}/summary?event={event_id}"
+    try:
+        res = requests.get(url, timeout=2.5)
+        if res.status_code == 200:
+            data = res.json()
+            leaders = data.get("leaders", [])
+            lines = []
+            for cat in leaders:
+                cat_name = cat.get("displayName", "")
+                if cat_name in ["Points", "Rebounds", "Assists", "Puntos", "Rebotes", "Asistencias"]:
+                    top_player = cat.get("leaders", [{}])[0]
+                    athlete = top_player.get("athlete", {}).get("displayName", "")
+                    value = top_player.get("displayValue", "")
+                    if athlete and value:
+                        lines.append(f"{athlete} ({value} {cat_name[:3]})")
+            if lines:
+                return " | ".join(lines[:2])
+    except:
+        pass
+    return "Análisis colectivo de rotación"
 
 def convertir_hora_colombia(date_str):
     try:
@@ -102,7 +126,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico de Alta Varianza)...", flush=True)
+    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico + Top Players)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -150,7 +174,6 @@ def analizar_partidos_nba():
                     pf_h, pc_h, win_pct_h = extraer_estadisticas_equipo(home, def_base)
                     pf_a, pc_a, win_pct_a = extraer_estadisticas_equipo(away, def_base)
 
-                    # Modelo Sabermétrico Dinámico con ponderación de Win Pct para evitar duplicidad de probabilidades
                     media_liga = (pf_h + pf_a + pc_h + pc_a) / 4.0
                     if media_liga == 0: media_liga = def_base
 
@@ -188,49 +211,31 @@ def analizar_partidos_nba():
                     prob_ml = max(p_win_h, p_win_a)
                     pick_val_ml = home_name if p_win_h >= p_win_a else away_name
 
-                    if prob_ml >= 58.0:
-                        picks_vip_valor.append({
-                            "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
-                            "mercado": f"Moneyline: {pick_val_ml}", 
-                            "justificacion": f"Análisis de eficiencia y récord de temporada proyecta ventaja clara para {pick_val_ml}.",
-                            "prob": prob_ml, "cuota": calcular_cuotas_valor(prob_ml)
-                        })
-                        oportunidades_alta_confianza.append(f"• 💎 **Gana {pick_val_ml} (ML):** {prob_ml}% | Cuota: *{calcular_cuotas_valor(prob_ml)}* ⏳ (Valor: Eficiencia Real)")
-
-                    if p_over_base >= 54.0:
+                    # Priorizar recomendaciones de Over / Under y Moneyline con fuerte peso estadístico
+                    if p_over_base >= 52.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Over {linea_over_base} Pts", 
-                            "justificacion": "Ritmo de posesiones superior proyectado por eficiencia cruzada.",
+                            "justificacion": f"Ritmo y eficiencia proyectan {mu_total} pts totales. Valor en alta anotación.",
                             "prob": p_over_base, "cuota": calcular_cuotas_valor(p_over_base)
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base} Pts:** {p_over_base}% | Cuota: *{calcular_cuotas_valor(p_over_base)}* ⏳ (Valor: Ritmo Ofensivo)")
-                    elif p_under_base >= 54.0:
+                    elif p_under_base >= 52.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Under {linea_under_base} Pts", 
-                            "justificacion": "Bloque defensivo sólido proyectado por debajo de la línea.",
+                            "justificacion": f"Defensas cerradas proyectan por debajo de {linea_under_base} pts.",
                             "prob": p_under_base, "cuota": calcular_cuotas_valor(p_under_base)
                         })
                         oportunidades_alta_confianza.append(f"• 💎 **Under {linea_under_base} Pts:** {p_under_base}% | Cuota: *{calcular_cuotas_valor(p_under_base)}* ⏳ (Valor: Solidez Defensiva)")
 
-                    def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=68.0):
-                        if prob_val >= umbral:
-                            est = "acertado" if (estado_cumplido and is_final) else ("fallado" if is_final else "pendiente")
-                            cuota_str = calcular_cuotas(prob_val)
-                            badge = " ✅" if est=="acertado" else (" ❌" if est=="fallado" else " ⏳")
-                            oportunidades_alta_confianza.append(f"• **{nombre_mercado}:** {prob_val}% | Cuota: *{cuota_str}*{badge}")
-                            candidatos_grid.append({"mercado": nombre_mercado, "prob": prob_val, "estado": est})
-
-                    evaluar_mercado_seguro(f"Moneyline ({home_name})", p_win_h, home_score > away_score, 70.0)
-                    evaluar_mercado_seguro(f"Moneyline ({away_name})", p_win_a, away_score > home_score, 70.0)
-                    evaluar_mercado_seguro(f"Over {linea_over_base - 6} Pts (Seguro)", round(p_over_base + 6.0, 1), total_points > (linea_over_base - 6), 66.0)
-                    evaluar_mercado_seguro(f"Under {linea_under_base + 6} Pts (Seguro)", round(p_under_base + 6.0, 1), total_points < (linea_under_base + 6), 66.0)
+                    if prob_ml >= 60.0:
+                        oportunidades_alta_confianza.append(f"• 🏀 **Gana {pick_val_ml} (ML):** {prob_ml}% | Cuota: *{calcular_cuotas(prob_ml)}* ⏳")
+                        candidatos_grid.append({"mercado": f"Moneyline ({pick_val_ml})", "prob": prob_ml, "estado": "pendiente"})
 
                     if not oportunidades_alta_confianza:
-                        # Forzar al menos el pick de Moneyline principal para que aparezca analizado
-                        candidatos_grid.append({"mercado": f"Moneyline ({pick_val_ml})", "prob": prob_ml, "estado": "pendiente"})
-                        oportunidades_alta_confianza.append(f"• **Moneyline ({pick_val_ml}):** {prob_ml}% | Cuota: *{calcular_cuotas(prob_ml)}* ⏳")
+                        candidatos_grid.append({"mercado": f"Over {linea_over_base} Pts", "prob": p_over_base, "estado": "pendiente"})
+                        oportunidades_alta_confianza.append(f"• **Over {linea_over_base} Pts:** {p_over_base}% | Cuota: *{calcular_cuotas(p_over_base)}* ⏳")
 
                     if candidatos_grid:
                         mejor_grid = max(candidatos_grid, key=lambda x: x["prob"])
@@ -254,6 +259,7 @@ def analizar_partidos_nba():
                                 "prob": mejor_grid["prob"], "estado_pick": mejor_grid["estado"]
                             })
 
+                    top_players_info = extraer_top_jugadores(event_id, liga["codigo"])
                     marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score} (Total: {total_points})\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
                     str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
@@ -262,6 +268,7 @@ def analizar_partidos_nba():
                         f"🏟 **{home_name} vs. {away_name}**\n"
                         f"🏆 *{liga['nombre']}* (Línea Base Proyectada: {mu_total} Pts)\n"
                         f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
+                        f"🔥 *Key Players / Estrellas:* {top_players_info}\n"
                         f"{marcador_str}\n"
                         f"🎯 **Oportunidades Estadísticas de Valor:**\n"
                         f"{str_oportunidades}"

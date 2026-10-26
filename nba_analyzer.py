@@ -82,10 +82,10 @@ def extraer_estadisticas_equipo(team_data, base_def):
 
     return float(puntos_favor), float(puntos_contra), float(win_pct)
 
-def extraer_top_jugadores(competition, home_name, away_name):
-    """Extrae líderes o jugadores destacados directamente de los atletas en la competencia."""
+def extraer_lideres_reales_api(competition):
+    """Extrae estrictamente los líderes estadísticos reportados por la API (en juego o finalizados)."""
     try:
-        leaders_info = []
+        lideres_info = []
         competitors = competition.get("competitors", [])
         for comp in competitors:
             t_name = comp.get("team", {}).get("shortDisplayName", "")
@@ -97,14 +97,14 @@ def extraer_top_jugadores(competition, home_name, away_name):
                     if top_list:
                         player = top_list[0].get("athlete", {}).get("displayName", "")
                         val = top_list[0].get("displayValue", "")
-                        if player:
-                            leaders_info.append(f"{t_name}: {player} ({val} PTS)")
+                        if player and val:
+                            lideres_info.append(f"{t_name}: {player} ({val} PTS)")
                             break
-        if leaders_info:
-            return " | ".join(leaders_info)
+        if lideres_info:
+            return " | ".join(lideres_info)
     except:
         pass
-    return f"Estrellas en duela ({home_name} vs {away_name})"
+    return None
 
 def convertir_hora_colombia(date_str):
     try:
@@ -125,7 +125,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico Avanzado)...", flush=True)
+    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico Estricto)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -250,14 +250,16 @@ def analizar_partidos_nba():
                             "estado_pick": mejor_grid["estado"]
                         })
 
-                        if mejor_grid["prob"] >= 70.0:
+                        if melhor_grid["prob"] >= 70.0 if "melhor_grid" in locals() else mejor_grid["prob"] >= 70.0:
                             picks_vip_seguros.append({
                                 "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"], 
                                 "mercado": f"{mejor_grid['mercado']} (Cuota: {calcular_cuotas(mejor_grid['prob'])})", 
                                 "prob": mejor_grid["prob"], "estado_pick": mejor_grid["estado"]
                             })
 
-                    top_players_info = extraer_top_jugadores(competition, home_name, away_name)
+                    lideres_reales = extraer_lideres_reales_api(competition)
+                    info_jugadores_str = f"🔥 *Líderes en Cancha:* {lideres_reales}\n" if lideres_reales else ""
+                    
                     marcador_str = f"🏆 **Marcador Final:** {home_score} - {away_score} (Total: {total_points})\n" if is_final else (f"⏱ **En Vivo:** {home_score} - {away_score}\n" if status_type == "STATUS_IN_PROGRESS" else "")
                     str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
@@ -266,7 +268,7 @@ def analizar_partidos_nba():
                         f"🏟 **{home_name} vs. {away_name}**\n"
                         f"🏆 *{liga['nombre']}* (Línea Base Proyectada: {mu_total} Pts)\n"
                         f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
-                        f"🔥 *Key Matchup / Estrellas:* {top_players_info}\n"
+                        f"{info_jugadores_str}"
                         f"{marcador_str}\n"
                         f"🎯 **Oportunidades Estadísticas de Valor:**\n"
                         f"{str_oportunidades}"

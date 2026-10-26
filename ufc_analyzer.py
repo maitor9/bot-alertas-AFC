@@ -9,8 +9,26 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
+def extraer_record_peleador(fighter_data):
+    """Extrae el récord real de victorias y derrotas del atleta desde la API de ESPN."""
+    try:
+        records = fighter_data.get("records", [])
+        if records:
+            summary = records[0].get("summary", "0-0")
+            partes = summary.replace("W", "").replace("L", "").replace("D", "").split("-")
+            if len(partes) >= 2:
+                wins = int(partes[0])
+                losses = int(partes[1])
+                draws = int(partes[2]) if len(partes) > 2 else 0
+                total = wins + losses + draws
+                win_pct = (wins / total) if total > 0 else 0.500
+                return wins, losses, win_pct
+    except Exception:
+        pass
+    return 0, 0, 0.500
+
 def analizar_cartelera_ufc():
-    print("🥊 Escaneando cartelera completa de UFC (Todas las peleas)...", flush=True)
+    print("🥊 Escaneando cartelera completa de UFC (Motor Estadístico Real)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_altisimos = []
@@ -31,7 +49,6 @@ def analizar_cartelera_ufc():
                     event_title = event.get("name", "UFC Event")
                     competitions = event.get("competitions", [])
 
-                    # Iterar sobre CADA COMBATE dentro de la cartelera del evento
                     for competition in competitions:
                         comp_id = competition.get("id")
                         if not comp_id or comp_id in combates_procesados: 
@@ -53,16 +70,30 @@ def analizar_cartelera_ufc():
 
                             f1_data = teams[0]
                             f2_data = teams[1]
-                            f1_name = f1_data.get("athlete", {}).get("displayName", "Peleador 1")
-                            f2_name = f2_data.get("athlete", {}).get("displayName", "Peleador 2")
-
-                            # Modelo probabilístico basado en hash de nombres y paridad de cuotas
-                            hash_1 = sum([ord(c) for c in f1_name])
-                            hash_2 = sum([ord(c) for c in f2_name])
-                            diff_hash = (hash_1 % 18) - (hash_2 % 18)
                             
-                            prob_f1_win = 50.0 + (diff_hash * 2.2)
-                            prob_f1_win = max(20.0, min(80.0, prob_f1_win))
+                            f1_athlete = f1_data.get("athlete", {})
+                            f2_athlete = f2_data.get("athlete", {})
+                            
+                            f1_name = f1_athlete.get("displayName", "Peleador 1")
+                            f2_name = f2_athlete.get("displayName", "Peleador 2")
+
+                            # Extracción de estadísticas reales de récord
+                            w1, l1, wp1 = extraer_record_peleador(f1_data)
+                            w2, l2, wp2 = extraer_record_peleador(f2_data)
+
+                            # Modelo cuantitativo basado en rendimiento real y diferencial de victorias
+                            diff_wp = wp1 - wp2
+                            prob_f1_win = 50.0 + (diff_wp * 35.0)  # Ponderación basada en el delta de efectividad real
+                            
+                            # Ajuste por volumen de experiencia (total de peleas registradas)
+                            total_peleas_1 = w1 + l1
+                            total_peleas_2 = w2 + l2
+                            if total_peleas_1 > total_peleas_2:
+                                prob_f1_win += 2.0
+                            elif total_peleas_2 > total_peleas_1:
+                                prob_f1_win -= 2.0
+
+                            prob_f1_win = max(15.0, min(85.0, prob_f1_win))
                             p_win_1 = round(prob_f1_win, 1)
                             p_win_2 = round(100.0 - p_win_1, 1)
 
@@ -92,12 +123,12 @@ def analizar_cartelera_ufc():
                             marcador_str = f"🏆 **Combate Finalizado**\n" if is_final else (f"⏱ **En Progreso**\n" if status_type == "STATUS_IN_PROGRESS" else "")
 
                             mensaje = (
-                                f"🥊 **ANÁLISIS COMBATE UFC**\n\n"
-                                f"🏟 **{f1_name} vs. {f2_name}**\n"
+                                f"🥊 **ANÁLISIS COMBATE UFC (ESTADÍSTICO)**\n\n"
+                                f"🏟 **{f1_name} ({w1}-{l1}) vs. {f2_name} ({w2}-{l2})**\n"
                                 f"🏆 *{event_title}*\n"
                                 f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                                 f"{marcador_str}\n"
-                                f"📈 **Moneyline (Ganador):**\n"
+                                f"📈 **Moneyline (Ganador - Basado en Récord):**\n"
                                 f"• **Probabilidad {f1_name}:** {p_win_1}%\n"
                                 f"• **Probabilidad {f2_name}:** {p_win_2}%\n\n"
                                 f"💡 **Sugerencia de Pick:** Gana {favorito}"
@@ -123,7 +154,7 @@ def analizar_cartelera_ufc():
         badge_p2 = " ✅" if est_p2 == "acertado" else (" ❌" if est_p2 == "fallado" else " ⏳")
 
         resumen_parleys = (
-            "🌟 **SELECCIÓN VIP UFC: OCTÁGONO IA** 🌟\n\n"
+            "🌟 **SELECCIÓN VIP UFC: OCTÁGONO ESTADÍSTICO** 🌟\n\n"
             "🔴 **PARLEY PRINCIPAL (Cuota Alta)**\n"
             f"• **{p1['partido']}** | Gana {p1['home'] if p1['p_win_h'] > p1['p_win_a'] else p1['away']} (Prob: {max(p1['p_win_h'], p1['p_win_a'])}%){badge_p1}\n"
             f"• **{p2['partido']}** | Gana {p2['home'] if p2['p_win_h'] > p2['p_win_a'] else p2['away']} (Prob: {max(p2['p_win_h'], p2['p_win_a'])}%){badge_p2}\n"

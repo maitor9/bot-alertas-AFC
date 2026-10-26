@@ -4,7 +4,7 @@ import requests
 import concurrent.futures
 
 LIGAS_BASKET_UNIVERSAL = [
-    {"codigo": "nba", "nombre": "NBA (Temporada Oficial)", "sd_margin": 10.5, "sd_total": 13.0, "home_adv": 3.0, "base_def": 114.5},
+    {"codigo": "nba", "nombre": "NBA", "sd_margin": 10.5, "sd_total": 13.0, "home_adv": 3.0, "base_def": 114.5},
     {"codigo": "wnba", "nombre": "WNBA", "sd_margin": 7.5, "sd_total": 9.2, "home_adv": 2.2, "base_def": 81.0},
     {"codigo": "mens-college-basketball", "nombre": "NCAA Masculino", "sd_margin": 10.5, "sd_total": 12.0, "home_adv": 3.5, "base_def": 73.0},
     {"codigo": "womens-college-basketball", "nombre": "NCAA Femenino", "sd_margin": 9.0, "sd_total": 11.0, "home_adv": 3.0, "base_def": 68.0},
@@ -35,31 +35,33 @@ def calcular_cuotas_valor(prob):
     except:
         return "2.20"
 
-def extraer_estadisticas_equipo(team_data):
-    """Extrae de forma robusta las estadísticas de puntos y récord de la temporada actual."""
+def extraer_estadisticas_equipo(team_data, base_def):
+    """Extrae de forma exhaustiva las estadísticas reales de anotación desde cualquier estructura de ESPN."""
     puntos_favor = 0.0
     puntos_contra = 0.0
     win_pct = 0.500
     try:
-        # Extraer estadísticas generales del equipo
+        # Revisar lista principal de estadísticas
         stats = team_data.get("statistics", [])
         for s in stats:
             name = s.get("name", "")
             val = float(s.get("value", 0))
-            if name in ["avgPoints", "pointsPerGame", "avgPointsFor"]:
+            if name in ["avgPoints", "pointsPerGame", "avgPointsFor", "scoringAverage"]:
                 puntos_favor = val
-            elif name in ["avgPointsAllowed", "pointsAllowedPerGame", "avgPointsAgainst"]:
+            elif name in ["avgPointsAllowed", "pointsAllowedPerGame", "avgPointsAgainst", "scoringAllowed"]:
                 puntos_contra = val
 
-        # Si la API anida estadísticas en objetos internos
+        # Si viene en formato anidado de objetos stats
         if puntos_favor == 0.0 and "stats" in team_data:
             for st in team_data.get("stats", []):
-                if st.get("name") in ["avgPoints", "pointsPerGame"]:
-                    puntos_favor = float(st.get("value", 0))
-                if st.get("name") in ["avgPointsAllowed", "pointsAllowedPerGame"]:
-                    puntos_contra = float(st.get("value", 0))
+                name = st.get("name", "")
+                val = float(st.get("value", 0))
+                if name in ["avgPoints", "pointsPerGame", "avgPointsFor"]:
+                    puntos_favor = val
+                elif name in ["avgPointsAllowed", "pointsAllowedPerGame"]:
+                    puntos_contra = val
 
-        # Extracción del récord de temporada (W-L)
+        # Extracción del récord de temporada (W-L) para calcular efectividad real
         records = team_data.get("records", [])
         if not records and "record" in team_data:
             records = [team_data.get("record")]
@@ -76,8 +78,14 @@ def extraer_estadisticas_equipo(team_data):
                     break
     except Exception:
         pass
-        
-    return puntos_favor, puntos_contra, win_pct
+
+    # Si la API no reporta estadísticas numéricas todavía, las derivamos del récord y la media de la liga
+    if puntos_favor == 0.0:
+        puntos_favor = base_def + (win_pct - 0.5) * 8.0
+    if puntos_contra == 0.0:
+        puntos_contra = base_def - (win_pct - 0.5) * 8.0
+
+    return float(puntos_favor), float(puntos_contra), float(win_pct)
 
 def convertir_hora_colombia(date_str):
     try:
@@ -98,7 +106,7 @@ def procesar_api_basket(liga, fecha):
     return liga, None
 
 def analizar_partidos_nba():
-    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico de Temporada)...", flush=True)
+    print("🏀 Escaneando cartelera Oficial NBA & Global (Motor Sabermétrico Ajustado)...", flush=True)
     analisis_lista = []
     picks_disponibles = []
     picks_vip_seguros = []
@@ -142,15 +150,9 @@ def analizar_partidos_nba():
                     home_name = home.get("team", {}).get("displayName", "Local")
                     away_name = away.get("team", {}).get("displayName", "Visita")
                     
-                    pf_h, pc_h, win_pct_h = extraer_estadisticas_equipo(home)
-                    pf_a, pc_a, win_pct_a = extraer_estadisticas_equipo(away)
-
                     def_base = liga["base_def"]
-                    # Si algún equipo arranca temporada y no tiene suficientes juegos en la API, usamos la media base de la liga oficial
-                    if pf_h == 0: pf_h = def_base
-                    if pc_h == 0: pc_h = def_base
-                    if pf_a == 0: pf_a = def_base - 1.5
-                    if pc_a == 0: pc_a = def_base - 1.5
+                    pf_h, pc_h, win_pct_h = extraer_estadisticas_equipo(home, def_base)
+                    pf_a, pc_a, win_pct_a = extraer_estadisticas_equipo(away, def_base)
 
                     # Modelo Sabermétrico de Puntos Esperados (Offensive & Defensive Efficiency)
                     media_liga = (pf_h + pf_a + pc_h + pc_a) / 4.0
@@ -187,33 +189,33 @@ def analizar_partidos_nba():
                     oportunidades_alta_confianza = []
                     candidatos_grid = []
 
-                    if abs(mu_diff) <= 4.5:
+                    if abs(mu_diff) <= 5.0:
                         pick_val_ml = home_name if p_win_h >= 50 else away_name
                         prob_ml = max(p_win_h, p_win_a)
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Moneyline: {pick_val_ml}", 
-                            "justificacion": "Duelo NBA muy cerrado según eficiencia ofensiva y defensiva de temporada.",
+                            "justificacion": f"Duelo cerrado en {liga['nombre']}. Eficiencia ofensiva proyectada con delta de {abs(mu_diff)} pts.",
                             "prob": prob_ml, "cuota": calcular_cuotas_valor(prob_ml)
                         })
-                        oportunidades_alta_confianza.append(f"• 💎 **Gana {pick_val_ml} (ML):** {prob_ml}% | Cuota: *{calcular_cuotas_valor(prob_ml)}* ⏳ (Valor: Margen Estrecho NBA)")
+                        oportunidades_alta_confianza.append(f"• 💎 **Gana {pick_val_ml} (ML):** {prob_ml}% | Cuota: *{calcular_cuotas_valor(prob_ml)}* ⏳ (Valor: Margen Estrecho)")
 
                     if p_over_base >= 54.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Over {linea_over_base} Pts", 
-                            "justificacion": "Ritmo de posesiones superior proyectado para este enfrentamiento.",
+                            "justificacion": f"Ritmo de posesiones superior al promedio en {liga['nombre']}.",
                             "prob": p_over_base, "cuota": calcular_cuotas_valor(p_over_base)
                         })
-                        oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base} Pts:** {p_over_base}% | Cuota: *{calcular_cuotas_valor(p_over_base)}* ⏳ (Valor: Ritmo Ofensivo NBA)")
+                        oportunidades_alta_confianza.append(f"• 💎 **Over {linea_over_base} Pts:** {p_over_base}% | Cuota: *{calcular_cuotas_valor(p_over_base)}* ⏳ (Valor: Ritmo Ofensivo)")
                     elif p_under_base >= 54.0:
                         picks_vip_valor.append({
                             "partido": f"{home_name} vs {away_name}", "liga": liga["nombre"],
                             "mercado": f"Under {linea_under_base} Pts", 
-                            "justificacion": "Solidez defensiva en la pintura proyectada por debajo de la línea.",
+                            "justificacion": f"Bloque defensivo sólido proyectado por debajo de los {linea_under_base} puntos.",
                             "prob": p_under_base, "cuota": calcular_cuotas_valor(p_under_base)
                         })
-                        oportunidades_alta_confianza.append(f"• 💎 **Under {linea_under_base} Pts:** {p_under_base}% | Cuota: *{calcular_cuotas_valor(p_under_base)}* ⏳ (Valor: Bloque Defensivo NBA)")
+                        oportunidades_alta_confianza.append(f"• 💎 **Under {linea_under_base} Pts:** {p_under_base}% | Cuota: *{calcular_cuotas_valor(p_under_base)}* ⏳ (Valor: Solidez Defensiva)")
 
                     def evaluar_mercado_seguro(nombre_mercado, prob_val, estado_cumplido, umbral=65.0):
                         if prob_val >= umbral:
@@ -257,9 +259,9 @@ def analizar_partidos_nba():
                     str_oportunidades = "\n".join(oportunidades_alta_confianza)
 
                     mensaje = (
-                        f"🏀 **ANÁLISIS NEURAL BASKETBALL (NBA & GLOBAL)**\n"
+                        f"🏀 **ANÁLISIS SABERMÉTRICO BASKETBALL**\n"
                         f"🏟 **{home_name} vs. {away_name}**\n"
-                        f"🏆 *{liga['nombre']}* (Línea Base: {mu_total} Pts)\n"
+                        f"🏆 *{liga['nombre']}* (Línea Base Proyectada: {mu_total} Pts)\n"
                         f"⏰ **Fecha/Hora (Col):** {fecha_hora_col}\n"
                         f"{marcador_str}\n"
                         f"🎯 **Oportunidades Estadísticas de Valor:**\n"

@@ -33,7 +33,6 @@ def extraer_estadisticas_luchador(fighter_data):
     wins, losses = 0, 1
     
     try:
-        # Extraer estadísticas de combate si están disponibles
         stats = fighter_data.get("statistics", [])
         for s in stats:
             name = s.get("name", "")
@@ -43,7 +42,6 @@ def extraer_estadisticas_luchador(fighter_data):
             elif name in ["takedownAccuracy", "grapplingAccuracy"]:
                 takedown_acc = val
 
-        # Extraer récord oficial (W-L)
         records = fighter_data.get("records", [])
         if not records and "record" in fighter_data:
             records = [fighter_data.get("record")]
@@ -70,7 +68,8 @@ def convertir_hora_colombia(date_str):
     except Exception:
         return "📅 Próximamente"
 
-def analizar_carteleras_ufc():
+def analizar_cartelera_ufc():
+    """Función unificada y estricta para importar limpiamente en app.py"""
     print("🥊 Escaneando carteleras múltiples de UFC con modelo sabermétrico de combate...", flush=True)
     analisis_lista = []
     picks_vip_seguros = []
@@ -86,7 +85,6 @@ def analizar_carteleras_ufc():
         data = response.json()
         events = data.get("events", [])
         
-        # Escaneo de múltiples eventos (UFC 334, 335, 336 y eventos en cartelera)
         for event in events:
             event_name = event.get("name", "UFC Event")
             event_date_str = event.get("date", "")
@@ -103,17 +101,14 @@ def analizar_carteleras_ufc():
                 f1_name = f1_data.get("athlete", {}).get("displayName", "Peleador 1")
                 f2_name = f2_data.get("athlete", {}).get("displayName", "Peleador 2")
                 
-                # Extracción rigurosa basada en datos reales
                 strike_1, td_1, wp_1, w1, l1 = extraer_estadisticas_luchador(f1_data)
                 strike_2, td_2, wp_2, w2, l2 = extraer_estadisticas_luchador(f2_data)
 
-                # Modelo sabermétrico de combate cruzado (Striking + Grappling + Inercia de Récord)
                 eficiencia_1 = (strike_1 * 0.6) + (td_1 * 0.4) + (wp_1 * 20.0)
                 eficiencia_2 = (strike_2 * 0.6) + (td_2 * 0.4) + (wp_2 * 20.0)
                 
                 delta_combate = eficiencia_1 - eficiencia_2
                 
-                # Desviación estándar típica para peleas de MMA (escala 15.0)
                 prob_f1_win = (1.0 - normal_cdf(0, delta_combate, 15.0)) * 100.0
                 p_f1 = round(max(15.0, min(85.0, prob_f1_win)), 1)
                 p_f2 = round(100.0 - p_f1, 1)
